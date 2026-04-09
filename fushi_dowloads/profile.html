@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>个人中心 - 天然原味</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#ece7e2",
+                        "on-primary-fixed-variant": "#6a3c00",
+                        "on-primary-container": "#774400",
+                        "secondary-container": "#aeedd5",
+                        "inverse-surface": "#32302d",
+                        "surface-container": "#f2ede8",
+                        "background": "#fef8f3",
+                        "outline-variant": "#d7c3b3",
+                        "surface-tint": "#8a5108",
+                        "on-tertiary-fixed": "#410006",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#8c1520",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "surface-variant": "#e6e2dd",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#96d3bd",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#2d1600",
+                        "primary-fixed-dim": "#ffb871",
+                        "on-secondary-fixed": "#002118",
+                        "tertiary-fixed": "#ffdad8",
+                        "inverse-primary": "#ffb871",
+                        "tertiary": "#ae2f34",
+                        "inverse-on-surface": "#f5f0eb",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e6e2dd",
+                        "on-surface-variant": "#524438",
+                        "on-tertiary-container": "#9a2028",
+                        "tertiary-container": "#ffaeab",
+                        "secondary-fixed": "#b1efd8",
+                        "secondary": "#2c6956",
+                        "on-secondary": "#ffffff",
+                        "outline": "#847466",
+                        "surface-container-low": "#f8f3ee",
+                        "primary-fixed": "#ffdcbe",
+                        "on-secondary-container": "#316d5b",
+                        "surface": "#fef8f3",
+                        "primary-container": "#ffb366",
+                        "primary": "#8a5108",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#0d503f",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fef8f3",
+                        "surface-dim": "#ded9d4",
+                        "on-surface": "#1d1b19"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-nav {
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body antialiased min-h-screen">
+<!-- Top App Bar -->
+<header class="fixed top-0 w-full z-50 bg-[#fef8f3]/80 backdrop-blur-xl flex items-center justify-between px-6 h-16 w-full">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#8a5108]">arrow_back</span>
+</div>
+<h1 class="text-[#8a5108] font-['Plus_Jakarta_Sans'] font-semibold text-lg">天然原味</h1>
+<div class="w-6"></div> <!-- Spacer for center alignment -->
+</header>
+<main class="pt-20 pb-32 px-6 max-w-2xl mx-auto">
+<!-- Profile Header Section -->
+<section class="relative mb-12">
+<div class="absolute -top-4 -right-2 opacity-20 pointer-events-none">
+<span class="material-symbols-outlined text-9xl text-primary" style="font-variation-settings: 'FILL' 1;">spa</span>
+</div>
+<div class="flex flex-col items-center">
+<div class="relative mb-6">
+<div class="w-32 h-32 rounded-full overflow-hidden border-4 border-surface-container-highest shadow-sm">
+<img class="w-full h-full object-cover" data-alt="Close-up portrait of a happy baby with soft morning light, warm tones, editorial photography style, high quality" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALG-zUcmKEJ4AUO8QtUJWilwCCdXsa01w93kocgOtkMXW9eNya5A3o63etEGROwmKxWLjjSmJYQ2fh5lr9GrQXjE3vGGwJ4Y0bIeynKfgGnGnl5NDlIcvfNVvCY0r5ntlCJHP6hTiyMvgEkApP3rP6bHYsY5KQLOpY29vjpkTv5Ka8u_bhbXuh_EfLNjuzzSAOL6oFcCJqCWOYzJSyExenJCv_OqmYPN0lEs5JMep09cBwHOlipkhwKh3vfGG8xcoD5VaShWaNuqc"/>
+</div>
+<div class="absolute bottom-0 right-0 bg-primary w-10 h-10 rounded-full flex items-center justify-center text-white border-4 border-background">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">edit</span>
+</div>
+</div>
+<div class="text-center">
+<h2 class="font-headline font-bold text-2xl text-on-surface tracking-tight mb-1">糯米团子</h2>
+<div class="flex items-center justify-center gap-2 text-on-surface-variant/80 text-sm">
+<span class="bg-secondary-fixed text-on-secondary-fixed-variant px-3 py-0.5 rounded-full font-medium">8个月22天</span>
+<span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+<span>牡羊座</span>
+</div>
+</div>
+</div>
+<!-- Growth Stats Bento -->
+<div class="grid grid-cols-2 gap-4 mt-10">
+<div class="bg-surface-container-low p-5 rounded-DEFAULT flex flex-col gap-1 relative overflow-hidden group active:scale-95 transition-transform duration-200">
+<span class="text-xs text-on-surface-variant/60 font-medium tracking-wider uppercase">当前阶段</span>
+<span class="text-lg font-bold text-primary">碎末状辅食</span>
+<span class="material-symbols-outlined absolute -bottom-2 -right-2 text-5xl opacity-5 group-hover:opacity-10 transition-opacity">restaurant</span>
+</div>
+<div class="bg-surface-container-low p-5 rounded-DEFAULT flex flex-col gap-1 relative overflow-hidden group active:scale-95 transition-transform duration-200">
+<span class="text-xs text-on-surface-variant/60 font-medium tracking-wider uppercase">已尝试食材</span>
+<span class="text-lg font-bold text-secondary">42 种</span>
+<span class="material-symbols-outlined absolute -bottom-2 -right-2 text-5xl opacity-5 group-hover:opacity-10 transition-opacity">eco</span>
+</div>
+</div>
+</section>
+<!-- Menu List (Healing Card Design) -->
+<section class="space-y-3 mb-12">
+<div class="bg-surface-container-lowest p-2 rounded-lg shadow-sm">
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-DEFAULT transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="child_care">child_care</span>
+</div>
+<span class="font-medium text-on-surface">宝宝档案</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-DEFAULT transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary" data-icon="favorite" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</div>
+<span class="font-medium text-on-surface">我的收藏</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-DEFAULT transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-tertiary" data-icon="warning">warning</span>
+</div>
+<span class="font-medium text-on-surface">过敏管理</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-DEFAULT transition-colors group relative" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="notifications">notifications</span>
+</div>
+<span class="font-medium text-on-surface">消息通知</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-error"></span>
+<span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</div>
+</a>
+<a class="flex items-center justify-between p-4 hover:bg-surface-container-low rounded-DEFAULT transition-colors group" href="#">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center">
+<span class="material-symbols-outlined text-on-surface-variant" data-icon="help">help</span>
+</div>
+<span class="font-medium text-on-surface">帮助与反馈</span>
+</div>
+<span class="material-symbols-outlined text-outline-variant group-hover:translate-x-1 transition-transform">chevron_right</span>
+</a>
+</div>
+</section>
+<!-- WeChat Features (Horizontal Layout) -->
+<section class="grid grid-cols-3 gap-3">
+<button class="flex flex-col items-center gap-2 p-4 bg-surface-container-low rounded-DEFAULT active:scale-95 transition-all">
+<div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[#07C160]" data-icon="share">share</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">分享好友</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 bg-surface-container-low rounded-DEFAULT active:scale-95 transition-all">
+<div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[#07C160]" data-icon="mark_email_unread">mark_email_unread</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">订阅提醒</span>
+</button>
+<button class="flex flex-col items-center gap-2 p-4 bg-surface-container-low rounded-DEFAULT active:scale-95 transition-all">
+<div class="w-12 h-12 rounded-full bg-white flex items-center justify-center shadow-sm">
+<span class="material-symbols-outlined text-[#07C160]" data-icon="add_circle">add_circle</span>
+</div>
+<span class="text-xs font-medium text-on-surface-variant">添加至桌面</span>
+</button>
+</section>
+<!-- Decorative Illustration -->
+<div class="mt-12 flex justify-center opacity-10 grayscale select-none">
+<span class="material-symbols-outlined text-8xl" data-icon="auto_awesome">auto_awesome</span>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe rounded-t-[32px] bg-[#fef8f3]/90 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(29,27,25,0.05)] flex justify-around items-center h-20 px-8 w-full">
+<a class="flex flex-col items-center justify-center text-[#1d1b19]/40 hover:text-[#2c6956] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="home_healing">healing</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">首页</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#1d1b19]/40 hover:text-[#2c6956] transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant_menu">restaurant_menu</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">辅食计划</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#2c6956] scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person_2" style="font-variation-settings: 'FILL' 1;">person_2</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">我的</span>
+</a>
+</nav>
+</body></html>

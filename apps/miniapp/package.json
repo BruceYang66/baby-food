@@ -1,0 +1,24 @@
+{
+  "name": "@baby-food/miniapp",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "uni -p mp-weixin",
+    "build": "uni build -p mp-weixin"
+  },
+  "dependencies": {
+    "@baby-food/shared-types": "0.1.0",
+    "@baby-food/ui-tokens": "0.1.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@dcloudio/types": "3.4.28",
+    "@dcloudio/uni-app": "3.0.0-5000620260331001",
+    "@dcloudio/uni-mp-weixin": "3.0.0-5000620260331001",
+    "@dcloudio/vite-plugin-uni": "3.0.0-5000620260331001",
+    "sass": "^1.86.3",
+    "typescript": "^5.8.3",
+    "vite": "5.2.8"
+  }
+}

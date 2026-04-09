@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ContentStatus {
+  draft
+  pending_review
+  published
+  offline
+  trash
+}
+
+enum ReviewStatus {
+  none
+  pending
+  approved
+  rejected
+}
+
+model User {
+  id           String   @id @default(cuid())
+  nickname     String
+  avatarUrl    String?
+  wechatOpenId String?  @unique
+  createdAt    DateTime @default(now())
+  babies       Baby[]
+  mealPlans    MealPlan[]
+}
+
+model Baby {
+  id            String         @id @default(cuid())
+  userId        String
+  nickname      String
+  birthDate     DateTime
+  stageLabel    String
+  allergens     BabyAllergen[]
+  user          User           @relation(fields: [userId], references: [id])
+}
+
+model BabyAllergen {
+  id       String @id @default(cuid())
+  babyId   String
+  name     String
+  severity String?
+  baby     Baby   @relation(fields: [babyId], references: [id])
+}
+
+model Recipe {
+  id              String         @id @default(cuid())
+  title           String
+  summary         String?
+  coverImage      String?
+  ageLabel        String
+  durationLabel   String
+  difficultyLabel String
+  contentStatus   ContentStatus  @default(draft)
+  reviewStatus    ReviewStatus   @default(none)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  ingredients     RecipeIngredient[]
+  steps           RecipeStep[]
+  tags            RecipeTag[]
+  versions        RecipeVersion[]
+  reviews         RecipeReview[]
+}
+
+model RecipeIngredient {
+  id       String @id @default(cuid())
+  recipeId String
+  name     String
+  amount   String
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+}
+
+model RecipeStep {
+  id          String @id @default(cuid())
+  recipeId    String
+  stepNo      Int
+  title       String
+  description String
+  imageUrl    String?
+  recipe      Recipe @relation(fields: [recipeId], references: [id])
+}
+
+model RecipeTag {
+  id       String @id @default(cuid())
+  recipeId String
+  name     String
+  recipe   Recipe @relation(fields: [recipeId], references: [id])
+}
+
+model MealPlan {
+  id             String         @id @default(cuid())
+  userId         String
+  title          String
+  dateLabel      String
+  nutritionScore Int
+  user           User           @relation(fields: [userId], references: [id])
+  items          MealPlanItem[]
+}
+
+model MealPlanItem {
+  id         String   @id @default(cuid())
+  mealPlanId String
+  recipeId   String?
+  slot       String
+  time       String
+  title      String
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id])
+}
+
+model GuideStage {
+  id          String          @id @default(cuid())
+  key         String          @unique
+  label       String
+  title       String
+  description String
+  rules       GuideFoodRule[]
+}
+
+model GuideFoodRule {
+  id           String     @id @default(cuid())
+  stageId      String
+  type         String
+  title        String
+  foodsJson    String
+  guideStage   GuideStage @relation(fields: [stageId], references: [id])
+}
+
+model SymptomGuide {
+  id          String             @id @default(cuid())
+  symptom     String             @unique
+  title       String
+  rules       SymptomFoodRule[]
+}
+
+model SymptomFoodRule {
+  id            String       @id @default(cuid())
+  symptomGuideId String
+  type          String
+  food          String
+  reason        String
+  symptomGuide  SymptomGuide @relation(fields: [symptomGuideId], references: [id])
+}
+
+model RecipeReview {
+  id         String       @id @default(cuid())
+  recipeId   String
+  action     ReviewStatus
+  comment    String?
+  createdAt  DateTime     @default(now())
+  recipe     Recipe       @relation(fields: [recipeId], references: [id])
+}
+
+model RecipeVersion {
+  id          String   @id @default(cuid())
+  recipeId    String
+  versionNo   Int
+  snapshot    String
+  createdAt   DateTime @default(now())
+  recipe      Recipe   @relation(fields: [recipeId], references: [id])
+}
+
+model ImportJob {
+  id         String   @id @default(cuid())
+  fileName   String
+  operator   String
+  total      Int
+  success    Int
+  failed     Int
+  status     String
+  createdAt  DateTime @default(now())
+}
+
+model SystemSetting {
+  id         String   @id @default(cuid())
+  settingKey String   @unique
+  settingVal String
+  updatedAt  DateTime @updatedAt
+}

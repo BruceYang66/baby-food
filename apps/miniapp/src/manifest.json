@@ -1,0 +1,15 @@
+{
+  "name": "沐爸AI育儿",
+  "appid": "wx83f3a52faf02061d",
+  "description": "宝宝辅食生成器微信小程序原型工程",
+  "mp-weixin": {
+    "appid": "wx83f3a52faf02061d",
+    "setting": {
+      "urlCheck": false,
+      "es6": true,
+      "enhance": true,
+      "postcss": true,
+      "minified": true
+    }
+  }
+}

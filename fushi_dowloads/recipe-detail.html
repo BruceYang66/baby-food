@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+
+<html lang="zh-Hans"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>天然原味 - 食谱详情</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container-high": "#ece7e2",
+                        "on-primary-fixed-variant": "#6a3c00",
+                        "on-primary-container": "#774400",
+                        "secondary-container": "#aeedd5",
+                        "inverse-surface": "#32302d",
+                        "surface-container": "#f2ede8",
+                        "background": "#fef8f3",
+                        "outline-variant": "#d7c3b3",
+                        "surface-tint": "#8a5108",
+                        "on-tertiary-fixed": "#410006",
+                        "surface-container-lowest": "#ffffff",
+                        "on-tertiary-fixed-variant": "#8c1520",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "surface-variant": "#e6e2dd",
+                        "error-container": "#ffdad6",
+                        "on-background": "#1d1b19",
+                        "error": "#ba1a1a",
+                        "secondary-fixed-dim": "#96d3bd",
+                        "on-error": "#ffffff",
+                        "on-primary-fixed": "#2d1600",
+                        "primary-fixed-dim": "#ffb871",
+                        "on-secondary-fixed": "#002118",
+                        "tertiary-fixed": "#ffdad8",
+                        "inverse-primary": "#ffb871",
+                        "tertiary": "#ae2f34",
+                        "inverse-on-surface": "#f5f0eb",
+                        "on-primary": "#ffffff",
+                        "surface-container-highest": "#e6e2dd",
+                        "on-surface-variant": "#524438",
+                        "on-tertiary-container": "#9a2028",
+                        "tertiary-container": "#ffaeab",
+                        "secondary-fixed": "#b1efd8",
+                        "secondary": "#2c6956",
+                        "on-secondary": "#ffffff",
+                        "outline": "#847466",
+                        "surface-container-low": "#f8f3ee",
+                        "primary-fixed": "#ffdcbe",
+                        "on-secondary-container": "#316d5b",
+                        "surface": "#fef8f3",
+                        "primary-container": "#ffb366",
+                        "primary": "#8a5108",
+                        "on-tertiary": "#ffffff",
+                        "on-secondary-fixed-variant": "#0d503f",
+                        "on-error-container": "#93000a",
+                        "surface-bright": "#fef8f3",
+                        "surface-dim": "#ded9d4",
+                        "on-surface": "#1d1b19"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-golden-hour {
+            background: linear-gradient(135deg, #8a5108 0%, #ffb366 100%);
+        }
+        .meal-timeline-stem {
+            position: absolute;
+            left: 12px;
+            top: 24px;
+            bottom: 0;
+            width: 2px;
+            background-color: #96d3bd;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- Top AppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fef8f3]/80 dark:bg-stone-950/80 backdrop-blur-xl flex items-center justify-between px-6 h-16">
+<div class="flex items-center gap-4">
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200">
+<span class="material-symbols-outlined text-[#8a5108]">arrow_back</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-semibold text-lg text-[#8a5108]">天然原味</h1>
+</div>
+<div class="flex items-center gap-2">
+<button class="w-10 h-10 flex items-center justify-center rounded-full surface-container-low text-[#8a5108]">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">favorite</span>
+</button>
+</div>
+</header>
+<main class="pt-16 pb-32">
+<!-- Hero Section: Macro Food Photography -->
+<section class="relative w-full aspect-[4/5] overflow-hidden mb-8">
+<img alt="Baby Food" class="w-full h-full object-cover" data-alt="Macro photography of smooth golden pumpkin and organic millet porridge in a handcrafted ceramic bowl, soft morning sunlight, editorial style" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBZVlRVMuDxcOHYXYcyY7cDcdMdrXQ_RtviIjrlenh5y7ABxe8ZHlUktpYJINmu_ILF0ow4NinIRcKV03KG_RKNnPbw40RFVb4QAuyu9MPMMyrmh6f-aVlkLwjbyNzjgijtn680G57alfG8GqT1lTvAyCNsMSuY_Oze-xH3L_D-vYXzO-ffTQHcPEcit5MnsMhYURRjHgszSXiC8wPhPQ_K2bt3kuY8GB1ITb6pt4fKMoD4l6EOmidYma8wEIYupoUUgLWGdtDNcpI"/>
+<div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent"></div>
+<!-- Decorative Illustration -->
+<div class="absolute -bottom-4 -right-4 w-32 h-32 opacity-20 pointer-events-none">
+<span class="material-symbols-outlined text-[120px] text-primary">psychology_alt</span>
+</div>
+</section>
+<!-- Content Canvas -->
+<div class="px-6 max-w-2xl mx-auto">
+<!-- Title & Basic Info -->
+<header class="mb-8">
+<div class="flex items-center gap-2 mb-2">
+<span class="px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant text-xs font-medium">6个月+ 尝试期</span>
+<span class="px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-medium">健脾开胃</span>
+</div>
+<h2 class="text-3xl font-headline font-bold text-on-surface tracking-tight mb-4">有机南瓜小米米糊</h2>
+<!-- Info Grid -->
+<div class="grid grid-cols-3 gap-4 p-4 rounded-xl bg-surface-container-low border border-outline-variant/10">
+<div class="flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-1">schedule</span>
+<span class="text-[10px] text-outline uppercase tracking-wider">烹饪时间</span>
+<span class="text-sm font-semibold">20 分钟</span>
+</div>
+<div class="flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-1">kid_star</span>
+<span class="text-[10px] text-outline uppercase tracking-wider">难度等级</span>
+<span class="text-sm font-semibold">初级</span>
+</div>
+<div class="flex flex-col items-center text-center">
+<span class="material-symbols-outlined text-primary mb-1">nutrition</span>
+<span class="text-[10px] text-outline uppercase tracking-wider">核心营养</span>
+<span class="text-sm font-semibold">胡萝卜素</span>
+</div>
+</div>
+</header>
+<!-- Ingredients List -->
+<section class="mb-10">
+<div class="flex items-end justify-between mb-4">
+<h3 class="text-xl font-headline font-bold">准备食材</h3>
+<span class="text-xs text-outline italic">Ingredients List</span>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-medium">有机南瓜</span>
+</div>
+<span class="text-on-surface-variant">50g</span>
+</div>
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-medium">黄小米</span>
+</div>
+<span class="text-on-surface-variant">20g</span>
+</div>
+<div class="flex items-center justify-between p-4 rounded-xl bg-surface-container-lowest shadow-sm">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-secondary"></div>
+<span class="font-medium">温水/母乳</span>
+</div>
+<span class="text-on-surface-variant">适量</span>
+</div>
+</div>
+</section>
+<!-- Preparation Steps -->
+<section class="mb-10">
+<div class="flex items-end justify-between mb-6">
+<h3 class="text-xl font-headline font-bold">制作步骤</h3>
+<span class="text-xs text-outline italic">Step by Step</span>
+</div>
+<div class="relative space-y-12">
+<!-- Step 1 -->
+<div class="relative pl-10">
+<div class="meal-timeline-stem"></div>
+<div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] text-white font-bold z-10">1</div>
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm">
+<div class="aspect-video w-full">
+<img alt="Prep step 1" class="w-full h-full object-cover" data-alt="Close up of hands peeling organic pumpkin on a wooden cutting board with soft cinematic lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAfo6jZHSwiI85bZXw2coTPwATR4g2s73muAaLzyrEM1ZGF-axydK5sdUBVAXPGF9hDE2KInkJYm1E11m_Ha49EaTPZ1WqCkqlwiZjWwk3EOH1lIeE5qSE_G4cbHX3Pp58z-esKrSK_PeNyYrXjGO9pAGiJIFNhnWzIEyhphpf75NtO5b5y43_WUOfeWq1B6CbeEtOmrSlOlWMY4PTIShNy4wu4f8XOBm9MrI-31r0o4K0Hzba9YQaxe65gUZHOjoM6QGBawgxCo8k"/>
+</div>
+<div class="p-4">
+<p class="text-on-surface-variant leading-relaxed">
+                                    将南瓜去皮去瓤，切成 1cm 左右的小丁，小米洗净后加水浸泡 15 分钟，激活谷物活性。
+                                </p>
+</div>
+</div>
+</div>
+<!-- Step 2 -->
+<div class="relative pl-10">
+<div class="meal-timeline-stem"></div>
+<div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] text-white font-bold z-10">2</div>
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm">
+<div class="aspect-video w-full">
+<img alt="Prep step 2" class="w-full h-full object-cover" data-alt="Steam rising from a professional stainless steel steamer with vegetables inside, soft bright lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_ePE0mjs0187pj-7pXeiGobaPrpP8M8O5H6_q48UvBix14YcJJxqdcBjUZYmD6kpUTVWmo6HiaucgzMXTc9AFAofc9v9mk9krvBdTmQ_tJ1SmRkHMawgt1_3r2mJdhTDVc2OEEF0vIPMaoPLMn-FbZPsxX6auvvpXyXRQC47pT5DWCldqEvksqvivAsT_F-sBfk-rX9ICPbdcowytx9z8Hdc7cDOOC0loQ6H7f163y8qcCKepns1y4DETne-PvrPHgO3294_UhDk"/>
+</div>
+<div class="p-4">
+<p class="text-on-surface-variant leading-relaxed">
+                                    将南瓜和小米一同放入蒸锅，大火蒸 15-20 分钟直到软烂。蒸出的南瓜水不要倒掉，含有丰富营养。
+                                </p>
+</div>
+</div>
+</div>
+<!-- Step 3 -->
+<div class="relative pl-10">
+<div class="absolute left-0 top-0 w-6 h-6 rounded-full bg-secondary flex items-center justify-center text-[10px] text-white font-bold z-10">3</div>
+<div class="bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm">
+<div class="p-4">
+<div class="flex gap-4 mb-4">
+<div class="flex-1 aspect-square rounded-xl overflow-hidden">
+<img alt="Prep step 3a" class="w-full h-full object-cover" data-alt="Smooth pumpkin puree inside a modern blender container, vibrant orange color" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAUI-TVvi2hv_Dh1v9xr2aJdz-xMyKBuKt6NQToB8Hh4FRNV3f56wH9KgfljZqL0cq-AO0B3CGz5-rDf_O1MjACMjxVwI3H_nuKi1oGixexVYqPDqNcdsw0ImcYOZXFvakGwA4FNdZBJp4WAkKGgEdZjW16okjGOouaqHs2i18hsfOgVXmhu2rOl48Umwht4YufrBOxfMgDexHb6aAeLlYLAYLWeMu5ntF1YwR_NwLTcJeptgTRaozcTPlPeOvBeB_2gPjo-wTXhVU"/>
+</div>
+<div class="flex-1 aspect-square rounded-xl overflow-hidden">
+<img alt="Prep step 3b" class="w-full h-full object-cover" data-alt="Artisanal ceramic baby bowl with fresh puree and a small spoon, editorial food styling" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkO4CfEgoHIxYc74D7Dd4NkAefmbkn358UCWblixoJ5Jv7IA2KzTOoS-hP532_cZqnUWUqcZJko95Cc91LAX3uSt1MUwGg6DPYvvNtO7_eWJCh6_yhnu6_0CHBBySMnM9v0VwvEK5Cnsh-Ts-8pZ4XLIB9_T9C_-WSWXNEX9D0Jzb1_w8QvdAICJVkLTZx-eXKtuFFndUUaUMUrQjuuG05CnEFgyvc8VdunqwPq99qn2iyY1ExwnuypkDi_2SP7zkL0fLDMjLHA30"/>
+</div>
+</div>
+<p class="text-on-surface-variant leading-relaxed">
+                                    将蒸熟的食材放入搅拌机中，根据宝宝吞咽能力加入温水或母乳，打磨成极其细腻的糊状。
+                                </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Dietary Tips -->
+<div class="p-6 rounded-2xl bg-secondary-container/20 border-l-4 border-secondary mb-12">
+<div class="flex items-center gap-2 mb-2 text-secondary">
+<span class="material-symbols-outlined">tips_and_updates</span>
+<h4 class="font-bold">营养师小贴士</h4>
+</div>
+<p class="text-sm text-on-secondary-container leading-relaxed">
+                    南瓜含有丰富的β-胡萝卜素，小米健脾养胃。初次添加请观察 3 天，确认宝宝无过敏反应。建议现做现吃，保持食材鲜美。
+                </p>
+</div>
+</div>
+</main>
+<!-- Fixed Action Bar (Bottom) -->
+<footer class="fixed bottom-0 w-full z-50 px-6 pb-8 pt-4 bg-[#fef8f3]/90 dark:bg-stone-950/90 backdrop-blur-2xl rounded-t-[32px] shadow-[0_-4px_24px_rgba(29,27,25,0.05)]">
+<div class="flex items-center gap-4 max-w-2xl mx-auto">
+<button class="flex flex-col items-center justify-center p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">share</span>
+<span class="text-[10px] font-medium mt-1">分享</span>
+</button>
+<button class="flex flex-col items-center justify-center p-2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">bookmark</span>
+<span class="text-[10px] font-medium mt-1">收藏</span>
+</button>
+<button class="flex-1 h-14 bg-golden-hour rounded-full text-white font-bold flex items-center justify-center gap-2 shadow-lg shadow-primary/20 active:scale-95 transition-transform">
+<span class="material-symbols-outlined">calendar_add_on</span>
+                加入辅食计划
+            </button>
+</div>
+</footer>
+</body></html>

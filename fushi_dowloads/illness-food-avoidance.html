@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#ece7e2",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "on-primary-container": "#774400",
+                    "secondary-container": "#aeedd5",
+                    "inverse-surface": "#32302d",
+                    "surface-container": "#f2ede8",
+                    "background": "#fef8f3",
+                    "outline-variant": "#d7c3b3",
+                    "surface-tint": "#8a5108",
+                    "on-tertiary-fixed": "#410006",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#8c1520",
+                    "tertiary-fixed-dim": "#ffb3b0",
+                    "surface-variant": "#e6e2dd",
+                    "error-container": "#ffdad6",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#96d3bd",
+                    "on-error": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "primary-fixed-dim": "#ffb871",
+                    "on-secondary-fixed": "#002118",
+                    "tertiary-fixed": "#ffdad8",
+                    "inverse-primary": "#ffb871",
+                    "tertiary": "#ae2f34",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#e6e2dd",
+                    "on-surface-variant": "#524438",
+                    "on-tertiary-container": "#9a2028",
+                    "tertiary-container": "#ffaeab",
+                    "secondary-fixed": "#b1efd8",
+                    "secondary": "#2c6956",
+                    "on-secondary": "#ffffff",
+                    "outline": "#847466",
+                    "surface-container-low": "#f8f3ee",
+                    "primary-fixed": "#ffdcbe",
+                    "on-secondary-container": "#316d5b",
+                    "surface": "#fef8f3",
+                    "primary-container": "#ffb366",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#0d503f",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#fef8f3",
+                    "surface-dim": "#ded9d4",
+                    "on-surface": "#1d1b19"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Be Vietnam Pro"],
+                    "label": ["Be Vietnam Pro"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .bg-golden-hour {
+            background: linear-gradient(135deg, #8a5108 0%, #ffb366 100%);
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 w-full z-50 bg-[#fef8f3]/80 dark:bg-stone-950/80 backdrop-blur-xl flex items-center justify-between px-6 h-16">
+<div class="flex items-center gap-4">
+<span class="material-symbols-outlined text-[#8a5108] dark:text-[#ffb366] cursor-pointer scale-95 duration-200">arrow_back</span>
+</div>
+<h1 class="font-['Plus_Jakarta_Sans'] font-semibold text-lg text-[#8a5108] dark:text-[#ffb366] absolute left-1/2 -translate-x-1/2">天然原味</h1>
+<div class="w-10"></div>
+</header>
+<main class="pt-20 px-6 max-w-2xl mx-auto">
+<!-- Hero Search Section -->
+<section class="mb-8">
+<h2 class="text-2xl font-headline font-bold text-on-surface mb-2">生病忌口查询</h2>
+<p class="text-on-surface-variant text-sm mb-6">根据宝宝当前症状，获取科学的饮食建议与专业指导。</p>
+<div class="relative group">
+<div class="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+<span class="material-symbols-outlined text-outline">search</span>
+</div>
+<input class="w-full bg-surface-container-low border-none rounded-full py-4 pl-12 pr-6 text-on-surface focus:ring-2 focus:ring-primary-container transition-all" placeholder="搜索症状，如：咳嗽、积食..." type="text"/>
+</div>
+</section>
+<!-- Symptoms Grid 2x4 -->
+<section class="mb-10">
+<div class="grid grid-cols-4 gap-3">
+<!-- Row 1 -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-secondary-fixed-dim/30 rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-secondary text-3xl">thermometer</span>
+</div>
+<span class="text-xs font-medium text-on-surface">感冒</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-primary-container rounded-2xl flex items-center justify-center ring-2 ring-primary ring-offset-2 ring-offset-background group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-on-primary-container text-3xl" style="font-variation-settings: 'FILL' 1;">water_drop</span>
+</div>
+<span class="text-xs font-bold text-primary">腹泻</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">air</span>
+</div>
+<span class="text-xs font-medium text-on-surface">咳嗽</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-col aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">potted_plant</span>
+</div>
+<span class="text-xs font-medium text-on-surface">过敏</span>
+</div>
+<!-- Row 2 -->
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">restaurant_menu</span>
+</div>
+<span class="text-xs font-medium text-on-surface">积食</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">ulna_radius</span>
+</div>
+<span class="text-xs font-medium text-on-surface">便秘</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">face_6</span>
+</div>
+<span class="text-xs font-medium text-on-surface">出疹</span>
+</div>
+<div class="flex flex-col items-center gap-2 group cursor-pointer">
+<div class="w-full aspect-square bg-surface-container-high rounded-2xl flex items-center justify-center group-active:scale-95 transition-transform">
+<span class="material-symbols-outlined text-outline text-3xl">more_horiz</span>
+</div>
+<span class="text-xs font-medium text-on-surface">更多</span>
+</div>
+</div>
+</section>
+<!-- Condition Details (Active State: 腹泻) -->
+<div class="space-y-6">
+<!-- Red Area: Forbidden -->
+<div class="bg-tertiary-container/20 rounded-2xl p-6 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10 rotate-12">
+<span class="material-symbols-outlined text-tertiary text-8xl">block</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-tertiary">dangerous</span>
+<h3 class="font-bold text-on-tertiary-container">不要吃 (避开过敏与刺激)</h3>
+</div>
+<ul class="space-y-4">
+<li class="flex items-start gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary mt-2"></div>
+<div>
+<span class="font-bold text-on-surface text-sm">高油脂食物</span>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">油炸、肥肉会加重肠胃负担，引起蠕动异常，加重腹泻症状。</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary mt-2"></div>
+<div>
+<span class="font-bold text-on-surface text-sm">高膳食纤维蔬菜</span>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">芹菜、韭菜等粗纤维会机械性刺激肠壁，使腹泻次数增加。</p>
+</div>
+</li>
+<li class="flex items-start gap-3">
+<div class="w-1.5 h-1.5 rounded-full bg-tertiary mt-2"></div>
+<div>
+<span class="font-bold text-on-surface text-sm">生冷瓜果</span>
+<p class="text-xs text-on-surface-variant mt-1 leading-relaxed">西瓜、香蕉等冷凉食物会导致胃肠平滑肌痉挛。</p>
+</div>
+</li>
+</ul>
+</div>
+<!-- Green Area: Recommended -->
+<div class="bg-secondary-container/20 rounded-2xl p-6 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10 -rotate-12">
+<span class="material-symbols-outlined text-secondary text-8xl">check_circle</span>
+</div>
+<div class="flex items-center gap-2 mb-4">
+<span class="material-symbols-outlined text-secondary">verified</span>
+<h3 class="font-bold text-on-secondary-container">推荐吃 (温和收敛)</h3>
+</div>
+<div class="flex flex-wrap gap-2">
+<span class="px-3 py-1 bg-white/60 text-secondary text-xs font-medium rounded-full">小米米汤</span>
+<span class="px-3 py-1 bg-white/60 text-secondary text-xs font-medium rounded-full">蒸苹果</span>
+<span class="px-3 py-1 bg-white/60 text-secondary text-xs font-medium rounded-full">胡萝卜泥</span>
+<span class="px-3 py-1 bg-white/60 text-secondary text-xs font-medium rounded-full">焦米粥</span>
+<span class="px-3 py-1 bg-white/60 text-secondary text-xs font-medium rounded-full">熟藕粉</span>
+</div>
+</div>
+<!-- Recipe Recommendations -->
+<section>
+<div class="flex justify-between items-end mb-4">
+<h3 class="text-lg font-bold">针对性食谱推荐</h3>
+<span class="text-xs text-secondary font-medium">查看更多方案</span>
+</div>
+<div class="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+<div class="min-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="h-32 bg-stone-200 relative">
+<img class="w-full h-full object-cover" data-alt="close-up of warm yellow millet porridge in a ceramic bowl with soft natural window lighting and a minimalist wooden spoon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxLt5sXP2Q4aoebzypng3kCKtIsVD_9Wzr1xGN4ZT8Vp1F-me-xUetcrLnAjzvUacSpbZ89YkAW8Wkeba8JjfSNkXCRbhTqkPhnWpnQ_ilwyTWa3nqfJYBsw44vTPRId27YK1BxNZ-_YAW06V-1C-RYoEg1nlvBGGhuebPDaX5RPRHSyTzgceQuMJkQw5FdATCagmgakYIjLXYvjTukka_evREsJRIlh3IRQatafwNXHE4ma6wY5eX0c0iC0DaJUVi1GN7m0AkF5s"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-white/90 backdrop-blur text-[10px] font-bold rounded-lg text-secondary">腹泻期首选</div>
+</div>
+<div class="p-4">
+<h4 class="font-bold text-on-surface text-sm mb-1">焦米汤</h4>
+<p class="text-xs text-on-surface-variant leading-tight">含有焦化的碳水，能有效吸附肠道水分，缓解腹泻。</p>
+</div>
+</div>
+<div class="min-w-[260px] bg-surface-container-lowest rounded-2xl overflow-hidden shadow-sm border border-outline-variant/10">
+<div class="h-32 bg-stone-200 relative">
+<img class="w-full h-full object-cover" data-alt="soft steamed red apple slices on a white textured ceramic plate, moody high-end food photography with warm tones" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDr_UI-Xtluelm6pBNRgO9r-9zObA00hFZxVFtM_KaOlPyKIXTgcOn1ufPvXDwCuIlOSfAB8fzzu07L4lnipV2HaAunkRyyiS-QePQQL0-8Ly38xxvDYEK5tsr8E5U37AwL-KF3ykPH8Ms9FpxfmbaudjcfdGSIC6eIb6S3Q0xNvbR7xTHRxexwJzB0Rp90XCQbLccShitaY1nDwwK1KaOsnN_KVtxu6PVMCBZ1RTZwO9l4We8XtgBLnPbkbFx7T6do8X5nCVikwtc"/>
+<div class="absolute top-2 right-2 px-2 py-1 bg-white/90 backdrop-blur text-[10px] font-bold rounded-lg text-secondary">温和收敛</div>
+</div>
+<div class="p-4">
+<h4 class="font-bold text-on-surface text-sm mb-1">蒸熟苹果泥</h4>
+<p class="text-xs text-on-surface-variant leading-tight">煮熟的苹果含有的果胶具有止泻作用，对肠道无刺激。</p>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Medical Warning Footer -->
+<footer class="mt-12 mb-8 bg-surface-container rounded-2xl p-6 border-l-4 border-primary">
+<div class="flex items-center gap-3 mb-2">
+<span class="material-symbols-outlined text-primary">medical_services</span>
+<h4 class="font-bold text-on-surface text-sm">就医特别提示</h4>
+</div>
+<p class="text-xs text-on-surface-variant leading-relaxed">
+                本页面内容仅供参考。如果宝宝出现以下情况，请务必立即就医：
+                <br/>• 持续发烧超过38.5℃
+                <br/>• 出现脱水症状（眼窝凹陷、少尿）
+                <br/>• 精神状态差、嗜睡或反复呕吐
+                <br/>• 腹泻伴有血便或剧烈腹痛
+            </p>
+</footer>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 w-full z-50 bg-[#fef8f3]/90 dark:bg-stone-950/90 backdrop-blur-2xl rounded-t-[32px] shadow-[0_-4px_24px_rgba(29,27,25,0.05)] pb-safe h-20 px-8 flex justify-around items-center">
+<div class="flex flex-col items-center justify-center text-[#1d1b19]/40 dark:text-[#e6e2dd]/40 hover:text-[#2c6956] transition-all">
+<span class="material-symbols-outlined mb-1">healing</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">首页</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#2c6956] dark:text-[#ffb366] scale-110 transition-transform">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">辅食计划</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#1d1b19]/40 dark:text-[#e6e2dd]/40 hover:text-[#2c6956] transition-all">
+<span class="material-symbols-outlined mb-1">person_2</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">我的</span>
+</div>
+</nav>
+</body></html>

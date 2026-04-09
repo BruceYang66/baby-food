@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>宝宝辅食生成器 - 月龄饮食指南</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "background": "#fef8f3",
+                        "surface-container-highest": "#e6e2dd",
+                        "on-surface": "#1d1b19",
+                        "on-secondary-container": "#316d5b",
+                        "on-surface-variant": "#524438",
+                        "primary": "#8a5108",
+                        "surface-container": "#f2ede8",
+                        "primary-container": "#ffb366",
+                        "on-error": "#ffffff",
+                        "on-secondary-fixed-variant": "#0d503f",
+                        "primary-fixed": "#ffdcbe",
+                        "tertiary-fixed-dim": "#ffb3b0",
+                        "secondary-fixed": "#b1efd8",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#ffaeab",
+                        "on-tertiary-container": "#9a2028",
+                        "outline-variant": "#d7c3b3",
+                        "inverse-surface": "#32302d",
+                        "tertiary-fixed": "#ffdad8",
+                        "on-tertiary-fixed": "#410006",
+                        "secondary": "#2c6956",
+                        "outline": "#847466",
+                        "surface-tint": "#8a5108",
+                        "on-tertiary-fixed-variant": "#8c1520",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "inverse-primary": "#ffb871",
+                        "on-secondary-fixed": "#002118",
+                        "secondary-container": "#aeedd5",
+                        "surface-dim": "#ded9d4",
+                        "surface-bright": "#fef8f3",
+                        "tertiary": "#ae2f34",
+                        "surface-container-low": "#f8f3ee",
+                        "on-background": "#1d1b19",
+                        "primary-fixed-dim": "#ffb871",
+                        "surface": "#fef8f3",
+                        "surface-variant": "#e6e2dd",
+                        "surface-container-high": "#ece7e2",
+                        "inverse-on-surface": "#f5f0eb",
+                        "secondary-fixed-dim": "#96d3bd",
+                        "error": "#ba1a1a",
+                        "on-secondary": "#ffffff",
+                        "on-primary-container": "#774400",
+                        "on-primary-fixed-variant": "#6a3c00",
+                        "on-primary-fixed": "#2d1600",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    }
+                },
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-surface font-body">
+<div class="relative flex min-h-screen w-full flex-col bg-background overflow-x-hidden">
+<!-- Top App Bar (Shared Logic) -->
+<div class="flex items-center bg-background p-4 pb-2 justify-between sticky top-0 z-50">
+<div class="text-on-surface flex size-12 shrink-0 items-center" data-icon="ArrowLeft">
+<span class="material-symbols-outlined">arrow_back</span>
+</div>
+<h2 class="text-on-surface text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12 font-headline">宝宝辅食生成器</h2>
+</div>
+<!-- Month Selection Tabs (Scrollable) -->
+<div class="sticky top-14 bg-background z-40">
+<div class="flex overflow-x-auto hide-scrollbar px-4 gap-6 border-b border-outline-variant/20">
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-on-surface-variant pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">0-6月</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-primary-container text-on-surface pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">7-8月</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-on-surface-variant pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">9-10月</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-on-surface-variant pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">11-12月</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-on-surface-variant pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">1-2岁</p>
+</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-transparent text-on-surface-variant pb-3 pt-4 whitespace-nowrap" href="#">
+<p class="text-sm font-bold">2-3岁</p>
+</a>
+</div>
+</div>
+<!-- Hero Stage Description -->
+<section class="px-4 pt-6 pb-4">
+<div class="flex items-start justify-between">
+<div class="max-w-[70%]">
+<h3 class="text-on-surface text-2xl font-bold font-headline leading-tight">7-8个月：尝试颗粒感</h3>
+<p class="text-on-surface-variant text-base mt-2 leading-relaxed">
+                        此阶段宝宝开始学习咀嚼，辅食应从细腻泥糊状过渡到带有细小颗粒的碎末状，培养吞咽能力。
+                    </p>
+</div>
+<div class="w-20 h-20 relative">
+<div class="absolute -top-2 -right-2 text-primary/40" data-icon="temp">
+<span class="material-symbols-outlined" style="font-size: 48px;">potted_plant</span>
+</div>
+<img alt="Soft grain porridge" class="w-20 h-20 rounded-full object-cover shadow-sm" data-alt="Close-up of organic millet porridge with small soft grain textures in a ceramic baby bowl, warm natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAcojR9QYBWU-wlUeGRNm6OfgKVEcee09_qCr1aWi_LxQ4zyhYJQq6BZ1IDwRYWIHFMBPfAvBQyzZYzE6OQmNs10gaIg-HLY7IidYlXJePEMWm3tHeUyDGLgBdPoDPfRUnd6gvxQB5pEvTQ1a3ruHfvVyGrTM2zLz6sM4D4NBeVCRzxValMeqXKYA_9YB680fF-ux-3HQbFgFk2b5YMNAEdU--FsfnQwu2HJyrVFSTaVYYx4B-oSaW6Y3GTlw_0sl9PpqJ8aAt7vFk"/>
+</div>
+</div>
+</section>
+<!-- Feeding Tips (The Modern Herbalist Stem Layout) -->
+<section class="px-4 py-4">
+<div class="bg-surface-container-low rounded-lg p-5">
+<h4 class="text-on-surface font-bold mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">eco</span>
+                    喂养要点
+                </h4>
+<div class="space-y-4 relative ml-2">
+<div class="absolute left-[7px] top-2 bottom-2 w-[2px] bg-secondary-fixed-dim"></div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-secondary border-2 border-background"></div>
+<p class="text-sm font-medium text-on-surface">质地过渡</p>
+<p class="text-xs text-on-surface-variant mt-1">从泥状升级为细碎状（如碎菜、肉末、烂面）。</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-secondary border-2 border-background"></div>
+<p class="text-sm font-medium text-on-surface">引入蛋白</p>
+<p class="text-xs text-on-surface-variant mt-1">可开始尝试添加全蛋黄，观察是否过敏。</p>
+</div>
+<div class="relative pl-6">
+<div class="absolute left-0 top-1.5 w-3.5 h-3.5 rounded-full bg-secondary border-2 border-background"></div>
+<p class="text-sm font-medium text-on-surface">手抓食练习</p>
+<p class="text-xs text-on-surface-variant mt-1">提供手指状长条软质蔬菜，练习自主抓握。</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Ingredient Guidelines (Tonal Layers) -->
+<section class="px-4 py-4 space-y-4">
+<div class="grid grid-cols-1 gap-3">
+<!-- Recommended -->
+<div class="bg-secondary-container/30 rounded-DEFAULT p-4 border-l-4 border-secondary">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="text-on-secondary-container font-bold">推荐添加</span>
+</div>
+<div class="flex flex-wrap gap-2 mt-3">
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">南瓜泥</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">三文鱼泥</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">豆腐碎</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">西兰花</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">肝泥</span>
+</div>
+</div>
+<!-- Cautious -->
+<div class="bg-primary-container/20 rounded-DEFAULT p-4 border-l-4 border-primary-container">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">warning</span>
+<span class="text-on-primary-container font-bold">谨慎尝试</span>
+</div>
+<p class="text-xs text-on-surface-variant mb-3 leading-tight">初次添加需少量，连续观察3天观察过敏反应。</p>
+<div class="flex flex-wrap gap-2">
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">全蛋黄</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">虾泥</span>
+<span class="bg-surface-container-lowest px-3 py-1 rounded-full text-xs font-medium text-on-surface border border-outline-variant/10">草莓泥</span>
+</div>
+</div>
+<!-- Forbidden -->
+<div class="bg-tertiary-container/20 rounded-DEFAULT p-4 border-l-4 border-tertiary">
+<div class="flex items-center gap-2 mb-2">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">cancel</span>
+<span class="text-on-tertiary-container font-bold">严格禁止</span>
+</div>
+<ul class="space-y-2 mt-3">
+<li class="flex items-start gap-2">
+<span class="text-tertiary font-bold text-xs mt-0.5">•</span>
+<div>
+<span class="text-xs font-bold text-on-surface">食盐/调味品：</span>
+<span class="text-xs text-on-surface-variant">增加肾脏负担，养成重口味习惯。</span>
+</div>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-tertiary font-bold text-xs mt-0.5">•</span>
+<div>
+<span class="text-xs font-bold text-on-surface">蜂蜜：</span>
+<span class="text-xs text-on-surface-variant">可能含有肉毒杆菌，1岁以下婴儿禁用。</span>
+</div>
+</li>
+<li class="flex items-start gap-2">
+<span class="text-tertiary font-bold text-xs mt-0.5">•</span>
+<div>
+<span class="text-xs font-bold text-on-surface">鲜牛奶：</span>
+<span class="text-xs text-on-surface-variant">蛋白质分子过大，不利于肠道消化。</span>
+</div>
+</li>
+</ul>
+</div>
+</div>
+</section>
+<!-- Daily Schedule (Editorial Style) -->
+<section class="px-4 py-6">
+<h3 class="text-on-surface text-xl font-bold font-headline mb-4">一日饮食安排参考</h3>
+<div class="space-y-4">
+<div class="flex gap-4">
+<div class="w-16 text-right pt-1">
+<span class="text-xs font-bold text-primary">07:00</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<p class="text-sm font-bold text-on-surface">晨奶</p>
+<p class="text-xs text-on-surface-variant mt-1">母乳或配方奶 200-240ml</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 text-right pt-1">
+<span class="text-xs font-bold text-primary">10:00</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10 relative overflow-hidden">
+<div class="absolute right-0 top-0 opacity-10" data-icon="nutrition">
+<span class="material-symbols-outlined" style="font-size: 60px;">egg_alt</span>
+</div>
+<p class="text-sm font-bold text-on-surface">第一次辅食 (正餐)</p>
+<p class="text-xs text-on-surface-variant mt-1">鸡肉碎青菜烂面 + 1/4 蛋黄</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 text-right pt-1">
+<span class="text-xs font-bold text-primary">15:00</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<p class="text-sm font-bold text-on-surface">午后点心</p>
+<p class="text-xs text-on-surface-variant mt-1">苹果刮泥 或 蒸熟的南瓜条</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 text-right pt-1">
+<span class="text-xs font-bold text-primary">18:00</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<p class="text-sm font-bold text-on-surface">第二次辅食 (尝试)</p>
+<p class="text-xs text-on-surface-variant mt-1">含铁强化米粉 或 三文鱼土豆泥</p>
+</div>
+</div>
+<div class="flex gap-4">
+<div class="w-16 text-right pt-1">
+<span class="text-xs font-bold text-primary">20:30</span>
+</div>
+<div class="flex-1 bg-surface-container-lowest p-3 rounded-lg border border-outline-variant/10">
+<p class="text-sm font-bold text-on-surface">晚安奶</p>
+<p class="text-xs text-on-surface-variant mt-1">母乳或配方奶，饱腹助眠</p>
+</div>
+</div>
+</div>
+</section>
+<!-- CTA Floating Button (Capsule Style) -->
+<div class="fixed bottom-24 right-6">
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-4 rounded-full shadow-lg flex items-center gap-2 font-bold transform active:scale-95 transition-transform">
+<span class="material-symbols-outlined">auto_fix</span>
+                生成今日食谱
+            </button>
+</div>
+<!-- Shared Bottom Navigation Bar -->
+<div class="mt-auto border-t border-outline-variant/20 bg-surface-container-lowest px-4 pb-6 pt-2 sticky bottom-0 z-50">
+<div class="flex gap-2">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-on-surface" href="#">
+<div class="text-on-surface flex h-8 items-center justify-center" data-icon="BookOpen" data-weight="fill">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M240,64V192a16,16,0,0,1-16,16H160a24,24,0,0,0-24,24,8,8,0,0,1-16,0,24,24,0,0,0-24-24H32a16,16,0,0,1-16-16V64A16,16,0,0,1,32,48H88a32,32,0,0,1,32,32v88a8,8,0,0,0,16,0V80a32,32,0,0,1,32-32h56A16,16,0,0,1,240,64Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">指南</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary/60" href="#">
+<div class="text-primary/60 flex h-8 items-center justify-center" data-icon="MagicWand" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M48,64a8,8,0,0,1,8-8H72V40a8,8,0,0,1,16,0V56h16a8,8,0,0,1,0,16H88V88a8,8,0,0,1-16,0V72H56A8,8,0,0,1,48,64ZM184,192h-8v-8a8,8,0,0,0-16,0v8h-8a8,8,0,0,0,0,16h8v8a8,8,0,0,0,16,0v-8h8a8,8,0,0,0,0-16Zm56-48H224V128a8,8,0,0,0-16,0v16H192a8,8,0,0,0,0,16h16v16a8,8,0,0,0,16,0V160h16a8,8,0,0,0,0-16ZM219.31,80,80,219.31a16,16,0,0,1-22.62,0L36.68,198.63a16,16,0,0,1,0-22.63L176,36.69a16,16,0,0,1,22.63,0l20.68,20.68A16,16,0,0,1,219.31,80Zm-54.63,32L144,91.31l-96,96L68.68,208ZM208,68.69,187.31,48l-32,32L176,100.69Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">生成器</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-primary/60" href="#">
+<div class="text-primary/60 flex h-8 items-center justify-center" data-icon="User" data-weight="regular">
+<svg fill="currentColor" height="24px" viewbox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M230.92,212-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium leading-normal tracking-[0.015em]">我的</p>
+</a>
+</div>
+</div>
+</div>
+</body></html>

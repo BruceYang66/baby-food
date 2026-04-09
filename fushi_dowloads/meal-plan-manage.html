@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container-high": "#ece7e2",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "on-primary-container": "#774400",
+                    "secondary-container": "#aeedd5",
+                    "inverse-surface": "#32302d",
+                    "surface-container": "#f2ede8",
+                    "background": "#fef8f3",
+                    "outline-variant": "#d7c3b3",
+                    "surface-tint": "#8a5108",
+                    "on-tertiary-fixed": "#410006",
+                    "surface-container-lowest": "#ffffff",
+                    "on-tertiary-fixed-variant": "#8c1520",
+                    "tertiary-fixed-dim": "#ffb3b0",
+                    "surface-variant": "#e6e2dd",
+                    "error-container": "#ffdad6",
+                    "on-background": "#1d1b19",
+                    "error": "#ba1a1a",
+                    "secondary-fixed-dim": "#96d3bd",
+                    "on-error": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "primary-fixed-dim": "#ffb871",
+                    "on-secondary-fixed": "#002118",
+                    "tertiary-fixed": "#ffdad8",
+                    "inverse-primary": "#ffb871",
+                    "tertiary": "#ae2f34",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary": "#ffffff",
+                    "surface-container-highest": "#e6e2dd",
+                    "on-surface-variant": "#524438",
+                    "on-tertiary-container": "#9a2028",
+                    "tertiary-container": "#ffaeab",
+                    "secondary-fixed": "#b1efd8",
+                    "secondary": "#2c6956",
+                    "on-secondary": "#ffffff",
+                    "outline": "#847466",
+                    "surface-container-low": "#f8f3ee",
+                    "primary-fixed": "#ffdcbe",
+                    "on-secondary-container": "#316d5b",
+                    "surface": "#fef8f3",
+                    "primary-container": "#ffb366",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "on-secondary-fixed-variant": "#0d503f",
+                    "on-error-container": "#93000a",
+                    "surface-bright": "#fef8f3",
+                    "surface-dim": "#ded9d4",
+                    "on-surface": "#1d1b19"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Be Vietnam Pro"],
+                    "label": ["Be Vietnam Pro"]
+            }
+          },
+        }
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .meal-stem {
+            background: linear-gradient(to bottom, #96d3bd 0%, #2c6956 100%);
+            width: 2px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- Top Navigation Anchor -->
+<header class="fixed top-0 w-full z-50 bg-[#fef8f3]/80 dark:bg-stone-950/80 backdrop-blur-xl">
+<div class="flex items-center justify-between px-6 h-16 w-full">
+<button class="text-[#8a5108] dark:text-[#ffb366] hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined">arrow_back</span>
+</button>
+<h1 class="font-['Plus_Jakarta_Sans'] font-semibold text-lg text-[#8a5108] dark:text-[#ffb366]">辅食计划</h1>
+<div class="w-6"></div> <!-- Spacer for centering -->
+</div>
+</header>
+<main class="pt-20 px-6 max-w-2xl mx-auto">
+<!-- Segmented Control: Tab Switcher -->
+<div class="flex p-1 bg-surface-container-low rounded-full mb-8">
+<button class="flex-1 py-2 text-sm font-medium rounded-full bg-surface-container-lowest text-primary shadow-sm">今日</button>
+<button class="flex-1 py-2 text-sm font-medium text-on-surface-variant/60">本周</button>
+<button class="flex-1 py-2 text-sm font-medium text-on-surface-variant/60">历史</button>
+</div>
+<!-- Today's Hero Section -->
+<section class="mb-10 relative">
+<div class="flex justify-between items-end mb-4">
+<div>
+<span class="text-secondary font-semibold text-sm tracking-wider uppercase">Today's Focus</span>
+<h2 class="font-headline text-2xl font-bold text-on-background mt-1">10月24日 · 营养周报</h2>
+</div>
+<div class="bg-primary-container/20 px-3 py-1 rounded-full">
+<span class="text-primary text-xs font-bold">第 12 周</span>
+</div>
+</div>
+<!-- Bento Card for Daily Plan -->
+<div class="grid grid-cols-1 gap-4">
+<div class="bg-surface-container-lowest rounded-lg p-6 shadow-sm border border-outline-variant/10 relative overflow-hidden">
+<div class="flex items-start justify-between mb-6">
+<div class="z-10">
+<h3 class="font-headline text-xl font-bold text-primary mb-1">南瓜山药小米粥</h3>
+<p class="text-on-surface-variant text-sm flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">schedule</span> 08:30 早餐
+                            </p>
+</div>
+<img class="w-20 h-20 rounded-full object-cover border-4 border-surface-container-high z-10" data-alt="Close-up macro photography of organic orange pumpkin porridge with soft steam, morning sunlight on rustic wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCfc6FPeZsyL4K1kqU1nNvHTsoiclaseJ-mSMtTXB2nb4HmYOSU_2zQycy1ek-sCEONs_eMCXfFDu_2rVWQYRp-gF9MvmS8hvEgrPllndGURWkBdoNsQ5CGm10PlVTgtfJDgUOdI3K54kbQKA7GsuQBTP_Xsm0ukvNR3i4Lt2SAX8DAVq0jpXL5dfnrsMapEW-T4BLYbygIa8DD0DNvjFvV048AlzirYgFaE57A5oZRTOreDByMrHFO6KbmNARXL2XCNijNoXKKcXM"/>
+<!-- Hand-drawn botanical overlap element -->
+<div class="absolute -top-4 -right-4 opacity-10">
+<span class="material-symbols-outlined text-[120px]" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+</div>
+<div class="flex gap-2 mb-4">
+<span class="bg-secondary-container/30 text-secondary text-[10px] font-bold px-2 py-1 rounded-full">高胡萝卜素</span>
+<span class="bg-secondary-container/30 text-secondary text-[10px] font-bold px-2 py-1 rounded-full">易消化</span>
+</div>
+<div class="pt-4 border-t border-outline-variant/5 flex justify-between items-center">
+<div class="flex -space-x-2">
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-primary">restaurant</span>
+</div>
+<div class="w-8 h-8 rounded-full border-2 border-surface-container-lowest bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-xs text-primary">skillet</span>
+</div>
+</div>
+<button class="bg-gradient-to-r from-primary to-primary-container text-on-primary px-6 py-2 rounded-full font-bold text-sm shadow-sm active:scale-95 transition-all">查看食谱</button>
+</div>
+</div>
+</div>
+</section>
+<!-- Meal Timeline Section -->
+<section class="mb-12">
+<h3 class="font-headline text-lg font-bold mb-6 text-on-background">全天计划管理</h3>
+<div class="space-y-0 relative">
+<div class="absolute left-[11px] top-4 bottom-4 w-[2px] meal-stem opacity-20"></div>
+<!-- Morning Snack -->
+<div class="flex gap-6 pb-8 relative group">
+<div class="relative z-10">
+<div class="w-6 h-6 rounded-full bg-secondary ring-4 ring-secondary/10 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-low/50 rounded-lg p-4 group-hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-center">
+<div>
+<span class="text-xs font-bold text-secondary">10:30 上午加餐</span>
+<p class="text-sm font-semibold mt-1">牛油果泥 + 香蕉片</p>
+</div>
+<button class="text-on-surface-variant/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit_note</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Lunch -->
+<div class="flex gap-6 pb-8 relative group">
+<div class="relative z-10">
+<div class="w-6 h-6 rounded-full bg-secondary-fixed-dim ring-4 ring-secondary-fixed-dim/10 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-low/50 rounded-lg p-4 group-hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-center">
+<div>
+<span class="text-xs font-bold text-secondary">12:30 午餐计划</span>
+<p class="text-sm font-semibold mt-1">清蒸三文鱼配西蓝花泥</p>
+</div>
+<button class="text-on-surface-variant/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">edit_note</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Afternoon Snack -->
+<div class="flex gap-6 pb-2 relative group">
+<div class="relative z-10">
+<div class="w-6 h-6 rounded-full bg-surface-container-highest ring-4 ring-surface-container-highest/10 flex items-center justify-center">
+<span class="w-2 h-2 rounded-full bg-white"></span>
+</div>
+</div>
+<div class="flex-1 bg-surface-container-low/50 rounded-lg p-4 group-hover:bg-surface-container-low transition-colors">
+<div class="flex justify-between items-center">
+<div>
+<span class="text-xs font-bold text-on-surface-variant/60">15:30 下午加餐</span>
+<p class="text-sm font-semibold mt-1">手工原味酸奶</p>
+</div>
+<button class="text-on-surface-variant/40 hover:text-primary transition-colors">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Empty State (Hidden by default, shown if no plans) -->
+<section class="hidden flex-col items-center justify-center py-20 text-center">
+<div class="relative mb-6">
+<div class="w-40 h-40 bg-primary-container/10 rounded-full flex items-center justify-center">
+<span class="material-symbols-outlined text-8xl text-primary-container/40">auto_stories</span>
+</div>
+<div class="absolute -bottom-2 -right-2 bg-white p-3 rounded-full shadow-lg">
+<span class="material-symbols-outlined text-primary" style="font-variation-settings: 'FILL' 1;">pen_size_2</span>
+</div>
+</div>
+<h3 class="text-xl font-bold text-on-background mb-2">开启宝宝的味蕾之旅</h3>
+<p class="text-on-surface-variant text-sm max-w-xs mx-auto leading-relaxed">
+                还没有生成的辅食计划，让我们根据宝宝的月龄和体质，定制专属的营养方案吧。
+            </p>
+<button class="mt-8 bg-gradient-to-r from-primary to-primary-container text-on-primary px-10 py-4 rounded-full font-bold shadow-md hover:shadow-lg transition-shadow active:scale-95">
+                立即生成计划
+            </button>
+</section>
+<!-- History Records (Collapsible) -->
+<section class="mt-12">
+<div class="flex items-center justify-between mb-4">
+<h3 class="font-headline text-lg font-bold text-on-background">历史记录</h3>
+<button class="text-primary text-sm font-medium flex items-center gap-1">
+                    全部 <span class="material-symbols-outlined text-sm">chevron_right</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+<div>
+<p class="text-sm font-bold">2023年10月23日</p>
+<p class="text-[10px] text-on-surface-variant/60">完成度 100% · 无过敏记录</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40">more_horiz</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-surface-container-lowest rounded-lg border border-outline-variant/5">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center text-secondary">
+<span class="material-symbols-outlined">calendar_today</span>
+</div>
+<div>
+<p class="text-sm font-bold">2023年10月22日</p>
+<p class="text-[10px] text-on-surface-variant/60">完成度 85% · 尝试新食材</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-on-surface-variant/40">more_horiz</span>
+</div>
+</div>
+</section>
+</main>
+<!-- Floating Action Button -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-primary rounded-full text-on-primary flex items-center justify-center shadow-[0_4px_24px_rgba(29,27,25,0.15)] z-40 active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-2xl">auto_fix_high</span>
+</button>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 w-full z-50 pb-safe rounded-t-[32px] bg-[#fef8f3]/90 dark:bg-stone-950/90 backdrop-blur-2xl shadow-[0_-4px_24px_rgba(29,27,25,0.05)]">
+<div class="flex justify-around items-center h-20 px-8 w-full">
+<!-- Home -->
+<a class="flex flex-col items-center justify-center text-[#1d1b19]/40 dark:text-[#e6e2dd]/40 hover:text-[#2c6956] transition-all" href="#">
+<span class="material-symbols-outlined mb-1">healing</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">首页</span>
+</a>
+<!-- Plan (Active) -->
+<a class="flex flex-col items-center justify-center text-[#2c6956] dark:text-[#ffb366] scale-110 transition-transform" href="#">
+<span class="material-symbols-outlined mb-1" style="font-variation-settings: 'FILL' 1;">restaurant_menu</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">辅食计划</span>
+</a>
+<!-- My -->
+<a class="flex flex-col items-center justify-center text-[#1d1b19]/40 dark:text-[#e6e2dd]/40 hover:text-[#2c6956] transition-all" href="#">
+<span class="material-symbols-outlined mb-1">person_2</span>
+<span class="font-['Be_Vietnam_Pro'] text-[11px] font-medium tracking-wide">我的</span>
+</a>
+</div>
+</nav>
+</body></html>
