@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { userRows } from '@/services/mock/data'
+import { onMounted, ref } from 'vue'
+import type { UserAdminRow } from '@baby-food/shared-types'
+import { getUsers } from '@/services/api'
+
+const userRows = ref<UserAdminRow[]>([])
+
+onMounted(async () => {
+  userRows.value = await getUsers()
+})
 </script>
 
 <template>

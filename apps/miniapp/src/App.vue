@@ -1,7 +1,19 @@
 <script lang="ts">
+import { syncAppSession } from '@/services/api'
+
+const SYNC_THROTTLE_MS = 5 * 60 * 1000
+let lastSyncAt = 0
+
 export default {
-  onLaunch() {},
-  onShow() {},
+  onLaunch() {
+    lastSyncAt = Date.now()
+    void syncAppSession()
+  },
+  onShow() {
+    if (Date.now() - lastSyncAt < SYNC_THROTTLE_MS) return
+    lastSyncAt = Date.now()
+    void syncAppSession()
+  },
   onHide() {}
 }
 </script>

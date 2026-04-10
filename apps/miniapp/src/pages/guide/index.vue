@@ -4,16 +4,44 @@ import type { GuideStage } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AgeStageTabs from '@/components/guide/AgeStageTabs.vue'
 import FoodRuleSection from '@/components/guide/FoodRuleSection.vue'
-import { getGuideData } from '@/services/mock'
+import { getGuideData, openProtectedPage, readAuthSession } from '@/services/api'
 
 const stages = ref<GuideStage[]>([])
 const activeKey = ref('6-8')
 
+function getDefaultStageKey() {
+  const session = readAuthSession()
+  const baby = session?.babyProfile
+
+  if (!baby?.birthDate) {
+    return '6-8'
+  }
+
+  const birthDate = new Date(baby.birthDate)
+  const today = new Date()
+  const monthAge = Math.max(0, (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth()))
+
+  if (monthAge < 6) return '6-8'
+  if (monthAge < 8) return '6-8'
+  if (monthAge < 10) return '8-10'
+  if (monthAge < 12) return '10-12'
+  if (monthAge < 18) return '12-18'
+  return '18-24'
+}
+
 onMounted(async () => {
-  const data = await getGuideData()
-  stages.value = data
-  if (!data.find((item) => item.key === activeKey.value) && data[0]) {
-    activeKey.value = data[0].key
+  const defaultKey = getDefaultStageKey()
+  activeKey.value = defaultKey
+
+  const results = await Promise.allSettled(
+    ['6-8', '8-10', '10-12', '12-18', '18-24'].map((key) => getGuideData(key))
+  )
+  stages.value = results
+    .filter((r): r is PromiseFulfilledResult<GuideStage> => r.status === 'fulfilled')
+    .map((r) => r.value)
+
+  if (!stages.value.find((item) => item.key === activeKey.value) && stages.value[0]) {
+    activeKey.value = stages.value[0].key
   }
 })
 
@@ -22,7 +50,7 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
 
 <template>
   <view class="page-shell">
-    <AppNavBar title="月龄饮食指南" subtitle="各月龄吃什么，禁忌一查便知" @back="uni.navigateBack()" />
+    <AppNavBar title="月龄饮食指南" subtitle="各月龄吃什么，禁忌一查便知" :show-back="true" />
 
     <AgeStageTabs :stages="stages" :active-key="activeKey" @change="activeKey = $event" />
 
@@ -62,7 +90,7 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
     </view>
 
     <view class="fixed-bottom-actions single">
-      <view class="bottom-mini-btn primary">生成今日食谱</view>
+      <view class="bottom-mini-btn primary" @tap="openProtectedPage('/pages/generate/index')">生成今日食谱</view>
     </view>
   </view>
 </template>

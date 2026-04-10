@@ -1,8 +1,21 @@
 <script setup lang="ts">
+import { computed, onMounted, ref } from 'vue'
+import type { DashboardMetric, DashboardTrendPoint, ReviewQueueItem } from '@baby-food/shared-types'
 import KpiCard from '@/components/dashboard/KpiCard.vue'
-import { dashboardMetrics, reviewQueue, userTrend } from '@/services/mock/data'
+import { getDashboardOverview } from '@/services/api'
 
-const maxValue = Math.max(...userTrend.map((item) => item.value))
+const dashboardMetrics = ref<DashboardMetric[]>([])
+const reviewQueue = ref<ReviewQueueItem[]>([])
+const userTrend = ref<DashboardTrendPoint[]>([])
+
+onMounted(async () => {
+  const data = await getDashboardOverview()
+  dashboardMetrics.value = data.metrics
+  reviewQueue.value = data.reviewQueue
+  userTrend.value = data.userTrend
+})
+
+const maxValue = computed(() => Math.max(...userTrend.value.map((item) => item.value), 1))
 </script>
 
 <template>

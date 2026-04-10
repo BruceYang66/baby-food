@@ -1,15 +1,35 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { BabyProfile, HomeFeature, HomeShortcut, IngredientHighlight } from '@baby-food/shared-types'
 import AppTabBar from '@/components/common/AppTabBar.vue'
-import { getHomeData } from '@/services/mock'
+import { ensureProtectedPageAccess, getHomeData, openProtectedPage } from '@/services/api'
+
+const SAVED_PLAN_KEY = 'savedGeneratePlan'
+const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
+const PREFERRED_INGREDIENT_KEY = 'preferredIngredient'
 
 const baby = ref<BabyProfile>()
 const features = ref<HomeFeature[]>([])
 const shortcuts = ref<HomeShortcut[]>([])
 const ingredients = ref<IngredientHighlight[]>([])
 
+function getStatusBarHeight() {
+  if (typeof uni.getWindowInfo === 'function') {
+    return uni.getWindowInfo().statusBarHeight || 0
+  }
+
+  return uni.getSystemInfoSync().statusBarHeight || 0
+}
+
+const pageStyle = computed(() => ({
+  paddingTop: `${getStatusBarHeight() + 12}px`
+}))
+
 onMounted(async () => {
+  if (!ensureProtectedPageAccess()) {
+    return
+  }
+
   const data = await getHomeData()
   baby.value = data.babyProfile
   features.value = data.homeFeatures
@@ -18,21 +38,69 @@ onMounted(async () => {
 })
 
 function go(url: string) {
-  uni.navigateTo({ url })
+  openProtectedPage(url)
 }
+
+function goMessage() {
+  openProtectedPage('/pages/message/index')
+}
+
+function goIngredient(name: string) {
+  uni.setStorageSync(PREFERRED_INGREDIENT_KEY, name)
+
+  if (!openProtectedPage('/pages/generate/index')) {
+    uni.removeStorageSync(PREFERRED_INGREDIENT_KEY)
+  }
+}
+
+function goShortcut(shortcut: HomeShortcut) {
+  if (shortcut.actionKey === 'recent-plan') {
+    if (shortcut.planPreview) {
+      uni.setStorageSync(SAVED_PLAN_KEY, {
+        savedAt: new Date().toISOString(),
+        babyProfile: baby.value,
+        todayMealPlan: shortcut.planPreview,
+        mealCount: shortcut.planPreview.entries.some((entry) => entry.slot === 'snack') ? '3餐+点心' : shortcut.planPreview.entries.length <= 2 ? '2餐' : '3餐',
+        goals: []
+      })
+      uni.setStorageSync(RESTORE_SAVED_PLAN_KEY, true)
+
+      if (!openProtectedPage('/pages/generate/index')) {
+        uni.removeStorageSync(RESTORE_SAVED_PLAN_KEY)
+        uni.removeStorageSync(SAVED_PLAN_KEY)
+      }
+    } else {
+      uni.showToast({ title: '暂无最近计划', icon: 'none' })
+    }
+    return
+  }
+
+  if (shortcut.actionKey === 'favorites') {
+    openProtectedPage('/pages/favorites/index')
+    return
+  }
+
+  if (shortcut.actionKey === 'message') {
+    openProtectedPage('/pages/message/index')
+  }
+}
+
 </script>
 
 <template>
-  <view class="page-shell home-page">
+  <view class="page-shell home-page" :style="pageStyle">
     <view class="topbar">
       <view class="user-box" v-if="baby">
-        <image class="avatar" :src="baby.avatar" mode="aspectFill" />
+        <view class="avatar-wrap">
+          <image v-if="baby.avatar && baby.avatar.startsWith('https://')" class="avatar" :src="baby.avatar" mode="aspectFill" />
+          <view v-else class="avatar-fallback">{{ baby.nickname[0] }}</view>
+        </view>
         <view>
           <text class="baby-name">{{ baby.nickname }}</text>
           <text class="baby-meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
         </view>
       </view>
-      <view class="notify">🔔</view>
+      <view class="notify" @tap="goMessage">🔔</view>
     </view>
 
     <view class="hero-card">
@@ -61,7 +129,7 @@ function go(url: string) {
     <view class="section">
       <text class="section-title">快捷操作</text>
       <view class="shortcut-list">
-        <view v-for="item in shortcuts" :key="item.title" class="shortcut-card card">
+        <view v-for="item in shortcuts" :key="item.title" class="shortcut-card card" @tap="goShortcut(item)">
           <text class="shortcut-icon">{{ item.icon }}</text>
           <view>
             <text class="shortcut-title">{{ item.title }}</text>
@@ -74,11 +142,11 @@ function go(url: string) {
     <view class="section">
       <view class="section-row">
         <text class="section-title">本周推荐食材</text>
-        <text class="section-link">查看更多</text>
+        <text class="section-link" @tap="go('/pages/recipe-list/index')">查看更多</text>
       </view>
       <scroll-view scroll-x class="ingredients-scroll" show-scrollbar="false">
         <view class="ingredients-row">
-          <view v-for="item in ingredients" :key="item.id" class="ingredient-card">
+          <view v-for="item in ingredients" :key="item.id" class="ingredient-card" @tap="goIngredient(item.name)">
             <image class="ingredient-image" :src="item.image" mode="aspectFill" />
             <text class="ingredient-name">{{ item.name }}</text>
           </view>
@@ -92,7 +160,6 @@ function go(url: string) {
 
 <style scoped lang="scss">
 .home-page {
-  padding-top: 26rpx;
 }
 
 .topbar {
@@ -108,11 +175,29 @@ function go(url: string) {
   gap: 18rpx;
 }
 
+.avatar-wrap {
+  flex-shrink: 0;
+}
+
 .avatar {
   width: 88rpx;
   height: 88rpx;
   border-radius: 999rpx;
   border: 4rpx solid rgba(255, 179, 102, 0.35);
+  display: block;
+}
+
+.avatar-fallback {
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  border: 4rpx solid rgba(255, 179, 102, 0.35);
+  color: #fff;
+  font-size: 36rpx;
+  font-weight: 700;
+  text-align: center;
+  line-height: 88rpx;
 }
 
 .baby-name {

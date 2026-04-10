@@ -6,6 +6,9 @@ CREATE TABLE users (
   nickname TEXT NOT NULL,
   avatar_url TEXT,
   wechat_open_id TEXT UNIQUE,
+  activity_label TEXT,
+  status_label TEXT,
+  active_baby_id TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
@@ -14,7 +17,8 @@ CREATE TABLE babies (
   user_id TEXT NOT NULL REFERENCES users(id),
   nickname TEXT NOT NULL,
   birth_date DATE NOT NULL,
-  stage_label TEXT NOT NULL
+  stage_label TEXT NOT NULL,
+  avatar_url TEXT
 );
 
 CREATE TABLE baby_allergens (
@@ -32,6 +36,10 @@ CREATE TABLE recipes (
   age_label TEXT NOT NULL,
   duration_label TEXT NOT NULL,
   difficulty_label TEXT NOT NULL,
+  source TEXT,
+  creator TEXT,
+  favorites INTEGER NOT NULL DEFAULT 0,
+  review_focus TEXT,
   content_status content_status NOT NULL DEFAULT 'draft',
   review_status review_status NOT NULL DEFAULT 'none',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -42,7 +50,8 @@ CREATE TABLE recipe_ingredients (
   id TEXT PRIMARY KEY,
   recipe_id TEXT NOT NULL REFERENCES recipes(id),
   name TEXT NOT NULL,
-  amount TEXT NOT NULL
+  amount TEXT NOT NULL,
+  unit TEXT
 );
 
 CREATE TABLE recipe_steps (
@@ -64,8 +73,10 @@ CREATE TABLE meal_plans (
   id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(id),
   title TEXT NOT NULL,
+  plan_date DATE NOT NULL,
   date_label TEXT NOT NULL,
-  nutrition_score INTEGER NOT NULL
+  nutrition_score INTEGER NOT NULL,
+  water_suggestion TEXT
 );
 
 CREATE TABLE meal_plan_items (
@@ -74,7 +85,8 @@ CREATE TABLE meal_plan_items (
   recipe_id TEXT REFERENCES recipes(id),
   slot TEXT NOT NULL,
   time TEXT NOT NULL,
-  title TEXT NOT NULL
+  title TEXT NOT NULL,
+  focus TEXT
 );
 
 CREATE TABLE guide_stages (
@@ -139,4 +151,19 @@ CREATE TABLE system_settings (
   setting_key TEXT UNIQUE NOT NULL,
   setting_val TEXT NOT NULL,
   updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE user_favorites (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  recipe_id TEXT NOT NULL REFERENCES recipes(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, recipe_id)
+);
+
+CREATE TABLE user_feedback (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

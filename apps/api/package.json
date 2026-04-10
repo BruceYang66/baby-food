@@ -5,14 +5,27 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc -p tsconfig.json"
+    "build": "tsc -p tsconfig.json",
+    "prisma:generate": "prisma generate",
+    "db:init": "tsx src/db/setup.ts init",
+    "db:seed": "tsx src/db/setup.ts seed",
+    "db:seed:extend": "tsx src/db/setup.ts seed:extend",  
+    "db:comment": "tsx src/db/setup.ts comment", 
+    "db:reset": "tsx src/db/setup.ts reset"
   },
   "dependencies": {
-    "express": "^4.21.2"
+    "@prisma/client": "^6.7.0",
+    "dotenv": "^16.6.1",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.13.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^22.14.1",
+    "@types/pg": "^8.15.2",
+    "prisma": "^6.7.0",
     "tsx": "^4.19.2",
     "typescript": "^5.8.3"
   }

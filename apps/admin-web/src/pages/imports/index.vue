@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import type { ImportJob } from '@baby-food/shared-types'
 import ImportUploadPanel from '@/components/imports/ImportUploadPanel.vue'
-import { importJobs } from '@/services/mock/data'
+import { getImportJobs } from '@/services/api'
+
+const importJobs = ref<ImportJob[]>([])
+
+onMounted(async () => {
+  importJobs.value = await getImportJobs()
+})
 </script>
 
 <template>

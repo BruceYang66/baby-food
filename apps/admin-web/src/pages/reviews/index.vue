@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import type { ReviewQueueItem } from '@baby-food/shared-types'
 import ReviewDecisionPanel from '@/components/reviews/ReviewDecisionPanel.vue'
-import { reviewQueue } from '@/services/mock/data'
+import { getReviewQueue } from '@/services/api'
+
+const reviewQueue = ref<ReviewQueueItem[]>([])
+
+onMounted(async () => {
+  reviewQueue.value = await getReviewQueue()
+})
 </script>
 
 <template>

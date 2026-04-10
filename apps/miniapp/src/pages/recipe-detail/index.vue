@@ -1,22 +1,120 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { RecipeDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import RecipeMetaGrid from '@/components/recipe/RecipeMetaGrid.vue'
 import RecipeSteps from '@/components/recipe/RecipeSteps.vue'
 import TagChip from '@/components/common/TagChip.vue'
-import { getRecipeDetailData } from '@/services/mock'
+import { getRecipeDetailData, openProtectedPage, readFavoriteRecipeIds, addFavorite, removeFavorite } from '@/services/api'
 
 const recipe = ref<RecipeDetail>()
+const loading = ref(false)
+const favoriteIds = ref<string[]>([])
 
-onMounted(async () => {
-  recipe.value = await getRecipeDetailData()
+const PENDING_RECIPE_KEY = 'pendingPlanRecipe'
+
+function goRecipe(id: string) {
+  uni.navigateTo({ url: `/pages/recipe-detail/index?id=${id}` })
+}
+
+function loadRecipe(recipeId: string) {
+  loading.value = true
+
+  getRecipeDetailData(recipeId)
+    .then((data) => {
+      recipe.value = data
+    })
+    .catch((error) => {
+      uni.showToast({
+        title: error instanceof Error ? error.message : '食谱读取失败',
+        icon: 'none'
+      })
+    })
+    .finally(() => {
+      loading.value = false
+    })
+}
+
+onMounted(() => {
+  favoriteIds.value = readFavoriteRecipeIds()
+  const pages = getCurrentPages()
+  const currentPage = pages[pages.length - 1]
+  const recipeId = currentPage?.options?.id
+
+  if (typeof recipeId === 'string' && recipeId) {
+    loadRecipe(recipeId)
+    return
+  }
+
+  uni.showToast({ title: '缺少食谱编号', icon: 'none' })
 })
+
+async function toggleFavorite() {
+  if (!recipe.value) {
+    return
+  }
+
+  const id = recipe.value.id
+  const exists = favoriteIds.value.includes(id)
+  // 乐观更新 UI
+  favoriteIds.value = exists
+    ? favoriteIds.value.filter((item) => item !== id)
+    : [...favoriteIds.value, id]
+
+  try {
+    if (exists) {
+      await removeFavorite(id)
+    } else {
+      await addFavorite(id)
+    }
+    uni.showToast({ title: exists ? '已取消收藏' : '已收藏', icon: 'success' })
+  } catch {
+    // 回滚
+    favoriteIds.value = exists
+      ? [...favoriteIds.value, id]
+      : favoriteIds.value.filter((item) => item !== id)
+    uni.showToast({ title: '操作失败，请重试', icon: 'none' })
+  }
+}
+
+function shareRecipe() {
+  uni.showShareMenu({
+    menus: ['shareAppMessage', 'shareTimeline']
+  })
+  uni.showToast({ title: '点击右上角 ··· 转发', icon: 'none', duration: 1500 })
+}
+
+onShareAppMessage(() => ({
+  title: recipe.value?.title ?? '宝宝辅食食谱',
+  path: recipe.value ? `/pages/recipe-detail/index?id=${recipe.value.id}` : '/pages/guide/index'
+}))
+
+onShareTimeline(() => ({
+  title: recipe.value?.title ?? '宝宝辅食食谱'
+}))
+
+function addToPlan() {
+  if (!recipe.value) {
+    return
+  }
+
+  uni.setStorageSync(PENDING_RECIPE_KEY, {
+    id: recipe.value.id,
+    title: recipe.value.title,
+    image: recipe.value.image,
+    tags: recipe.value.tags
+  })
+
+  if (!openProtectedPage('/pages/generate/index')) {
+    uni.removeStorageSync(PENDING_RECIPE_KEY)
+  }
+}
 </script>
 
 <template>
   <view class="recipe-page" v-if="recipe">
-    <AppNavBar title="食谱详情" @back="uni.navigateBack()" right-text="♡" />
+    <AppNavBar title="食谱详情" :show-back="true" :right-text="favoriteIds.includes(recipe.id) ? '♥' : '♡'" @right="toggleFavorite" />
 
     <image class="hero-image" :src="recipe.heroImage" mode="aspectFill" />
 
@@ -57,7 +155,7 @@ onMounted(async () => {
       <view class="section">
         <text class="section-title">关联推荐</text>
         <view class="related-list">
-          <view v-for="item in recipe.relatedRecipes" :key="item.id" class="related-card card">
+          <view v-for="item in recipe.relatedRecipes" :key="item.id" class="related-card card" @tap="goRecipe(item.id)">
             <image class="related-image" :src="item.image" mode="aspectFill" />
             <view class="related-main">
               <text class="related-title">{{ item.title }}</text>
@@ -69,9 +167,9 @@ onMounted(async () => {
     </view>
 
     <view class="fixed-bottom-actions">
-      <view class="bottom-mini-btn">收藏</view>
-      <view class="bottom-mini-btn">分享</view>
-      <view class="bottom-mini-btn primary">加入计划</view>
+      <view class="bottom-mini-btn" @tap="toggleFavorite">{{ favoriteIds.includes(recipe.id) ? '已收藏' : '收藏' }}</view>
+      <view class="bottom-mini-btn" @tap="shareRecipe">分享</view>
+      <view class="bottom-mini-btn primary" @tap="addToPlan">加入计划</view>
     </view>
   </view>
 </template>
@@ -79,6 +177,8 @@ onMounted(async () => {
 <style scoped lang="scss">
 .recipe-page {
   min-height: 100vh;
+  padding-top: calc(constant(safe-area-inset-top));
+  padding-top: calc(env(safe-area-inset-top));
   background: linear-gradient(180deg, #FDF8F3 0%, #FBF5EF 100%);
 }
 

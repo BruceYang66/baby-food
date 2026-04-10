@@ -1,5 +1,5 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   active: 'home' | 'plan' | 'profile'
 }>()
 
@@ -9,7 +9,11 @@ const tabs = [
   { key: 'profile', label: '我的', icon: '☺', path: '/pages/profile/index' }
 ] as const
 
-function go(path: string) {
+function go(path: string, key: 'home' | 'plan' | 'profile') {
+  if (key === props.active) {
+    return
+  }
+
   uni.reLaunch({ url: path })
 }
 </script>
@@ -21,7 +25,7 @@ function go(path: string) {
       :key="tab.key"
       class="tab-item"
       :class="{ active: active === tab.key }"
-      @tap="go(tab.path)"
+      @tap="go(tab.path, tab.key)"
     >
       <text class="tab-icon">{{ tab.icon }}</text>
       <text class="tab-label">{{ tab.label }}</text>

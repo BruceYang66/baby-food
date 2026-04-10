@@ -1,9 +1,14 @@
 <script setup lang="ts">
-import type { DailyMealPlan } from '@baby-food/shared-types'
+import type { DailyMealPlan, MealPlanEntry } from '@baby-food/shared-types'
 import MealCard from './MealCard.vue'
 
-defineProps<{
+const props = defineProps<{
   plan: DailyMealPlan
+  allowSwap?: boolean
+}>()
+
+const emit = defineEmits<{
+  swap: [entry: MealPlanEntry]
 }>()
 
 const slotNameMap: Record<string, string> = {
@@ -11,6 +16,10 @@ const slotNameMap: Record<string, string> = {
   lunch: '午餐',
   dinner: '晚餐',
   snack: '加餐'
+}
+
+function handleSwap(entry: MealPlanEntry) {
+  emit('swap', entry)
 }
 </script>
 
@@ -23,7 +32,7 @@ const slotNameMap: Record<string, string> = {
       </view>
       <view class="timeline-content">
         <text class="timeline-title">{{ slotNameMap[entry.slot] }} · {{ entry.time }}</text>
-        <MealCard :item="entry" />
+        <MealCard :item="entry" :show-swap="allowSwap !== false" @swap="handleSwap(entry)" />
       </view>
     </view>
   </view>

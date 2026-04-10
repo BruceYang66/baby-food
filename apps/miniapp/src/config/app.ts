@@ -1,5 +1,5 @@
 export const appConfig = {
-  appName: '沐爸AI育儿',
+  appName: '宝宝辅食智囊',
   miniProgramAppId: 'wx83f3a52faf02061d',
   shareSlogan: '科学辅食，悦享成长',
   apiBaseUrl: 'http://localhost:3000/api',

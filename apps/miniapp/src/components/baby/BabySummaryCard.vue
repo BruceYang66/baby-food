@@ -12,9 +12,12 @@ defineProps<{
     <view class="content">
       <text class="name">{{ baby.nickname }}</text>
       <text class="meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
-      <view class="allergens">
+      <view class="allergens" v-if="baby.allergens.length">
         <text class="allergen-label">已避开：</text>
         <text class="allergen-text">{{ baby.allergens.join('、') }}</text>
+      </view>
+      <view class="allergens empty" v-else>
+        <text class="allergen-text">暂未记录过敏原</text>
       </view>
     </view>
   </view>

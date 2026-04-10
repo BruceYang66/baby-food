@@ -1,23 +1,61 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getLoginGuide } from '@/services/mock'
+import { getGuideData, readAuthSession, wechatLogin } from '@/services/api'
 
 const heroTitle = ref('科学辅食，悦享成长')
 const heroDesc = ref('为宝宝量身定制每一餐，开启健康饮食第一步。')
 const agreed = ref(true)
+const loggingIn = ref(false)
 
 onMounted(async () => {
-  const data = await getLoginGuide()
-  heroTitle.value = data.heroTitle
-  heroDesc.value = data.heroDesc
+  try {
+    const stage = await getGuideData('6-8')
+    // heroTitle.value = stage.title
+    // heroDesc.value = stage.description
+  } catch {
+    const session = readAuthSession()
+
+    if (session?.hasBaby) {
+      heroDesc.value = `${session.babyProfile?.monthAgeLabel ?? ''} 宝宝专属辅食建议已准备好。`.trim()
+    }
+  }
 })
 
-function enterApp() {
-  uni.reLaunch({ url: '/pages/home/index' })
+async function enterApp() {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先勾选协议', icon: 'none' })
+    return
+  }
+
+  if (loggingIn.value) {
+    return
+  }
+
+  loggingIn.value = true
+
+  try {
+    const loginResult = await uni.login({ provider: 'weixin' })
+    const code = loginResult.code
+
+    if (!code) {
+      throw new Error('未获取到微信登录凭证')
+    }
+
+    const session = await wechatLogin(code)
+
+    uni.reLaunch({ url: session.hasBaby ? '/pages/home/index' : '/pages/baby-form/index' })
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '微信登录失败',
+      icon: 'none'
+    })
+  } finally {
+    loggingIn.value = false
+  }
 }
 
 function guestEnter() {
-  uni.reLaunch({ url: '/pages/home/index' })
+  uni.reLaunch({ url: '/pages/guide/index' })
 }
 </script>
 
@@ -25,7 +63,7 @@ function guestEnter() {
   <view class="page-shell login-page">
     <view class="rice-paper"></view>
     <view class="brand-block">
-      <text class="brand-title">沐爸AI育儿</text>
+      <text class="brand-title">宝宝辅食智囊</text>
       <text class="brand-subtitle">Pure Nourishment for Growth</text>
     </view>
 
@@ -48,14 +86,14 @@ function guestEnter() {
     <view class="action-panel card">
       <button class="wechat-btn" @tap="enterApp">
         <text class="wechat-icon">微</text>
-        <text>微信一键登录</text>
+        <text>{{ loggingIn ? '登录中...' : '微信一键登录' }}</text>
       </button>
       <view class="guest-link" @tap="guestEnter">暂不登录先逛逛 →</view>
       <view class="agreement-row" @tap="agreed = !agreed">
         <view class="checkbox" :class="{ checked: agreed }">{{ agreed ? '✓' : '' }}</view>
         <text class="agreement-text">登录即代表已阅读并同意《用户服务协议》《隐私政策》</text>
       </view>
-      <view class="onboarding-tip">首次登录将引导创建宝宝档案，自动匹配月龄辅食建议。</view>
+      <view class="onboarding-tip">首次登录将引导创建宝宝档案，游客模式仅支持浏览公开内容。</view>
     </view>
   </view>
 </template>
@@ -66,7 +104,8 @@ function guestEnter() {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  padding-top: 54rpx;
+  padding-top: calc(54rpx + constant(safe-area-inset-top));
+  padding-top: calc(54rpx + env(safe-area-inset-top));
   overflow: hidden;
 }
 

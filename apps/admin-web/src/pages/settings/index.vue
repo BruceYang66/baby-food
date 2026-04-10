@@ -1,6 +1,14 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import type { SystemSettingGroup } from '@baby-food/shared-types'
 import RoleMatrix from '@/components/settings/RoleMatrix.vue'
-import { settingGroups } from '@/services/mock/data'
+import { getSystemSettings } from '@/services/api'
+
+const settingGroups = ref<SystemSettingGroup[]>([])
+
+onMounted(async () => {
+  settingGroups.value = await getSystemSettings()
+})
 </script>
 
 <template>

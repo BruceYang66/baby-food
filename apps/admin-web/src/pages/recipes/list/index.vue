@@ -1,7 +1,15 @@
 <script setup lang="ts">
+import { onMounted, ref } from 'vue'
+import type { RecipeAdminRow } from '@baby-food/shared-types'
 import RecipeFilterBar from '@/components/recipes/RecipeFilterBar.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
-import { recipeRows } from '@/services/mock/data'
+import { getRecipeList } from '@/services/api'
+
+const recipeRows = ref<RecipeAdminRow[]>([])
+
+onMounted(async () => {
+  recipeRows.value = await getRecipeList()
+})
 </script>
 
 <template>

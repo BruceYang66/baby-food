@@ -1,9 +1,16 @@
 <script setup lang="ts">
 import type { RecipeAdminRow } from '@baby-food/shared-types'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 defineProps<{
   rows: RecipeAdminRow[]
 }>()
+
+function editRecipe(id: string) {
+  router.push({ path: '/recipes/editor', query: { id } })
+}
 </script>
 
 <template>
@@ -33,7 +40,7 @@ defineProps<{
       </div>
       <div>{{ row.favorites }}</div>
       <div style="display:flex; gap:8px;">
-        <button class="ghost-btn" style="padding:8px 10px;">编辑</button>
+        <button class="ghost-btn" style="padding:8px 10px;" @click="editRecipe(row.id)">编辑</button>
         <button class="ghost-btn" style="padding:8px 10px;">更多</button>
       </div>
     </div>

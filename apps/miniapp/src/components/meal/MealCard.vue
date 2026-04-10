@@ -2,9 +2,26 @@
 import type { MealPlanEntry } from '@baby-food/shared-types'
 import TagChip from '@/components/common/TagChip.vue'
 
-defineProps<{
+const props = defineProps<{
   item: MealPlanEntry
+  showSwap?: boolean
 }>()
+
+const emit = defineEmits<{
+  swap: []
+}>()
+
+function goRecipeDetail() {
+  if (!props.item.recipeId) {
+    return
+  }
+
+  uni.navigateTo({ url: `/pages/recipe-detail/index?id=${props.item.recipeId}` })
+}
+
+function handleSwap() {
+  emit('swap')
+}
 </script>
 
 <template>
@@ -22,8 +39,8 @@ defineProps<{
         <TagChip v-for="tag in item.tags" :key="tag" :text="tag" accent="secondary" />
       </view>
       <view class="meal-actions">
-        <view class="ghost-btn">查看做法</view>
-        <view class="swap-btn">换一道</view>
+        <view class="ghost-btn" :class="{ disabled: !item.recipeId }" @tap="goRecipeDetail">查看做法</view>
+        <view v-if="showSwap !== false" class="swap-btn" @tap="handleSwap">换一道</view>
       </view>
     </view>
   </view>
@@ -90,6 +107,10 @@ defineProps<{
 .ghost-btn {
   background: rgba(255, 179, 102, 0.18);
   color: var(--mini-primary-deep);
+}
+
+.ghost-btn.disabled {
+  opacity: 0.45;
 }
 
 .swap-btn {

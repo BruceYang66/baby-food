@@ -31,9 +31,9 @@ export const homeFeatures: HomeFeature[] = [
 ]
 
 export const homeShortcuts: HomeShortcut[] = [
-  { title: '继续上次计划', description: '昨天晚餐替换未完成', icon: '↩︎' },
-  { title: '收藏有更新', description: '新增 3 道高铁食谱', icon: '♡' },
-  { title: '温馨提示', description: '本周注意增加深绿叶菜摄入', icon: '☀︎' }
+  { title: '继续上次计划', description: '昨天已保存 3 餐安排', icon: '↩︎', actionKey: 'recent-plan', planPreview: todayMealPlan },
+  { title: '收藏有更新', description: '新增 3 道高铁食谱', icon: '♡', actionKey: 'favorites' },
+  { title: '温馨提示', description: '本周注意增加深绿叶菜摄入', icon: '☀︎', actionKey: 'message' }
 ]
 
 export const ingredientHighlights: IngredientHighlight[] = [
@@ -74,7 +74,8 @@ export const featuredRecipes: RecipeSummary[] = [
 
 export const todayMealPlan: DailyMealPlan = {
   id: 'plan-001',
-  dateLabel: '今天 · 4月9日',
+  planDate: '2026-04-10',
+  dateLabel: '今天 · 4月10日',
   nutritionScore: 98,
   waterSuggestion: '450ml',
   entries: [
@@ -85,9 +86,128 @@ export const todayMealPlan: DailyMealPlan = {
 }
 
 export const historyMealPlans: HistoryMealPlan[] = [
-  { id: 'history-1', dateLabel: '2026年4月8日', summary: '完成度 100% · 无过敏记录', completionRate: 100 },
-  { id: 'history-2', dateLabel: '2026年4月7日', summary: '完成度 85% · 新增牛油果尝试', completionRate: 85 },
-  { id: 'history-3', dateLabel: '2026年4月6日', summary: '完成度 92% · 高铁日安排', completionRate: 92 }
+  { id: 'history-1', dateLabel: '2026年4月8日', summary: '南瓜鸡肉软饭 / 鳕鱼蔬菜粥 · 完成度 100%', completionRate: 100 },
+  { id: 'history-2', dateLabel: '2026年4月7日', summary: '牛油果软饭 / 山药鸡肉面 · 完成度 85%', completionRate: 85 },
+  { id: 'history-3', dateLabel: '2026年4月6日', summary: '高铁猪肝泥 / 小米南瓜粥 · 完成度 92%', completionRate: 92 }
+]
+
+export const weeklyPlanDays = [
+  {
+    id: 'plan-2026-04-07',
+    planDate: '2026-04-07',
+    dateLabel: '4月7日',
+    dayLabel: '周二',
+    summary: '3 餐安排',
+    recipeTitles: ['牛油果软饭', '山药鸡肉面', '胡萝卜鳕鱼泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 85,
+    tagLabel: '已保存',
+    isRecommended: false
+  },
+  {
+    id: 'plan-2026-04-08',
+    planDate: '2026-04-08',
+    dateLabel: '4月8日',
+    dayLabel: '周三',
+    summary: '3 餐安排',
+    recipeTitles: ['南瓜鸡肉软饭', '鳕鱼蔬菜粥', '苹果小米蒸糕'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 100,
+    tagLabel: '已保存',
+    isRecommended: false
+  },
+  {
+    id: 'plan-2026-04-09',
+    planDate: '2026-04-09',
+    dateLabel: '4月9日',
+    dayLabel: '周四',
+    summary: '推荐 3 餐安排',
+    recipeTitles: ['红薯山药小米粥', '鳕鱼西兰花软饭', '贝贝南瓜猪肝泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 89,
+    tagLabel: '推荐',
+    isRecommended: true,
+    mealPlan: {
+      id: 'recommended-2026-04-09',
+      planDate: '2026-04-09',
+      dateLabel: '2026年4月9日',
+      nutritionScore: 89,
+      waterSuggestion: '450ml',
+      entries: todayMealPlan.entries
+    }
+  },
+  {
+    id: 'plan-001',
+    planDate: '2026-04-10',
+    dateLabel: '4月10日',
+    dayLabel: '今天',
+    summary: '3 餐安排',
+    recipeTitles: ['红薯山药小米粥', '鳕鱼西兰花软饭', '贝贝南瓜猪肝泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 98,
+    tagLabel: '今日',
+    isRecommended: false
+  },
+  {
+    id: 'recommended-2026-04-11',
+    planDate: '2026-04-11',
+    dateLabel: '4月11日',
+    dayLabel: '周六',
+    summary: '推荐 3 餐安排',
+    recipeTitles: ['红薯山药小米粥', '鳕鱼西兰花软饭', '贝贝南瓜猪肝泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 90,
+    tagLabel: '推荐',
+    isRecommended: true,
+    mealPlan: {
+      id: 'recommended-2026-04-11',
+      planDate: '2026-04-11',
+      dateLabel: '2026年4月11日',
+      nutritionScore: 90,
+      waterSuggestion: '450ml',
+      entries: todayMealPlan.entries
+    }
+  },
+  {
+    id: 'recommended-2026-04-12',
+    planDate: '2026-04-12',
+    dateLabel: '4月12日',
+    dayLabel: '周日',
+    summary: '推荐 3 餐安排',
+    recipeTitles: ['红薯山药小米粥', '鳕鱼西兰花软饭', '贝贝南瓜猪肝泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 91,
+    tagLabel: '推荐',
+    isRecommended: true,
+    mealPlan: {
+      id: 'recommended-2026-04-12',
+      planDate: '2026-04-12',
+      dateLabel: '2026年4月12日',
+      nutritionScore: 91,
+      waterSuggestion: '450ml',
+      entries: todayMealPlan.entries
+    }
+  },
+  {
+    id: 'recommended-2026-04-13',
+    planDate: '2026-04-13',
+    dateLabel: '4月13日',
+    dayLabel: '周一',
+    summary: '推荐 3 餐安排',
+    recipeTitles: ['红薯山药小米粥', '鳕鱼西兰花软饭', '贝贝南瓜猪肝泥'],
+    recipeIds: ['recipe-001', 'recipe-002', 'recipe-003'],
+    completionRate: 92,
+    tagLabel: '推荐',
+    isRecommended: true,
+    mealPlan: {
+      id: 'recommended-2026-04-13',
+      planDate: '2026-04-13',
+      dateLabel: '2026年4月13日',
+      nutritionScore: 92,
+      waterSuggestion: '450ml',
+      entries: todayMealPlan.entries
+    }
+  }
 ]
 
 export const guideStages: GuideStage[] = [

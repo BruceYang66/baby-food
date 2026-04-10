@@ -1,4 +1,5 @@
-export type NutritionGoal = '补铁' | '补钙' | '通便' | '挑食' | '免疫力'
+export type NutritionGoal = '补铁' | '补钙' | 'DHA' | '通便' | '开胃' | '挑食' | '免疫力' | '手抓食' | '补钙补锌' | '病期适用'
+export type MealCount = '2餐' | '3餐' | '3餐+点心'
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type GuideRuleType = 'recommended' | 'cautious' | 'forbidden'
 export type TabooRuleType = 'avoid' | 'recommended'
@@ -11,6 +12,30 @@ export interface BabyProfile {
   birthDate: string
   avatar: string
   allergens: string[]
+  isActive?: boolean
+}
+
+export interface BabyProfilePayload {
+  nickname: string
+  birthDate: string
+  allergens: string[]
+  avatarUrl?: string
+}
+
+export interface AppUser {
+  id: string
+  nickname: string
+  avatarUrl: string
+}
+
+export interface AuthState {
+  user: AppUser
+  hasBaby: boolean
+  babyProfile: BabyProfile | null
+}
+
+export interface AuthSession extends AuthState {
+  token: string
 }
 
 export interface HomeFeature {
@@ -22,10 +47,14 @@ export interface HomeFeature {
   route: string
 }
 
+export type HomeShortcutAction = 'recent-plan' | 'favorites' | 'message'
+
 export interface HomeShortcut {
   title: string
   description: string
   icon: string
+  actionKey?: HomeShortcutAction
+  planPreview?: DailyMealPlan
 }
 
 export interface IngredientHighlight {
@@ -68,6 +97,7 @@ export interface RecipeDetail extends RecipeSummary {
 
 export interface MealPlanEntry {
   id: string
+  recipeId?: string
   slot: MealSlot
   time: string
   title: string
@@ -78,10 +108,15 @@ export interface MealPlanEntry {
 
 export interface DailyMealPlan {
   id: string
+  planDate: string
   dateLabel: string
   nutritionScore: number
   waterSuggestion: string
   entries: MealPlanEntry[]
+}
+
+export interface MealPlanDetail extends DailyMealPlan {
+  title: string
 }
 
 export interface HistoryMealPlan {
@@ -89,6 +124,65 @@ export interface HistoryMealPlan {
   dateLabel: string
   summary: string
   completionRate: number
+}
+
+export interface WeeklyMealPlanDay {
+  id: string
+  planDate: string
+  dateLabel: string
+  dayLabel: string
+  summary: string
+  recipeTitles: string[]
+  recipeIds: string[]
+  completionRate: number
+  tagLabel: string
+  isRecommended: boolean
+  mealPlan?: DailyMealPlan
+}
+
+export interface GeneratePageData {
+  babyProfile: BabyProfile
+  todayMealPlan: DailyMealPlan
+  nutritionGoals: NutritionGoal[]
+}
+
+export interface PlanPageData {
+  todayMealPlan: DailyMealPlan
+  historyMealPlans: HistoryMealPlan[]
+  weeklyPlanDays: WeeklyMealPlanDay[]
+}
+
+export interface SaveMealPlanEntryPayload {
+  recipeId?: string
+  slot: MealSlot
+  time: string
+  title: string
+  focus: string
+}
+
+export interface SaveMealPlanPayload {
+  title?: string
+  dateLabel?: string
+  planDate?: string
+  nutritionScore: number
+  waterSuggestion: string
+  entries: SaveMealPlanEntryPayload[]
+}
+
+export interface SaveMealPlanResponse {
+  mealPlan: MealPlanDetail
+}
+
+export interface SwapMealPlanResponse {
+  mealPlan: DailyMealPlan
+}
+
+export interface BatchRecipeSummaryPayload {
+  recipeIds: string[]
+}
+
+export interface BatchRecipeSummaryResponse {
+  recipes: RecipeSummary[]
 }
 
 export interface GuideRule {
@@ -120,6 +214,8 @@ export interface TabooGuide {
   recommended: string[]
   recipes: RecipeSummary[]
   medicalTips: string[]
+  matched?: boolean
+  resolvedSymptom?: string
 }
 
 export interface ProfileMenuItem {
@@ -127,6 +223,13 @@ export interface ProfileMenuItem {
   title: string
   subtitle: string
   icon: string
+}
+
+export interface ProfilePageData {
+  hasBaby: boolean
+  babyProfile: BabyProfile | null
+  profileMenus: ProfileMenuItem[]
+  wechatEntries: WechatEntry[]
 }
 
 export interface WechatEntry {
