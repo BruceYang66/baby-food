@@ -71,22 +71,39 @@ CREATE TABLE recipe_tags (
 
 CREATE TABLE meal_plans (
   id TEXT PRIMARY KEY,
-  user_id TEXT NOT NULL REFERENCES users(id),
+  baby_id TEXT NOT NULL REFERENCES babies(id),
   title TEXT NOT NULL,
   plan_date DATE NOT NULL,
   date_label TEXT NOT NULL,
   nutrition_score INTEGER NOT NULL,
-  water_suggestion TEXT
+  water_suggestion TEXT,
+  UNIQUE(baby_id, plan_date)
+);
+
+CREATE TABLE custom_recipes (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  title TEXT NOT NULL,
+  focus TEXT,
+  cover_image TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
 CREATE TABLE meal_plan_items (
   id TEXT PRIMARY KEY,
   meal_plan_id TEXT NOT NULL REFERENCES meal_plans(id),
   recipe_id TEXT REFERENCES recipes(id),
+  custom_recipe_id TEXT REFERENCES custom_recipes(id),
   slot TEXT NOT NULL,
   time TEXT NOT NULL,
   title TEXT NOT NULL,
-  focus TEXT
+  focus TEXT,
+  snapshot_title TEXT,
+  snapshot_focus TEXT,
+  snapshot_image TEXT,
+  snapshot_tags_json TEXT
 );
 
 CREATE TABLE guide_stages (
@@ -94,7 +111,11 @@ CREATE TABLE guide_stages (
   key TEXT UNIQUE NOT NULL,
   label TEXT NOT NULL,
   title TEXT NOT NULL,
-  description TEXT NOT NULL
+  description TEXT NOT NULL,
+  feeding_tips_json TEXT NOT NULL DEFAULT '[]',
+  qa_json TEXT NOT NULL DEFAULT '[]',
+  daily_schedule_json TEXT NOT NULL DEFAULT '[]',
+  sort_order INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE TABLE guide_food_rules (

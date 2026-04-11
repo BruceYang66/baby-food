@@ -36,7 +36,6 @@ model User {
   activeBabyId  String?  @map("active_baby_id")
   createdAt     DateTime @default(now()) @map("created_at")
   babies        Baby[]
-  mealPlans     MealPlan[]
   favorites     UserFavorite[]
 
   @@map("users")
@@ -50,6 +49,8 @@ model Baby {
   stageLabel    String         @map("stage_label")
   avatarUrl     String?        @map("avatar_url")
   allergens     BabyAllergen[]
+  mealPlans     MealPlan[]
+  customRecipes CustomRecipe[]
   user          User           @relation(fields: [userId], references: [id])
 
   @@map("babies")
@@ -92,6 +93,21 @@ model Recipe {
   @@map("recipes")
 }
 
+model CustomRecipe {
+  id            String         @id @default(cuid())
+  babyId        String         @map("baby_id")
+  title         String
+  focus         String?
+  coverImage    String?        @map("cover_image")
+  tagsJson      String         @default("[]") @map("tags_json")
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+  baby          Baby           @relation(fields: [babyId], references: [id])
+  mealPlanItems MealPlanItem[]
+
+  @@map("custom_recipes")
+}
+
 model RecipeIngredient {
   id       String @id @default(cuid())
   recipeId String @map("recipe_id")
@@ -126,39 +142,50 @@ model RecipeTag {
 
 model MealPlan {
   id              String         @id @default(cuid())
-  userId          String         @map("user_id")
+  babyId          String         @map("baby_id")
   title           String
   planDate        DateTime       @map("plan_date") @db.Date
   dateLabel       String         @map("date_label")
   nutritionScore  Int            @map("nutrition_score")
   waterSuggestion String?        @map("water_suggestion")
-  user            User           @relation(fields: [userId], references: [id])
+  baby            Baby           @relation(fields: [babyId], references: [id])
   items           MealPlanItem[]
 
+  @@unique([babyId, planDate])
   @@map("meal_plans")
 }
 
 model MealPlanItem {
-  id         String   @id @default(cuid())
-  mealPlanId String   @map("meal_plan_id")
-  recipeId   String?  @map("recipe_id")
-  slot       String
-  time       String
-  title      String
-  focus      String?
-  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id])
-  recipe     Recipe?  @relation(fields: [recipeId], references: [id])
+  id                String        @id @default(cuid())
+  mealPlanId        String        @map("meal_plan_id")
+  recipeId          String?       @map("recipe_id")
+  customRecipeId    String?       @map("custom_recipe_id")
+  slot              String
+  time              String
+  title             String
+  focus             String?
+  snapshotTitle     String?       @map("snapshot_title")
+  snapshotFocus     String?       @map("snapshot_focus")
+  snapshotImage     String?       @map("snapshot_image")
+  snapshotTagsJson  String?       @map("snapshot_tags_json")
+  mealPlan          MealPlan      @relation(fields: [mealPlanId], references: [id])
+  recipe            Recipe?       @relation(fields: [recipeId], references: [id])
+  customRecipe      CustomRecipe? @relation(fields: [customRecipeId], references: [id])
 
   @@map("meal_plan_items")
 }
 
 model GuideStage {
-  id          String          @id @default(cuid())
-  key         String          @unique
-  label       String
-  title       String
-  description String
-  rules       GuideFoodRule[]
+  id                String          @id @default(cuid())
+  key               String          @unique
+  label             String
+  title             String
+  description       String
+  feedingTipsJson   String          @default("[]") @map("feeding_tips_json")
+  qaJson            String          @default("[]") @map("qa_json")
+  dailyScheduleJson String          @default("[]") @map("daily_schedule_json")
+  sortOrder         Int             @default(0) @map("sort_order")
+  rules             GuideFoodRule[]
 
   @@map("guide_stages")
 }

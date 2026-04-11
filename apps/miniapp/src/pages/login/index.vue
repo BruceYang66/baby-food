@@ -9,7 +9,7 @@ const loggingIn = ref(false)
 
 onMounted(async () => {
   try {
-    const stage = await getGuideData('6-8')
+    const stage = await getGuideData('6-7')
     // heroTitle.value = stage.title
     // heroDesc.value = stage.description
   } catch {

@@ -74,23 +74,40 @@ COMMENT ON COLUMN recipe_tags.recipe_id IS '所属食谱 ID，关联 recipes.id'
 COMMENT ON COLUMN recipe_tags.name      IS '标签内容，如：高铁、补钙、手抓食、开胃';
 
 -- ── meal_plans ────────────────────────────────────────────────
-COMMENT ON TABLE  meal_plans                   IS '每日辅食计划表，每条记录代表一天的膳食安排';
+COMMENT ON TABLE  meal_plans                   IS '每日辅食计划表，每条记录代表某个宝宝在某一天的膳食安排';
 COMMENT ON COLUMN meal_plans.id                IS '计划唯一标识';
-COMMENT ON COLUMN meal_plans.user_id           IS '所属用户 ID，关联 users.id';
+COMMENT ON COLUMN meal_plans.baby_id           IS '所属宝宝 ID，关联 babies.id';
 COMMENT ON COLUMN meal_plans.title             IS '计划标题，如：今日辅食计划';
-COMMENT ON COLUMN meal_plans.date_label        IS '日期展示标签，如：今天 · 4月9日（含"今天"关键词用于识别当日计划）';
+COMMENT ON COLUMN meal_plans.plan_date         IS '计划生效日期（DATE），用于今天/本周/历史按日读取';
+COMMENT ON COLUMN meal_plans.date_label        IS '日期展示标签，如：今天 · 4月9日';
 COMMENT ON COLUMN meal_plans.nutrition_score   IS '营养评分（0-100），系统根据食谱营养素计算';
 COMMENT ON COLUMN meal_plans.water_suggestion  IS '建议饮水量，如：450ml，依月龄推算';
+
+-- ── custom_recipes ────────────────────────────────────────────
+COMMENT ON TABLE  custom_recipes               IS '宝宝自定义菜谱表，归属具体宝宝，可复用于多个计划条目';
+COMMENT ON COLUMN custom_recipes.id            IS '自定义菜谱唯一标识';
+COMMENT ON COLUMN custom_recipes.baby_id       IS '所属宝宝 ID，关联 babies.id';
+COMMENT ON COLUMN custom_recipes.title         IS '自定义菜品名称';
+COMMENT ON COLUMN custom_recipes.focus         IS '备注说明或营养重点';
+COMMENT ON COLUMN custom_recipes.cover_image   IS '自定义菜品图片 URL，可为空';
+COMMENT ON COLUMN custom_recipes.tags_json     IS '自定义标签 JSON 数组，如：["补铁","顺滑易吞咽"]';
+COMMENT ON COLUMN custom_recipes.created_at    IS '自定义菜谱创建时间';
+COMMENT ON COLUMN custom_recipes.updated_at    IS '自定义菜谱更新时间';
 
 -- ── meal_plan_items ───────────────────────────────────────────
 COMMENT ON TABLE  meal_plan_items               IS '膳食计划条目表，每条记录对应计划中的一个餐次';
 COMMENT ON COLUMN meal_plan_items.id            IS '条目唯一标识';
 COMMENT ON COLUMN meal_plan_items.meal_plan_id  IS '所属膳食计划 ID，关联 meal_plans.id';
-COMMENT ON COLUMN meal_plan_items.recipe_id     IS '关联食谱 ID（可为空，表示自定义非食谱餐次）';
+COMMENT ON COLUMN meal_plan_items.recipe_id     IS '关联标准食谱 ID；为空时表示使用自定义菜品';
+COMMENT ON COLUMN meal_plan_items.custom_recipe_id IS '关联自定义菜谱 ID，关联 custom_recipes.id';
 COMMENT ON COLUMN meal_plan_items.slot          IS '餐次标识：breakfast=早餐，lunch=午餐，dinner=晚餐，snack=加餐';
 COMMENT ON COLUMN meal_plan_items.time          IS '建议进食时间，格式 HH:mm';
-COMMENT ON COLUMN meal_plan_items.title         IS '餐次展示名称（冗余自食谱，或自定义）';
+COMMENT ON COLUMN meal_plan_items.title         IS '餐次展示名称（冗余自食谱或自定义内容）';
 COMMENT ON COLUMN meal_plan_items.focus         IS '该餐次的营养重点说明，如：补充优质蛋白';
+COMMENT ON COLUMN meal_plan_items.snapshot_title IS '保存计划时的自定义标题快照';
+COMMENT ON COLUMN meal_plan_items.snapshot_focus IS '保存计划时的自定义备注快照';
+COMMENT ON COLUMN meal_plan_items.snapshot_image IS '保存计划时的自定义图片快照';
+COMMENT ON COLUMN meal_plan_items.snapshot_tags_json IS '保存计划时的自定义标签快照 JSON';
 
 -- ── guide_stages ──────────────────────────────────────────────
 COMMENT ON TABLE  guide_stages             IS '月龄饮食指南阶段表，每条记录对应一个月龄区间';

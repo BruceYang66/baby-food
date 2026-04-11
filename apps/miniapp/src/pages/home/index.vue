@@ -12,6 +12,7 @@ const baby = ref<BabyProfile>()
 const features = ref<HomeFeature[]>([])
 const shortcuts = ref<HomeShortcut[]>([])
 const ingredients = ref<IngredientHighlight[]>([])
+const hasAnyPlan = ref(true)
 
 function getStatusBarHeight() {
   if (typeof uni.getWindowInfo === 'function') {
@@ -35,6 +36,7 @@ onMounted(async () => {
   features.value = data.homeFeatures
   shortcuts.value = data.homeShortcuts
   ingredients.value = data.ingredientHighlights
+  hasAnyPlan.value = (data as any).hasAnyPlan !== false
 })
 
 function go(url: string) {
@@ -103,7 +105,19 @@ function goShortcut(shortcut: HomeShortcut) {
       <view class="notify" @tap="goMessage">🔔</view>
     </view>
 
-    <view class="hero-card">
+    <!-- 首次用户引导卡（无任何历史计划时显示） -->
+    <view v-if="!hasAnyPlan" class="first-guide-card">
+      <view class="first-guide-inner">
+        <text class="first-guide-emoji">🌱</text>
+        <view>
+          <text class="first-guide-title">生成第一周辅食计划</text>
+          <text class="first-guide-desc">根据宝宝月龄智能推荐食材与餐次安排，一键开始</text>
+        </view>
+      </view>
+      <view class="first-guide-btn" @tap="go('/pages/generate/index')">立即生成 →</view>
+    </view>
+
+    <view class="hero-card" v-else>
       <view>
         <text class="hero-label">今日食谱</text>
         <text class="hero-title">根据宝宝成长阶段，生成今天的科学辅食安排</text>
@@ -222,6 +236,52 @@ function goShortcut(shortcut: HomeShortcut) {
   text-align: center;
   line-height: 76rpx;
   font-size: 30rpx;
+}
+
+.first-guide-card {
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, rgba(168, 230, 207, 0.4), rgba(255, 255, 255, 0.95));
+  box-shadow: var(--mini-shadow-soft);
+  padding: 32rpx;
+  overflow: hidden;
+}
+
+.first-guide-inner {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+  margin-bottom: 24rpx;
+}
+
+.first-guide-emoji {
+  font-size: 56rpx;
+  flex-shrink: 0;
+}
+
+.first-guide-title {
+  display: block;
+  font-size: 34rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.first-guide-desc {
+  display: block;
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--mini-text-muted);
+}
+
+.first-guide-btn {
+  display: block;
+  padding: 22rpx 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-secondary-deep), #3db886);
+  text-align: center;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
 .hero-card {

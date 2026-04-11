@@ -18,8 +18,7 @@ import type {
   SaveMealPlanPayload,
   SaveMealPlanResponse,
   SwapMealPlanResponse,
-  TabooGuide,
-  WeeklyMealPlanDay
+  TabooGuide
 } from '@baby-food/shared-types'
 import { appConfig } from '@/config/app'
 

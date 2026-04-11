@@ -6,24 +6,27 @@ import AgeStageTabs from '@/components/guide/AgeStageTabs.vue'
 import FoodRuleSection from '@/components/guide/FoodRuleSection.vue'
 import { getGuideData, openProtectedPage, readAuthSession } from '@/services/api'
 
+const STAGE_KEYS = ['4-6', '6-7', '8-9', '10-12', '12-18', '18-24']
+
 const stages = ref<GuideStage[]>([])
-const activeKey = ref('6-8')
+const activeKey = ref('6-7')
+const expandedQaIndex = ref<number | null>(null)
 
 function getDefaultStageKey() {
   const session = readAuthSession()
   const baby = session?.babyProfile
 
   if (!baby?.birthDate) {
-    return '6-8'
+    return '6-7'
   }
 
   const birthDate = new Date(baby.birthDate)
   const today = new Date()
   const monthAge = Math.max(0, (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth()))
 
-  if (monthAge < 6) return '6-8'
-  if (monthAge < 8) return '6-8'
-  if (monthAge < 10) return '8-10'
+  if (monthAge < 6) return '4-6'
+  if (monthAge < 8) return '6-7'
+  if (monthAge < 10) return '8-9'
   if (monthAge < 12) return '10-12'
   if (monthAge < 18) return '12-18'
   return '18-24'
@@ -34,7 +37,7 @@ onMounted(async () => {
   activeKey.value = defaultKey
 
   const results = await Promise.allSettled(
-    ['6-8', '8-10', '10-12', '12-18', '18-24'].map((key) => getGuideData(key))
+    STAGE_KEYS.map((key) => getGuideData(key))
   )
   stages.value = results
     .filter((r): r is PromiseFulfilledResult<GuideStage> => r.status === 'fulfilled')
@@ -46,13 +49,22 @@ onMounted(async () => {
 })
 
 const activeStage = computed(() => stages.value.find((item) => item.key === activeKey.value) ?? stages.value[0])
+
+function switchStage(key: string) {
+  activeKey.value = key
+  expandedQaIndex.value = null
+}
+
+function toggleQa(index: number) {
+  expandedQaIndex.value = expandedQaIndex.value === index ? null : index
+}
 </script>
 
 <template>
   <view class="page-shell">
     <AppNavBar title="月龄饮食指南" subtitle="各月龄吃什么，禁忌一查便知" :show-back="true" />
 
-    <AgeStageTabs :stages="stages" :active-key="activeKey" @change="activeKey = $event" />
+    <AgeStageTabs :stages="stages" :active-key="activeKey" @change="switchStage" />
 
     <view v-if="activeStage" class="stage-hero card">
       <view>
@@ -84,6 +96,27 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
           <view class="schedule-main">
             <text class="schedule-title">{{ schedule.title }}</text>
             <text class="schedule-desc">{{ schedule.description }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <!-- Q&A 模块 -->
+    <view v-if="activeStage && activeStage.qaItems && activeStage.qaItems.length" class="qa-section">
+      <text class="section-title">常见问题</text>
+      <view class="qa-list">
+        <view
+          v-for="(qa, index) in activeStage.qaItems"
+          :key="index"
+          class="qa-card card"
+          @tap="toggleQa(index)"
+        >
+          <view class="qa-header">
+            <text class="qa-q">Q：{{ qa.q }}</text>
+            <text class="qa-arrow">{{ expandedQaIndex === index ? '∧' : '∨' }}</text>
+          </view>
+          <view v-if="expandedQaIndex === index" class="qa-answer">
+            <text class="qa-a">{{ qa.a }}</text>
           </view>
         </view>
       </view>
@@ -148,6 +181,7 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
   margin-top: 12rpx;
   border-radius: 999rpx;
   background: var(--mini-secondary-deep);
+  flex-shrink: 0;
 }
 
 .tip-text {
@@ -158,14 +192,16 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
 }
 
 .rule-list,
-.schedule-section {
+.schedule-section,
+.qa-section {
   display: flex;
   flex-direction: column;
   gap: 18rpx;
   margin-top: 22rpx;
 }
 
-.schedule-list {
+.schedule-list,
+.qa-list {
   display: flex;
   flex-direction: column;
   gap: 16rpx;
@@ -182,6 +218,7 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
   font-size: 24rpx;
   font-weight: 700;
   color: var(--mini-primary-deep);
+  flex-shrink: 0;
 }
 
 .schedule-main {
@@ -199,6 +236,45 @@ const activeStage = computed(() => stages.value.find((item) => item.key === acti
   margin-top: 8rpx;
   font-size: 22rpx;
   line-height: 1.6;
+  color: var(--mini-text-muted);
+}
+
+/* Q&A */
+.qa-card {
+  padding: 24rpx 28rpx;
+}
+
+.qa-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16rpx;
+}
+
+.qa-q {
+  flex: 1;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--mini-primary-deep);
+  line-height: 1.6;
+}
+
+.qa-arrow {
+  font-size: 24rpx;
+  color: var(--mini-text-muted);
+  flex-shrink: 0;
+  margin-top: 4rpx;
+}
+
+.qa-answer {
+  margin-top: 16rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid rgba(0,0,0,0.06);
+}
+
+.qa-a {
+  font-size: 24rpx;
+  line-height: 1.8;
   color: var(--mini-text-muted);
 }
 

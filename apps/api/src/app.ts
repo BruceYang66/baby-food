@@ -465,10 +465,14 @@ app.post('/api/app/meal-plans', requireAppAuth, async (req, res) => {
       waterSuggestion: string
       entries: Array<{
         recipeId?: string
+        customRecipeId?: string
+        isCustom?: boolean
         slot: string
         time: string
         title: string
         focus: string
+        image?: string
+        tags?: string[]
       }>
     }
 
@@ -488,10 +492,14 @@ app.put('/api/app/meal-plans/:id', requireAppAuth, async (req, res) => {
       waterSuggestion: string
       entries: Array<{
         recipeId?: string
+        customRecipeId?: string
+        isCustom?: boolean
         slot: string
         time: string
         title: string
         focus: string
+        image?: string
+        tags?: string[]
       }>
     }
 

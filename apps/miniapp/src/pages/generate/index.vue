@@ -181,7 +181,22 @@ async function swapMeal(entry: MealPlanEntry) {
   swappingEntryId.value = entry.id
 
   try {
-    const data = await swapMealPlanItem(plan.value.id, entry.id)
+    let currentPlan = plan.value
+    const isSyntheticPlan = !currentPlan.id || currentPlan.id.startsWith('recommended-') || currentPlan.id.startsWith('generated-')
+    let targetEntryId = entry.id
+
+    if (isSyntheticPlan) {
+      const saved = await saveMealPlan(buildSavePayload(currentPlan))
+      currentPlan = saved.mealPlan
+      plan.value = currentPlan
+      targetEntryId = currentPlan.entries.find((item) => item.slot === entry.slot)?.id ?? ''
+
+      if (!targetEntryId) {
+        throw new Error('当前餐次保存失败，请重试')
+      }
+    }
+
+    const data = await swapMealPlanItem(currentPlan.id, targetEntryId)
     plan.value = data.mealPlan
     uni.showToast({ title: '已换一道', icon: 'success' })
   } catch (error) {
@@ -203,10 +218,14 @@ function buildSavePayload(currentPlan: DailyMealPlan): SaveMealPlanPayload {
     waterSuggestion: currentPlan.waterSuggestion,
     entries: currentPlan.entries.map((entry) => ({
       recipeId: entry.recipeId,
+      customRecipeId: entry.customRecipeId,
+      isCustom: entry.isCustom,
       slot: entry.slot,
       time: entry.time,
       title: entry.title,
-      focus: entry.focus
+      focus: entry.focus,
+      image: entry.image,
+      tags: entry.tags
     }))
   }
 }

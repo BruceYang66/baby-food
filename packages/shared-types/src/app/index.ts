@@ -98,6 +98,8 @@ export interface RecipeDetail extends RecipeSummary {
 export interface MealPlanEntry {
   id: string
   recipeId?: string
+  customRecipeId?: string
+  isCustom?: boolean
   slot: MealSlot
   time: string
   title: string
@@ -121,9 +123,12 @@ export interface MealPlanDetail extends DailyMealPlan {
 
 export interface HistoryMealPlan {
   id: string
+  planDate: string
   dateLabel: string
   summary: string
   completionRate: number
+  firstFoodName?: string
+  firstFoodEmoji?: string
 }
 
 export interface WeeklyMealPlanDay {
@@ -154,10 +159,14 @@ export interface PlanPageData {
 
 export interface SaveMealPlanEntryPayload {
   recipeId?: string
+  customRecipeId?: string
+  isCustom?: boolean
   slot: MealSlot
   time: string
   title: string
   focus: string
+  image?: string
+  tags?: string[]
 }
 
 export interface SaveMealPlanPayload {
@@ -198,6 +207,7 @@ export interface GuideStage {
   title: string
   description: string
   feedingTips: string[]
+  qaItems: Array<{ q: string; a: string }>
   rules: GuideRule[]
   dailySchedule: Array<{ time: string; title: string; description: string }>
 }
