@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
-import type { BabyProfile, DailyMealPlan } from '@baby-food/shared-types'
+import type { BabyProfile, DailyMealPlan, SaveMealPlanPayload } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import NutritionScoreCard from '@/components/meal/NutritionScoreCard.vue'
 import MealTimeline from '@/components/meal/MealTimeline.vue'
-import { ensureProtectedPageAccess, getMealPlanDetail, readAuthSession } from '@/services/api'
+import { ensureProtectedPageAccess, getMealPlanDetail, readAuthSession, saveFeedingRecord, saveMealPlan } from '@/services/api'
 
 const SAVED_PLAN_KEY = 'savedGeneratePlan'
 const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
@@ -44,7 +44,68 @@ async function loadDetail() {
   }
 }
 
+function buildSavePayload(currentPlan: DailyMealPlan): SaveMealPlanPayload {
+  return {
+    title: '已保存辅食计划',
+    dateLabel: currentPlan.dateLabel,
+    planDate: currentPlan.planDate,
+    nutritionScore: currentPlan.nutritionScore,
+    waterSuggestion: currentPlan.waterSuggestion,
+    entries: currentPlan.entries.map((entry) => ({
+      recipeId: entry.recipeId,
+      customRecipeId: entry.customRecipeId,
+      isCustom: entry.isCustom,
+      slot: entry.slot,
+      time: entry.time,
+      title: entry.title,
+      focus: entry.focus,
+      image: entry.image,
+      tags: entry.tags
+    }))
+  }
+}
+
+async function ensureSavedPlan(currentPlan: DailyMealPlan, targetEntry: DailyMealPlan['entries'][number]) {
+  if (currentPlan.isSaved) {
+    return {
+      mealPlan: currentPlan,
+      entryId: targetEntry.id
+    }
+  }
+
+  const saved = await saveMealPlan(buildSavePayload(currentPlan))
+  const savedEntry = saved.mealPlan.entries.find((item) => item.slot === targetEntry.slot)
+
+  if (!savedEntry) {
+    throw new Error('当前餐次保存失败，请重试')
+  }
+
+  mealPlan.value = saved.mealPlan
+
+  return {
+    mealPlan: saved.mealPlan,
+    entryId: savedEntry.id
+  }
+}
+
 onMounted(loadDetail)
+
+async function handleRecord(entry: DailyMealPlan['entries'][number], status: 'fed' | 'skipped') {
+  if (!mealPlan.value) {
+    return
+  }
+
+  try {
+    const ensured = await ensureSavedPlan(mealPlan.value, entry)
+    const data = await saveFeedingRecord(ensured.mealPlan.id, ensured.entryId, { status })
+    mealPlan.value = data.mealPlan
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '记录失败',
+      icon: 'none'
+    })
+  }
+}
 
 function restoreToGenerate() {
   if (!mealPlan.value || !baby.value || restoring.value) {
@@ -101,7 +162,7 @@ onShareTimeline(() => ({
 
     <view v-if="mealPlan" class="section">
       <text class="section-title">三餐明细</text>
-      <MealTimeline :plan="mealPlan" :allow-swap="false" />
+      <MealTimeline :plan="mealPlan" :allow-swap="false" @record="handleRecord" />
     </view>
 
     <view class="fixed-bottom-actions" v-if="mealPlan">

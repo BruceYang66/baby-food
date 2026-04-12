@@ -51,9 +51,12 @@ async function seedExtendDatabase() {
 
 async function resetDatabase() {
   await client.query(`
-    DROP TABLE IF EXISTS user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_allergens, babies, recipes, users CASCADE;
+    DROP TABLE IF EXISTS user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
     DROP TYPE IF EXISTS content_status CASCADE;
     DROP TYPE IF EXISTS review_status CASCADE;
+    DROP TYPE IF EXISTS feeding_record_status CASCADE;
+    DROP TYPE IF EXISTS baby_invite_status CASCADE;
+    DROP TYPE IF EXISTS baby_member_role CASCADE;
   `)
 
   console.log('旧表与枚举已清空。')

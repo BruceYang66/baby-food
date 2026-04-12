@@ -6,6 +6,9 @@
 -- ── 枚举类型 ──────────────────────────────────────────────────
 COMMENT ON TYPE content_status IS '食谱内容状态：draft=草稿，pending_review=待审核，published=已发布，offline=已下架，trash=已删除';
 COMMENT ON TYPE review_status IS '食谱审核状态：none=未发起，pending=审核中，approved=已通过，rejected=已驳回';
+COMMENT ON TYPE baby_member_role IS '宝宝共享成员角色：owner=所有者，collaborator=协作者，caregiver=照护者，viewer=只读查看者';
+COMMENT ON TYPE baby_invite_status IS '宝宝共享邀请状态：pending=待处理，accepted=已接受，declined=已拒绝，revoked=已撤销，expired=已过期';
+COMMENT ON TYPE feeding_record_status IS '喂养记录状态：fed=已喂养，skipped=跳过/未进食';
 
 -- ── users ──────────────────────────────────────────────────────
 COMMENT ON TABLE  users                  IS '小程序用户表，每条记录对应一个微信登录用户';
@@ -31,6 +34,30 @@ COMMENT ON COLUMN baby_allergens.id      IS '记录唯一标识';
 COMMENT ON COLUMN baby_allergens.baby_id IS '所属宝宝 ID，关联 babies.id';
 COMMENT ON COLUMN baby_allergens.name    IS '过敏原名称，如：鸡蛋、花生、牛奶';
 COMMENT ON COLUMN baby_allergens.severity IS '严重程度：低/中/高，可为空（未知严重度）';
+
+-- ── baby_members ───────────────────────────────────────────────
+COMMENT ON TABLE  baby_members              IS '宝宝家庭成员表，记录可访问该宝宝档案的家庭成员';
+COMMENT ON COLUMN baby_members.id           IS '成员记录唯一标识';
+COMMENT ON COLUMN baby_members.baby_id      IS '所属宝宝 ID，关联 babies.id';
+COMMENT ON COLUMN baby_members.user_id      IS '成员用户 ID，关联 users.id';
+COMMENT ON COLUMN baby_members.role         IS '成员角色，如：owner、collaborator、caregiver、viewer';
+COMMENT ON COLUMN baby_members.display_name IS '成员显示名称，如：妈妈、爸爸、外婆';
+COMMENT ON COLUMN baby_members.created_at   IS '加入家庭共享时间';
+
+-- ── baby_invites ───────────────────────────────────────────────
+COMMENT ON TABLE  baby_invites                 IS '宝宝共享邀请表，记录邀请家庭成员加入共享的过程';
+COMMENT ON COLUMN baby_invites.id              IS '邀请记录唯一标识';
+COMMENT ON COLUMN baby_invites.baby_id         IS '所属宝宝 ID，关联 babies.id';
+COMMENT ON COLUMN baby_invites.inviter_user_id IS '发起邀请的用户 ID，关联 users.id';
+COMMENT ON COLUMN baby_invites.invitee_user_id IS '被邀请用户 ID，关联 users.id，可为空';
+COMMENT ON COLUMN baby_invites.invitee_nickname IS '被邀请人展示名称';
+COMMENT ON COLUMN baby_invites.invitee_contact IS '被邀请人联系方式，如微信号或手机号，可为空';
+COMMENT ON COLUMN baby_invites.role            IS '邀请加入后的成员角色，如：collaborator、caregiver、viewer';
+COMMENT ON COLUMN baby_invites.status          IS '邀请状态，如：pending、accepted、declined、revoked、expired';
+COMMENT ON COLUMN baby_invites.invite_code     IS '邀请识别码，用于分享与接受邀请';
+COMMENT ON COLUMN baby_invites.expires_at      IS '邀请过期时间';
+COMMENT ON COLUMN baby_invites.responded_at    IS '被邀请人响应时间';
+COMMENT ON COLUMN baby_invites.created_at      IS '邀请创建时间';
 
 -- ── recipes ───────────────────────────────────────────────────
 COMMENT ON TABLE  recipes                  IS '辅食食谱主表，含内容状态与审核状态双轨管理';
@@ -108,6 +135,17 @@ COMMENT ON COLUMN meal_plan_items.snapshot_title IS '保存计划时的自定义
 COMMENT ON COLUMN meal_plan_items.snapshot_focus IS '保存计划时的自定义备注快照';
 COMMENT ON COLUMN meal_plan_items.snapshot_image IS '保存计划时的自定义图片快照';
 COMMENT ON COLUMN meal_plan_items.snapshot_tags_json IS '保存计划时的自定义标签快照 JSON';
+
+-- ── feeding_records ───────────────────────────────────────────
+COMMENT ON TABLE  feeding_records                IS '喂养记录表，记录某个计划餐次的实际喂养结果';
+COMMENT ON COLUMN feeding_records.id             IS '喂养记录唯一标识';
+COMMENT ON COLUMN feeding_records.meal_plan_id   IS '所属膳食计划 ID，关联 meal_plans.id';
+COMMENT ON COLUMN feeding_records.meal_plan_item_id IS '所属计划条目 ID，关联 meal_plan_items.id';
+COMMENT ON COLUMN feeding_records.status         IS '喂养状态：fed=已喂养，skipped=跳过/未进食';
+COMMENT ON COLUMN feeding_records.note           IS '喂养备注，如：吃了一半、状态一般';
+COMMENT ON COLUMN feeding_records.fed_at         IS '实际喂养时间，可为空';
+COMMENT ON COLUMN feeding_records.created_at     IS '记录创建时间';
+COMMENT ON COLUMN feeding_records.updated_at     IS '记录更新时间';
 
 -- ── guide_stages ──────────────────────────────────────────────
 COMMENT ON TABLE  guide_stages             IS '月龄饮食指南阶段表，每条记录对应一个月龄区间';

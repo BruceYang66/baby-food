@@ -74,6 +74,7 @@ export const featuredRecipes: RecipeSummary[] = [
 
 export const todayMealPlan: DailyMealPlan = {
   id: 'plan-001',
+  isSaved: true,
   planDate: '2026-04-10',
   dateLabel: '今天 · 4月10日',
   nutritionScore: 98,
@@ -129,6 +130,7 @@ export const weeklyPlanDays = [
     isRecommended: true,
     mealPlan: {
       id: 'recommended-2026-04-09',
+      isSaved: false,
       planDate: '2026-04-09',
       dateLabel: '2026年4月9日',
       nutritionScore: 89,
@@ -161,6 +163,7 @@ export const weeklyPlanDays = [
     isRecommended: true,
     mealPlan: {
       id: 'recommended-2026-04-11',
+      isSaved: false,
       planDate: '2026-04-11',
       dateLabel: '2026年4月11日',
       nutritionScore: 90,
@@ -181,6 +184,7 @@ export const weeklyPlanDays = [
     isRecommended: true,
     mealPlan: {
       id: 'recommended-2026-04-12',
+      isSaved: false,
       planDate: '2026-04-12',
       dateLabel: '2026年4月12日',
       nutritionScore: 91,
@@ -201,6 +205,7 @@ export const weeklyPlanDays = [
     isRecommended: true,
     mealPlan: {
       id: 'recommended-2026-04-13',
+      isSaved: false,
       planDate: '2026-04-13',
       dateLabel: '2026年4月13日',
       nutritionScore: 92,

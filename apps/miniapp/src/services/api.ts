@@ -4,6 +4,10 @@ import type {
   BabyProfile,
   BabyProfilePayload,
   BatchRecipeSummaryResponse,
+  CreateFamilyInvitePayload,
+  CreateFamilyInviteResponse,
+  FamilyInvitesResponse,
+  FamilyMembersResponse,
   GeneratePageData,
   GuideStage,
   HomeFeature,
@@ -14,7 +18,8 @@ import type {
   NutritionGoal,
   PlanPageData,
   ProfilePageData,
-  RecipeDetail,
+  SaveFeedingRecordPayload,
+  SaveFeedingRecordResponse,
   SaveMealPlanPayload,
   SaveMealPlanResponse,
   SwapMealPlanResponse,
@@ -40,16 +45,24 @@ type RequestOptions = Partial<UniApp.RequestOptions> & {
   redirectOnUnauthorized?: boolean
 }
 
+type UniPageLike = {
+  route?: string
+  options?: Record<string, string | number | boolean | undefined>
+}
+
 const AUTH_SESSION_KEY = 'appAuthSession'
+const POST_LOGIN_REDIRECT_KEY = 'postLoginRedirectUrl'
 const LOGIN_PAGE = '/pages/login/index'
 const HOME_PAGE = '/pages/home/index'
 const BABY_FORM_PAGE = '/pages/baby-form/index'
+const FAMILY_PAGE = '/pages/family/index'
 const PROTECTED_PAGES = new Set([
   '/pages/home/index',
   '/pages/generate/index',
   '/pages/plan/index',
   '/pages/plan-detail/index',
-  '/pages/profile/index'
+  '/pages/profile/index',
+  FAMILY_PAGE
 ])
 
 function getRouteBase(path: string) {
@@ -58,9 +71,27 @@ function getRouteBase(path: string) {
 }
 
 function getCurrentRoutePath() {
-  const pages = getCurrentPages() as Array<{ route?: string }>
+  const pages = getCurrentPages() as UniPageLike[]
   const currentPage = pages[pages.length - 1]
   return currentPage?.route ? `/${currentPage.route}` : ''
+}
+
+function getCurrentRouteUrl() {
+  const pages = getCurrentPages() as UniPageLike[]
+  const currentPage = pages[pages.length - 1]
+
+  if (!currentPage?.route) {
+    return ''
+  }
+
+  const route = `/${currentPage.route}`
+  const options = currentPage.options ?? {}
+  const query = Object.entries(options)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+    .join('&')
+
+  return query ? `${route}?${query}` : route
 }
 
 function isProtectedPage(path: string) {
@@ -102,6 +133,52 @@ export function readAuthSession() {
   return getStoredAuthSession()
 }
 
+function savePostLoginRedirect(url: string) {
+  if (!url) {
+    uni.removeStorageSync(POST_LOGIN_REDIRECT_KEY)
+    return
+  }
+
+  uni.setStorageSync(POST_LOGIN_REDIRECT_KEY, url)
+}
+
+function clearPostLoginRedirect() {
+  uni.removeStorageSync(POST_LOGIN_REDIRECT_KEY)
+}
+
+function readPostLoginRedirect() {
+  const stored = uni.getStorageSync(POST_LOGIN_REDIRECT_KEY)
+  return typeof stored === 'string' ? stored : ''
+}
+
+export function takePostLoginRedirect() {
+  const stored = readPostLoginRedirect()
+  clearPostLoginRedirect()
+  return stored
+}
+
+function getPostAuthRedirectUrl(session: Pick<AuthSession, 'hasBaby'>) {
+  const redirectUrl = readPostLoginRedirect()
+  const routeBase = redirectUrl ? getRouteBase(redirectUrl) : ''
+
+  if (redirectUrl && routeBase === FAMILY_PAGE) {
+    clearPostLoginRedirect()
+    return redirectUrl
+  }
+
+  if (redirectUrl && session.hasBaby) {
+    clearPostLoginRedirect()
+    return redirectUrl
+  }
+
+  if (!session.hasBaby) {
+    return BABY_FORM_PAGE
+  }
+
+  clearPostLoginRedirect()
+  return HOME_PAGE
+}
+
 function reLaunchIfNeeded(url: string) {
   if (getRouteBase(getCurrentRoutePath()) === getRouteBase(url)) {
     return
@@ -110,7 +187,13 @@ function reLaunchIfNeeded(url: string) {
   uni.reLaunch({ url })
 }
 
-function redirectToLogin(message?: string) {
+function redirectToLogin(message?: string, redirectUrl = getCurrentRouteUrl()) {
+  const routeBase = redirectUrl ? getRouteBase(redirectUrl) : ''
+
+  if (routeBase && routeBase !== getRouteBase(LOGIN_PAGE)) {
+    savePostLoginRedirect(redirectUrl)
+  }
+
   if (message) {
     uni.showToast({ title: message, icon: 'none' })
   }
@@ -118,7 +201,13 @@ function redirectToLogin(message?: string) {
   reLaunchIfNeeded(LOGIN_PAGE)
 }
 
-function redirectToBabyForm(message?: string) {
+function redirectToBabyForm(message?: string, redirectUrl = '') {
+  const routeBase = redirectUrl ? getRouteBase(redirectUrl) : ''
+
+  if (routeBase && routeBase !== getRouteBase(BABY_FORM_PAGE)) {
+    savePostLoginRedirect(redirectUrl)
+  }
+
   if (message) {
     uni.showToast({ title: message, icon: 'none' })
   }
@@ -185,7 +274,7 @@ export function ensureProtectedPageAccess(options: { allowNoBaby?: boolean } = {
   }
 
   if (!options.allowNoBaby && !session.hasBaby) {
-    redirectToBabyForm('请先完善宝宝档案')
+    redirectToBabyForm('请先完善宝宝档案', getCurrentRouteUrl())
     return false
   }
 
@@ -194,14 +283,16 @@ export function ensureProtectedPageAccess(options: { allowNoBaby?: boolean } = {
 
 export function openProtectedPage(url: string, navigateMode: NavigateMode = 'navigateTo') {
   const session = getStoredAuthSession()
+  const routeBase = getRouteBase(url)
+  const allowNoBaby = routeBase === FAMILY_PAGE
 
   if (!session?.token) {
-    redirectToLogin('公开内容可直接浏览，个性化功能请先登录')
+    redirectToLogin('公开内容可直接浏览，个性化功能请先登录', url)
     return false
   }
 
-  if (!session.hasBaby) {
-    redirectToBabyForm('请先完善宝宝档案')
+  if (!allowNoBaby && !session.hasBaby) {
+    redirectToBabyForm('请先完善宝宝档案', url)
     return false
   }
 
@@ -237,12 +328,15 @@ export async function syncAppSession() {
     saveAuthSession(nextSession)
 
     if (!nextSession.hasBaby && (isProtectedPage(currentPath) || currentBase === getRouteBase(LOGIN_PAGE) || !currentBase)) {
-      redirectToBabyForm()
-      return nextSession
+      if (currentBase !== FAMILY_PAGE) {
+        redirectToBabyForm(undefined, getCurrentRouteUrl())
+        return nextSession
+      }
     }
 
     if (nextSession.hasBaby && (currentBase === getRouteBase(LOGIN_PAGE) || currentBase === getRouteBase(BABY_FORM_PAGE) || !currentBase)) {
-      reLaunchIfNeeded(HOME_PAGE)
+      const redirectUrl = getPostAuthRedirectUrl(nextSession)
+      reLaunchIfNeeded(redirectUrl)
     }
 
     return nextSession
@@ -261,6 +355,12 @@ export async function wechatLogin(code: string) {
   })
 
   saveAuthSession(session)
+
+  const redirectUrl = getPostAuthRedirectUrl(session)
+  if (getRouteBase(redirectUrl) !== getRouteBase(LOGIN_PAGE)) {
+    uni.reLaunch({ url: redirectUrl })
+  }
+
   return session
 }
 
@@ -361,6 +461,13 @@ export function updateMealPlan(mealPlanId: string, payload: SaveMealPlanPayload)
   })
 }
 
+export function saveFeedingRecord(mealPlanId: string, itemId: string, payload: SaveFeedingRecordPayload) {
+  return request<SaveFeedingRecordResponse>(`/app/meal-plans/${mealPlanId}/items/${itemId}/feeding-record`, {
+    method: 'POST',
+    data: payload
+  })
+}
+
 export function swapMealPlanItem(mealPlanId: string, itemId: string) {
   return request<SwapMealPlanResponse>(`/app/meal-plans/${mealPlanId}/items/${itemId}/swap`, {
     method: 'POST'
@@ -410,6 +517,48 @@ export function getTabooData(symptom = '腹泻') {
 
 export function getProfileData() {
   return request<ProfilePageData>('/app/profile')
+}
+
+export function getFamilyMembers(babyId?: string) {
+  const query = babyId ? `?babyId=${encodeURIComponent(babyId)}` : ''
+  return request<FamilyMembersResponse>(`/app/family/members${query}`)
+}
+
+export function getFamilyInvites(babyId?: string) {
+  const query = babyId ? `?babyId=${encodeURIComponent(babyId)}` : ''
+  return request<FamilyInvitesResponse>(`/app/family/invites${query}`)
+}
+
+export function createFamilyInvite(payload: CreateFamilyInvitePayload) {
+  return request<CreateFamilyInviteResponse>('/app/family/invites', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function acceptFamilyInvite(inviteCode: string) {
+  return request<FamilyMembersResponse>('/app/family/invites/accept', {
+    method: 'POST',
+    data: { inviteCode }
+  }).then(async (data) => {
+    const session = getStoredAuthSession()
+    if (!session) {
+      return data
+    }
+
+    try {
+      const authState = await getAuthMe()
+      updateStoredAuthState(authState)
+    } catch {
+      updateStoredAuthState({
+        user: session.user,
+        hasBaby: true,
+        babyProfile: data.baby
+      })
+    }
+
+    return data
+  })
 }
 
 export function updateUserProfile(payload: { nickname?: string; avatarUrl?: string }) {

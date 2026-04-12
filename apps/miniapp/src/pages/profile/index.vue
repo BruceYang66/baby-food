@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { BabyProfile, ProfileMenuItem, WechatEntry } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
@@ -9,6 +9,23 @@ import { clearAuthSession, ensureProtectedPageAccess, getProfileData, listBabyPr
 const activeBaby = ref<BabyProfile | null>(null)
 const menus = ref<ProfileMenuItem[]>([])
 const wechatEntries = ref<WechatEntry[]>([])
+
+const canEditActiveBaby = computed(() => activeBaby.value?.role !== 'viewer')
+const activeBabyRoleLabel = computed(() => {
+  if (!activeBaby.value?.role) {
+    return ''
+  }
+
+  if (activeBaby.value.role === 'owner') {
+    return '拥有者'
+  }
+
+  if (activeBaby.value.role === 'viewer') {
+    return '只读成员'
+  }
+
+  return '协作成员'
+})
 
 async function loadProfile() {
   const [data, babyList] = await Promise.all([
@@ -47,9 +64,26 @@ function openShareGuide() {
   uni.showToast({ title: '请点击右上角转发给家人朋友', icon: 'none' })
 }
 
+function openActiveBabyEditor() {
+  if (!activeBaby.value) {
+    return
+  }
+
+  if (!canEditActiveBaby.value) {
+    uni.showToast({ title: '当前为只读成员，暂不能编辑宝宝档案', icon: 'none' })
+    return
+  }
+
+  uni.navigateTo({ url: `/pages/baby-form/index?id=${activeBaby.value.id}` })
+}
+
 function openMenu(menu: ProfileMenuItem) {
   if (menu.key === 'baby') {
     uni.navigateTo({ url: '/pages/babies/index' })
+    return
+  }
+  if (menu.key === 'family') {
+    openProtectedPage('/pages/family/index')
     return
   }
   if (menu.key === 'history') {
@@ -121,6 +155,9 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
           <text class="current-tag">当前宝宝</text>
         </view>
         <text class="hero-meta">{{ activeBaby.monthAgeLabel }} · {{ activeBaby.stageLabel }}</text>
+        <view v-if="activeBabyRoleLabel" class="hero-role-pill">
+          <text class="hero-role-text">家庭身份：{{ activeBabyRoleLabel }}</text>
+        </view>
         <view v-if="activeBaby.allergens.length" class="hero-allergen">
           <text class="allergen-text">过敏：{{ activeBaby.allergens.join('、') }}</text>
         </view>
@@ -128,7 +165,7 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
           <text class="allergen-text">暂未记录过敏原</text>
         </view>
       </view>
-      <view class="hero-edit-btn" @tap.stop="uni.navigateTo({ url: `/pages/baby-form/index?id=${activeBaby.id}` })">
+      <view class="hero-edit-btn" :class="{ disabled: !canEditActiveBaby }" @tap.stop="openActiveBabyEditor">
         <text class="hero-edit-icon">✎</text>
         <text class="hero-edit-label">编辑</text>
       </view>
@@ -247,6 +284,19 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
   color: var(--mini-text-muted);
 }
 
+.hero-role-pill {
+  display: inline-flex;
+  margin-top: 10rpx;
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 93, 170, 0.10);
+}
+
+.hero-role-text {
+  font-size: 20rpx;
+  color: var(--mini-primary-deep);
+}
+
 .hero-allergen {
   display: inline-flex;
   margin-top: 10rpx;
@@ -277,6 +327,10 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
   border-radius: 16rpx;
   background: rgba(255, 255, 255, 0.9);
   flex-shrink: 0;
+}
+
+.hero-edit-btn.disabled {
+  opacity: 0.5;
 }
 
 .hero-edit-icon {

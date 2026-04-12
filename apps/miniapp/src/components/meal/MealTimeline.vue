@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { DailyMealPlan, MealPlanEntry } from '@baby-food/shared-types'
+import type { DailyMealPlan, FeedingRecordStatus, MealPlanEntry } from '@baby-food/shared-types'
 import MealCard from './MealCard.vue'
 
 const props = defineProps<{
@@ -9,6 +9,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   swap: [entry: MealPlanEntry]
+  record: [entry: MealPlanEntry, status: FeedingRecordStatus]
 }>()
 
 const slotNameMap: Record<string, string> = {
@@ -21,6 +22,10 @@ const slotNameMap: Record<string, string> = {
 function handleSwap(entry: MealPlanEntry) {
   emit('swap', entry)
 }
+
+function handleRecord(entry: MealPlanEntry, status: FeedingRecordStatus) {
+  emit('record', entry, status)
+}
 </script>
 
 <template>
@@ -32,7 +37,7 @@ function handleSwap(entry: MealPlanEntry) {
       </view>
       <view class="timeline-content">
         <text class="timeline-title">{{ slotNameMap[entry.slot] }} · {{ entry.time }}</text>
-        <MealCard :item="entry" :show-swap="allowSwap !== false" @swap="handleSwap(entry)" />
+        <MealCard :item="entry" :show-swap="allowSwap !== false" @swap="handleSwap(entry)" @record="handleRecord(entry, $event)" />
       </view>
     </view>
   </view>

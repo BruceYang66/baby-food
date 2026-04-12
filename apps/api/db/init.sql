@@ -1,5 +1,8 @@
 CREATE TYPE content_status AS ENUM ('draft', 'pending_review', 'published', 'offline', 'trash');
 CREATE TYPE review_status AS ENUM ('none', 'pending', 'approved', 'rejected');
+CREATE TYPE baby_member_role AS ENUM ('owner', 'collaborator', 'caregiver', 'viewer');
+CREATE TYPE baby_invite_status AS ENUM ('pending', 'accepted', 'declined', 'revoked', 'expired');
+CREATE TYPE feeding_record_status AS ENUM ('fed', 'skipped');
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
@@ -27,6 +30,34 @@ CREATE TABLE baby_allergens (
   name TEXT NOT NULL,
   severity TEXT
 );
+
+CREATE TABLE baby_members (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  user_id TEXT NOT NULL REFERENCES users(id),
+  role baby_member_role NOT NULL DEFAULT 'collaborator',
+  display_name TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(baby_id, user_id)
+);
+
+CREATE TABLE baby_invites (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  inviter_user_id TEXT NOT NULL REFERENCES users(id),
+  invitee_user_id TEXT REFERENCES users(id),
+  invitee_nickname TEXT,
+  invitee_contact TEXT,
+  role baby_member_role NOT NULL DEFAULT 'collaborator',
+  status baby_invite_status NOT NULL DEFAULT 'pending',
+  invite_code TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMP,
+  responded_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_baby_invites_invitee_user_status ON baby_invites(invitee_user_id, status);
+CREATE INDEX idx_baby_invites_baby_status ON baby_invites(baby_id, status);
 
 CREATE TABLE recipes (
   id TEXT PRIMARY KEY,
@@ -105,6 +136,20 @@ CREATE TABLE meal_plan_items (
   snapshot_image TEXT,
   snapshot_tags_json TEXT
 );
+
+CREATE TABLE feeding_records (
+  id TEXT PRIMARY KEY,
+  meal_plan_id TEXT NOT NULL REFERENCES meal_plans(id),
+  meal_plan_item_id TEXT NOT NULL REFERENCES meal_plan_items(id),
+  status feeding_record_status NOT NULL,
+  note TEXT,
+  fed_at TIMESTAMP,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(meal_plan_item_id)
+);
+
+CREATE INDEX idx_feeding_records_meal_plan_id ON feeding_records(meal_plan_id);
 
 CREATE TABLE guide_stages (
   id TEXT PRIMARY KEY,

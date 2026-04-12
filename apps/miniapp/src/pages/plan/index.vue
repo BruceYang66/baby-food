@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
-import type { DailyMealPlan, HistoryMealPlan, WeeklyMealPlanDay } from '@baby-food/shared-types'
+import type { DailyMealPlan, HistoryMealPlan, SaveMealPlanPayload, WeeklyMealPlanDay } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AppTabBar from '@/components/common/AppTabBar.vue'
 import MealTimeline from '@/components/meal/MealTimeline.vue'
-import { ensureProtectedPageAccess, getPlanPageData, openProtectedPage } from '@/services/api'
+import { ensureProtectedPageAccess, getPlanPageData, openProtectedPage, saveFeedingRecord, saveMealPlan } from '@/services/api'
 
 const activeTab = ref<'today' | 'week' | 'history'>('today')
 const todayPlan = ref<DailyMealPlan>()
@@ -32,6 +32,10 @@ async function loadPlanPage() {
     todayPlan.value = data.todayMealPlan
     history.value = data.historyMealPlans
     weeklyPlans.value = data.weeklyPlanDays
+
+    const targetMonth = latestHistoryMonth.value ?? getMonthCursor(todayPlan.value?.planDate)
+    calendarYear.value = targetMonth.year
+    calendarMonth.value = targetMonth.month
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : '计划加载失败',
@@ -40,6 +44,76 @@ async function loadPlanPage() {
   } finally {
     loading.value = false
   }
+}
+
+function buildSavePayload(currentPlan: DailyMealPlan): SaveMealPlanPayload {
+  return {
+    title: '已保存辅食计划',
+    dateLabel: currentPlan.dateLabel,
+    planDate: currentPlan.planDate,
+    nutritionScore: currentPlan.nutritionScore,
+    waterSuggestion: currentPlan.waterSuggestion,
+    entries: currentPlan.entries.map((entry) => ({
+      recipeId: entry.recipeId,
+      customRecipeId: entry.customRecipeId,
+      isCustom: entry.isCustom,
+      slot: entry.slot,
+      time: entry.time,
+      title: entry.title,
+      focus: entry.focus,
+      image: entry.image,
+      tags: entry.tags
+    }))
+  }
+}
+
+async function ensureSavedPlan(currentPlan: DailyMealPlan, targetEntry: DailyMealPlan['entries'][number]) {
+  if (currentPlan.isSaved) {
+    return {
+      mealPlan: currentPlan,
+      entryId: targetEntry.id,
+      created: false
+    }
+  }
+
+  const saved = await saveMealPlan(buildSavePayload(currentPlan))
+  const savedEntry = saved.mealPlan.entries.find((item) => item.slot === targetEntry.slot)
+
+  if (!savedEntry) {
+    throw new Error('当前餐次保存失败，请重试')
+  }
+
+  todayPlan.value = saved.mealPlan
+
+  return {
+    mealPlan: saved.mealPlan,
+    entryId: savedEntry.id,
+    created: true
+  }
+}
+
+function getMonthCursor(dateKey?: string | null) {
+  if (!dateKey) {
+    const now = new Date()
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth()
+    }
+  }
+
+  const [yearText, monthText] = dateKey.split('-')
+  const year = Number(yearText)
+  const month = Number(monthText) - 1
+
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 0 || month > 11) {
+    const now = new Date()
+    return {
+      year: now.getFullYear(),
+      month: now.getMonth()
+    }
+  }
+
+  return { year, month }
 }
 
 // 月历当前年月
@@ -61,6 +135,19 @@ const historyMap = computed(() => {
     }
   }
   return map
+})
+
+const historyDateKeys = computed(() => history.value
+  .map((item) => item.planDate)
+  .filter((item): item is string => Boolean(item)))
+
+const latestHistoryMonth = computed(() => {
+  if (!historyDateKeys.value.length) {
+    return null
+  }
+
+  const latestDateKey = [...historyDateKeys.value].sort().at(-1) ?? null
+  return getMonthCursor(latestDateKey)
 })
 
 // 月历格子：当月所有日期（前补空格对齐周一）
@@ -105,9 +192,11 @@ function prevMonth() {
 }
 
 function nextMonth() {
-  const now = new Date()
-  if (calendarYear.value > now.getFullYear() || (calendarYear.value === now.getFullYear() && calendarMonth.value >= now.getMonth())) {
-    return // 不允许翻到未来月份
+  const latestMonth = latestHistoryMonth.value
+  if (latestMonth) {
+    if (calendarYear.value > latestMonth.year || (calendarYear.value === latestMonth.year && calendarMonth.value >= latestMonth.month)) {
+      return
+    }
   }
   if (calendarMonth.value === 11) {
     calendarMonth.value = 0
@@ -168,9 +257,35 @@ function goWeeklyPlan(plan: WeeklyMealPlanDay) {
   }
 }
 
+async function handleRecord(entry: DailyMealPlan['entries'][number], status: 'fed' | 'skipped') {
+  if (!todayPlan.value) {
+    return
+  }
+
+  try {
+    const ensured = await ensureSavedPlan(todayPlan.value, entry)
+    const data = await saveFeedingRecord(ensured.mealPlan.id, ensured.entryId, { status })
+    todayPlan.value = data.mealPlan
+
+    if (ensured.created) {
+      await loadPlanPage()
+    }
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '记录失败',
+      icon: 'none'
+    })
+  }
+}
+
 const isCurrentMonth = computed(() => {
-  const now = new Date()
-  return calendarYear.value === now.getFullYear() && calendarMonth.value === now.getMonth()
+  const latestMonth = latestHistoryMonth.value
+
+  if (!latestMonth) {
+    return true
+  }
+
+  return calendarYear.value === latestMonth.year && calendarMonth.value === latestMonth.month
 })
 
 const todayKey = getLocalDateKey()
@@ -191,7 +306,7 @@ const todayKey = getLocalDateKey()
         <text class="hero-kicker">{{ tabLabel }}</text>
         <text class="hero-date">{{ activeTab === 'week' ? '本周 7 天安排' : activeTab === 'history' ? calendarMonthLabel : todayPlan.dateLabel }}</text>
       </view>
-      <view class="hero-badge">{{ activeTab === 'week' ? '可提前查看' : activeTab === 'history' ? `${history.length} 条记录` : '已生成计划' }}</view>
+      <view class="hero-badge">{{ activeTab === 'week' ? '可提前查看' : activeTab === 'history' ? `${history.length} 条计划` : todayPlan.isSaved ? '已保存计划' : '待保存' }}</view>
     </view>
 
     <!-- 今日 Tab -->
@@ -199,7 +314,7 @@ const todayKey = getLocalDateKey()
       <view class="plan-action-row">
         <view class="plan-edit-btn" @tap="goEditPlan(todayPlan.id, todayPlan.planDate)">✏️ 编辑今日计划</view>
       </view>
-      <MealTimeline :plan="todayPlan" @swap="goGeneratePage" />
+      <MealTimeline :plan="todayPlan" @swap="goGeneratePage" @record="handleRecord" />
     </view>
 
     <!-- 本周 Tab -->

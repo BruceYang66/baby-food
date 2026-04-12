@@ -26,17 +26,46 @@ enum ReviewStatus {
   @@map("review_status")
 }
 
+enum BabyMemberRole {
+  owner
+  collaborator
+  caregiver
+  viewer
+
+  @@map("baby_member_role")
+}
+
+enum BabyInviteStatus {
+  pending
+  accepted
+  declined
+  revoked
+  expired
+
+  @@map("baby_invite_status")
+}
+
+enum FeedingRecordStatus {
+  fed
+  skipped
+
+  @@map("feeding_record_status")
+}
+
 model User {
-  id            String   @id @default(cuid())
-  nickname      String
-  avatarUrl     String?  @map("avatar_url")
-  wechatOpenId  String?  @unique @map("wechat_open_id")
-  activityLabel String?  @map("activity_label")
-  statusLabel   String?  @map("status_label")
-  activeBabyId  String?  @map("active_baby_id")
-  createdAt     DateTime @default(now()) @map("created_at")
-  babies        Baby[]
-  favorites     UserFavorite[]
+  id               String       @id @default(cuid())
+  nickname         String
+  avatarUrl        String?      @map("avatar_url")
+  wechatOpenId     String?      @unique @map("wechat_open_id")
+  activityLabel    String?      @map("activity_label")
+  statusLabel      String?      @map("status_label")
+  activeBabyId     String?      @map("active_baby_id")
+  createdAt        DateTime     @default(now()) @map("created_at")
+  babies           Baby[]
+  ownedBabyInvites BabyInvite[] @relation("BabyInviteCreator")
+  babyMembers      BabyMember[]
+  receivedInvites  BabyInvite[] @relation("BabyInviteRecipient")
+  favorites        UserFavorite[]
 
   @@map("users")
 }
@@ -51,9 +80,47 @@ model Baby {
   allergens     BabyAllergen[]
   mealPlans     MealPlan[]
   customRecipes CustomRecipe[]
+  members       BabyMember[]
+  invites       BabyInvite[]
   user          User           @relation(fields: [userId], references: [id])
 
   @@map("babies")
+}
+
+model BabyMember {
+  id          String         @id @default(cuid())
+  babyId      String         @map("baby_id")
+  userId      String         @map("user_id")
+  role        BabyMemberRole @default(collaborator)
+  displayName String?        @map("display_name")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  baby        Baby           @relation(fields: [babyId], references: [id])
+  user        User           @relation(fields: [userId], references: [id])
+
+  @@unique([babyId, userId])
+  @@map("baby_members")
+}
+
+model BabyInvite {
+  id                String           @id @default(cuid())
+  babyId            String           @map("baby_id")
+  inviterUserId     String           @map("inviter_user_id")
+  inviteeUserId     String?          @map("invitee_user_id")
+  inviteeNickname   String?          @map("invitee_nickname")
+  inviteeContact    String?          @map("invitee_contact")
+  role              BabyMemberRole   @default(collaborator)
+  status            BabyInviteStatus @default(pending)
+  inviteCode        String           @unique @map("invite_code")
+  expiresAt         DateTime?        @map("expires_at")
+  respondedAt       DateTime?        @map("responded_at")
+  createdAt         DateTime         @default(now()) @map("created_at")
+  baby              Baby             @relation(fields: [babyId], references: [id])
+  inviterUser       User             @relation("BabyInviteCreator", fields: [inviterUserId], references: [id])
+  inviteeUser       User?            @relation("BabyInviteRecipient", fields: [inviteeUserId], references: [id])
+
+  @@index([inviteeUserId, status])
+  @@index([babyId, status])
+  @@map("baby_invites")
 }
 
 model BabyAllergen {
@@ -141,38 +208,57 @@ model RecipeTag {
 }
 
 model MealPlan {
-  id              String         @id @default(cuid())
-  babyId          String         @map("baby_id")
+  id              String          @id @default(cuid())
+  babyId          String          @map("baby_id")
   title           String
-  planDate        DateTime       @map("plan_date") @db.Date
-  dateLabel       String         @map("date_label")
-  nutritionScore  Int            @map("nutrition_score")
-  waterSuggestion String?        @map("water_suggestion")
-  baby            Baby           @relation(fields: [babyId], references: [id])
+  planDate        DateTime        @map("plan_date") @db.Date
+  dateLabel       String          @map("date_label")
+  nutritionScore  Int             @map("nutrition_score")
+  waterSuggestion String?         @map("water_suggestion")
+  baby            Baby            @relation(fields: [babyId], references: [id])
   items           MealPlanItem[]
+  feedingRecords  FeedingRecord[]
 
   @@unique([babyId, planDate])
   @@map("meal_plans")
 }
 
 model MealPlanItem {
-  id                String        @id @default(cuid())
-  mealPlanId        String        @map("meal_plan_id")
-  recipeId          String?       @map("recipe_id")
-  customRecipeId    String?       @map("custom_recipe_id")
+  id                String          @id @default(cuid())
+  mealPlanId        String          @map("meal_plan_id")
+  recipeId          String?         @map("recipe_id")
+  customRecipeId    String?         @map("custom_recipe_id")
   slot              String
   time              String
   title             String
   focus             String?
-  snapshotTitle     String?       @map("snapshot_title")
-  snapshotFocus     String?       @map("snapshot_focus")
-  snapshotImage     String?       @map("snapshot_image")
-  snapshotTagsJson  String?       @map("snapshot_tags_json")
-  mealPlan          MealPlan      @relation(fields: [mealPlanId], references: [id])
-  recipe            Recipe?       @relation(fields: [recipeId], references: [id])
-  customRecipe      CustomRecipe? @relation(fields: [customRecipeId], references: [id])
+  snapshotTitle     String?         @map("snapshot_title")
+  snapshotFocus     String?         @map("snapshot_focus")
+  snapshotImage     String?         @map("snapshot_image")
+  snapshotTagsJson  String?         @map("snapshot_tags_json")
+  mealPlan          MealPlan        @relation(fields: [mealPlanId], references: [id])
+  recipe            Recipe?         @relation(fields: [recipeId], references: [id])
+  customRecipe      CustomRecipe?   @relation(fields: [customRecipeId], references: [id])
+  feedingRecords    FeedingRecord[]
 
   @@map("meal_plan_items")
+}
+
+model FeedingRecord {
+  id             String              @id @default(cuid())
+  mealPlanId     String              @map("meal_plan_id")
+  mealPlanItemId String              @map("meal_plan_item_id")
+  status         FeedingRecordStatus
+  note           String?
+  fedAt          DateTime?           @map("fed_at")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  mealPlan       MealPlan            @relation(fields: [mealPlanId], references: [id])
+  mealPlanItem   MealPlanItem        @relation(fields: [mealPlanItemId], references: [id])
+
+  @@unique([mealPlanItemId])
+  @@index([mealPlanId])
+  @@map("feeding_records")
 }
 
 model GuideStage {

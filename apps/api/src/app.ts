@@ -12,11 +12,15 @@ import {
   getAdminUsers
 } from './data/admin.js'
 import {
+  acceptFamilyInvite,
   createBabyProfile,
+  createFamilyInvite,
   findOrCreateWechatUser,
   getAppAuthState,
   getAppMessages,
   getBatchRecipeSummaries,
+  getFamilyInvites,
+  getFamilyMembers,
   getGeneratePageData,
   getGuideStageData,
   getHomePageData,
@@ -31,6 +35,7 @@ import {
   removeUserFavorite,
   listBabyProfiles,
   setActiveBaby,
+  saveFeedingRecord,
   saveMealPlan,
   submitUserFeedback,
   swapMealPlanEntry,
@@ -51,12 +56,17 @@ type BabyProfilePayload = {
   avatarUrl?: string
 }
 
+type FamilyInvitePayload = {
+  babyId?: string
+  role?: 'owner' | 'editor' | 'viewer'
+}
+
 type WechatSessionResponse = {
-  errcode?: number
-  errmsg?: string
   openid?: string
   session_key?: string
   unionid?: string
+  errcode?: number
+  errmsg?: string
 }
 
 class HttpError extends Error {
@@ -115,6 +125,10 @@ function getStatusCode(error: unknown) {
     || error.message === '未找到可更新的计划'
     || error.message === '未找到可替换的餐次'
     || error.message === '暂无可替换菜谱'
+    || error.message === '邀请不存在或已失效'
+    || error.message === '未找到可记录的餐次'
+    || error.message === '喂养时间格式不正确'
+    || error.message === '未找到可访问的宝宝档案'
   ) {
     return 400
   }
@@ -402,6 +416,48 @@ app.post('/api/app/babies/:id/activate', requireAppAuth, async (req, res) => {
   }
 })
 
+app.get('/api/app/family/members', requireAppAuth, async (req, res) => {
+  try {
+    const babyId = typeof req.query.babyId === 'string' ? req.query.babyId : undefined
+    res.json({ ok: true, data: await getFamilyMembers(getAppUserId(req), babyId) })
+  } catch (error) {
+    sendError(res, error, '家庭成员读取失败')
+  }
+})
+
+app.get('/api/app/family/invites', requireAppAuth, async (req, res) => {
+  try {
+    const babyId = typeof req.query.babyId === 'string' ? req.query.babyId : undefined
+    res.json({ ok: true, data: await getFamilyInvites(getAppUserId(req), babyId) })
+  } catch (error) {
+    sendError(res, error, '家庭邀请读取失败')
+  }
+})
+
+app.post('/api/app/family/invites', requireAppAuth, async (req, res) => {
+  try {
+    const payload = (req.body ?? {}) as FamilyInvitePayload
+    res.json({ ok: true, data: await createFamilyInvite(getAppUserId(req), payload) })
+  } catch (error) {
+    sendError(res, error, '家庭邀请创建失败')
+  }
+})
+
+app.post('/api/app/family/invites/accept', requireAppAuth, async (req, res) => {
+  const inviteCode = typeof req.body?.inviteCode === 'string' ? req.body.inviteCode.trim() : ''
+
+  if (!inviteCode) {
+    sendError(res, new HttpError(400, '邀请不存在或已失效'), '家庭邀请接受失败')
+    return
+  }
+
+  try {
+    res.json({ ok: true, data: await acceptFamilyInvite(getAppUserId(req), inviteCode) })
+  } catch (error) {
+    sendError(res, error, '家庭邀请接受失败')
+  }
+})
+
 app.get('/api/app/home', requireAppAuth, async (req, res) => {
   try {
     res.json({ ok: true, data: await getHomePageData(getAppUserId(req)) })
@@ -506,6 +562,27 @@ app.put('/api/app/meal-plans/:id', requireAppAuth, async (req, res) => {
     res.json({ ok: true, data: await updateMealPlan(getAppUserId(req), getRouteParam(req.params.id), payload) })
   } catch (error) {
     sendError(res, error, '计划更新失败')
+  }
+})
+
+app.post('/api/app/meal-plans/:id/items/:itemId/feeding-record', requireAppAuth, async (req, res) => {
+  try {
+    const payload = req.body as {
+      status?: 'fed' | 'skipped'
+      note?: string
+      fedAt?: string
+    }
+
+    res.json({
+      ok: true,
+      data: await saveFeedingRecord(getAppUserId(req), getRouteParam(req.params.id), getRouteParam(req.params.itemId), {
+        status: payload.status === 'skipped' ? 'skipped' : 'fed',
+        note: payload.note,
+        fedAt: payload.fedAt
+      })
+    })
+  } catch (error) {
+    sendError(res, error, '喂养记录保存失败')
   }
 })
 

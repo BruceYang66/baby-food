@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import type { BabyProfile } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
-import { activateBaby, ensureProtectedPageAccess, listBabyProfiles } from '@/services/api'
+import { activateBaby, ensureProtectedPageAccess, listBabyProfiles, openProtectedPage } from '@/services/api'
 
 const babies = ref<BabyProfile[]>([])
 const switching = ref(false)
 const loading = ref(true)
+
+const ownerCount = computed(() => babies.value.filter((baby) => baby.role === 'owner').length)
 
 // 使用 onShow 而非 onMounted，确保从 baby-form 返回后自动刷新列表
 onShow(async () => {
@@ -42,7 +44,28 @@ async function handleActivate(b: BabyProfile) {
 }
 
 function editBaby(b: BabyProfile) {
+  if (b.role === 'viewer') {
+    uni.showToast({ title: '只读成员暂不能编辑宝宝档案', icon: 'none' })
+    return
+  }
+
   uni.navigateTo({ url: `/pages/baby-form/index?id=${b.id}` })
+}
+
+function openFamily(b: BabyProfile) {
+  openProtectedPage(`/pages/family/index?babyId=${encodeURIComponent(b.id)}`)
+}
+
+function getRoleLabel(role?: BabyProfile['role']) {
+  if (role === 'owner') {
+    return '拥有者'
+  }
+
+  if (role === 'viewer') {
+    return '只读成员'
+  }
+
+  return '协作成员'
 }
 
 function addBaby() {
@@ -85,6 +108,7 @@ function addBaby() {
             <view class="name-row">
               <text class="name">{{ b.nickname }}</text>
               <text v-if="b.isActive" class="active-tag">当前宝宝</text>
+              <text class="role-tag" :class="b.role">{{ getRoleLabel(b.role) }}</text>
             </view>
             <text class="meta">{{ b.monthAgeLabel }} · {{ b.stageLabel }}</text>
             <view v-if="b.allergens.length" class="allergen-pill">
@@ -95,10 +119,15 @@ function addBaby() {
             </view>
           </view>
 
-          <!-- 编辑按钮 -->
-          <view class="edit-btn" @tap.stop="editBaby(b)">
-            <text class="edit-icon">✎</text>
-            <text class="edit-label">编辑</text>
+          <view class="action-group">
+            <view class="family-btn" @tap.stop="openFamily(b)">
+              <text class="family-icon">🏠</text>
+              <text class="family-label">家庭</text>
+            </view>
+            <view class="edit-btn" :class="{ disabled: b.role === 'viewer' }" @tap.stop="editBaby(b)">
+              <text class="edit-icon">✎</text>
+              <text class="edit-label">编辑</text>
+            </view>
           </view>
         </view>
       </view>
@@ -109,7 +138,9 @@ function addBaby() {
         <text class="add-text">添加宝宝</text>
       </view>
 
-      <text class="tip-text">点击宝宝卡片即可切换当前宝宝，首页与辅食计划将按当前宝宝生成</text>
+      <text class="tip-text">
+        点击宝宝卡片即可切换当前宝宝；当前共管理 {{ babies.length }} 个宝宝，其中 {{ ownerCount }} 个为自己创建。
+      </text>
     </view>
   </view>
 </template>
@@ -238,6 +269,25 @@ function addBaby() {
   border-radius: 999rpx;
 }
 
+.role-tag {
+  font-size: 20rpx;
+  font-weight: 700;
+  padding: 4rpx 14rpx;
+  border-radius: 999rpx;
+  background: rgba(0, 93, 170, 0.10);
+  color: var(--mini-primary-deep);
+}
+
+.role-tag.owner {
+  background: rgba(255, 179, 102, 0.25);
+  color: #a45a18;
+}
+
+.role-tag.viewer {
+  background: rgba(0, 0, 0, 0.06);
+  color: var(--mini-text-muted);
+}
+
 .meta {
   display: block;
   margin-top: 8rpx;
@@ -267,6 +317,14 @@ function addBaby() {
 }
 
 /* 编辑按钮 */
+.action-group {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  flex-shrink: 0;
+}
+
+.family-btn,
 .edit-btn {
   display: flex;
   flex-direction: column;
@@ -278,14 +336,20 @@ function addBaby() {
   flex-shrink: 0;
 }
 
+.family-icon,
 .edit-icon {
   font-size: 30rpx;
   color: var(--mini-primary-deep);
 }
 
+.family-label,
 .edit-label {
   font-size: 18rpx;
   color: var(--mini-text-muted);
+}
+
+.edit-btn.disabled {
+  opacity: 0.5;
 }
 
 /* 添加宝宝行 */

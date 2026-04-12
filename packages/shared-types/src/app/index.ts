@@ -3,6 +3,8 @@ export type MealCount = '2餐' | '3餐' | '3餐+点心'
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type GuideRuleType = 'recommended' | 'cautious' | 'forbidden'
 export type TabooRuleType = 'avoid' | 'recommended'
+export type FamilyRole = 'owner' | 'editor' | 'viewer'
+export type FeedingRecordStatus = 'fed' | 'skipped'
 
 export interface BabyProfile {
   id: string
@@ -12,6 +14,9 @@ export interface BabyProfile {
   birthDate: string
   avatar: string
   allergens: string[]
+  role?: FamilyRole
+  ownerUserId?: string
+  isOwner?: boolean
   isActive?: boolean
 }
 
@@ -32,6 +37,7 @@ export interface AuthState {
   user: AppUser
   hasBaby: boolean
   babyProfile: BabyProfile | null
+  accessibleBabies?: BabyProfile[]
 }
 
 export interface AuthSession extends AuthState {
@@ -106,10 +112,12 @@ export interface MealPlanEntry {
   image: string
   tags: string[]
   focus: string
+  feedingRecord?: FeedingRecord
 }
 
 export interface DailyMealPlan {
   id: string
+  isSaved: boolean
   planDate: string
   dateLabel: string
   nutritionScore: number
@@ -186,6 +194,28 @@ export interface SwapMealPlanResponse {
   mealPlan: DailyMealPlan
 }
 
+export interface FeedingRecord {
+  id: string
+  mealPlanId: string
+  mealPlanItemId: string
+  status: FeedingRecordStatus
+  note?: string
+  fedAt?: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface SaveFeedingRecordPayload {
+  status: FeedingRecordStatus
+  note?: string
+  fedAt?: string
+}
+
+export interface SaveFeedingRecordResponse {
+  mealPlan: DailyMealPlan
+  feedingRecord: FeedingRecord
+}
+
 export interface BatchRecipeSummaryPayload {
   recipeIds: string[]
 }
@@ -238,8 +268,52 @@ export interface ProfileMenuItem {
 export interface ProfilePageData {
   hasBaby: boolean
   babyProfile: BabyProfile | null
+  familyMembers?: FamilyMember[]
+  pendingInvites?: FamilyInvite[]
   profileMenus: ProfileMenuItem[]
   wechatEntries: WechatEntry[]
+}
+
+export interface FamilyMember {
+  id: string
+  userId: string
+  nickname: string
+  avatarUrl: string
+  role: FamilyRole
+  joinedAt?: string
+  isCurrentUser?: boolean
+  isOwner?: boolean
+}
+
+export interface FamilyInvite {
+  id: string
+  babyId: string
+  inviteCode: string
+  role: FamilyRole
+  status: 'pending' | 'accepted' | 'revoked' | 'expired'
+  invitedByUserId: string
+  invitedByName: string
+  expiresAt: string
+  createdAt?: string
+}
+
+export interface CreateFamilyInvitePayload {
+  babyId?: string
+  role: FamilyRole
+}
+
+export interface CreateFamilyInviteResponse {
+  invite: FamilyInvite
+}
+
+export interface FamilyMembersResponse {
+  baby: BabyProfile
+  members: FamilyMember[]
+}
+
+export interface FamilyInvitesResponse {
+  baby: BabyProfile
+  invites: FamilyInvite[]
 }
 
 export interface WechatEntry {

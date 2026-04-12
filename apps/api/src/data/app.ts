@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { prisma } from '../db/prisma.js'
 
 const homeFeatures = [
@@ -15,7 +16,8 @@ const mealPlanInclude = {
           tags: true
         }
       },
-      customRecipe: true
+      customRecipe: true,
+      feedingRecords: true
     },
     orderBy: { time: 'asc' as const }
   }
@@ -108,9 +110,12 @@ function formatBabyProfile(baby: {
   nickname: string
   birthDate: Date
   stageLabel: string
+  userId?: string
   avatarUrl?: string | null
   user?: { avatarUrl: string | null }
   allergens: Array<{ name: string }>
+  accessRole?: 'owner' | 'editor' | 'viewer'
+  isOwner?: boolean
 }) {
   return {
     id: baby.id,
@@ -119,7 +124,10 @@ function formatBabyProfile(baby: {
     stageLabel: baby.stageLabel,
     birthDate: formatDateKey(baby.birthDate),
     avatar: baby.avatarUrl ?? baby.user?.avatarUrl ?? '',
-    allergens: baby.allergens.map((item) => item.name)
+    allergens: baby.allergens.map((item) => item.name),
+    role: baby.accessRole,
+    ownerUserId: baby.userId,
+    isOwner: baby.isOwner
   }
 }
 
@@ -249,30 +257,145 @@ function getWaterSuggestion(monthAge: number) {
   return '500ml'
 }
 
-async function getCurrentBaby(userId: string) {
-  let activeBabyId: string | null = null
+async function getBabyAccessRecords(userId: string) {
+  const [ownedBabies, memberships] = await Promise.all([
+    prisma.baby.findMany({
+      where: { userId },
+      include: { allergens: true },
+      orderBy: { birthDate: 'asc' }
+    }),
+    prisma.babyMember.findMany({
+      where: { userId },
+      include: {
+        baby: {
+          include: {
+            allergens: true,
+            user: true
+          }
+        }
+      },
+      orderBy: { createdAt: 'asc' }
+    })
+  ])
 
+  const accessMap = new Map<string, {
+    baby: typeof ownedBabies[number]
+    role: 'owner' | 'editor' | 'viewer'
+    isOwner: boolean
+  }>()
+
+  for (const baby of ownedBabies) {
+    accessMap.set(baby.id, {
+      baby,
+      role: 'owner',
+      isOwner: true
+    })
+  }
+
+  for (const membership of memberships) {
+    const role = membership.role === 'owner'
+      ? 'owner'
+      : membership.role === 'viewer'
+        ? 'viewer'
+        : 'editor'
+    const existing = accessMap.get(membership.babyId)
+
+    if (existing?.isOwner) {
+      continue
+    }
+
+    accessMap.set(membership.babyId, {
+      baby: membership.baby,
+      role,
+      isOwner: role === 'owner'
+    })
+  }
+
+  return Array.from(accessMap.values())
+}
+
+async function getAccessibleBabies(userId: string) {
+  return (await getBabyAccessRecords(userId)).map(({ baby, role, isOwner }) => ({
+    ...formatBabyProfile({
+      ...baby,
+      userId: baby.userId,
+      accessRole: role,
+      isOwner
+    })
+  }))
+}
+
+async function getActiveBabyId(userId: string) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { activeBabyId: true } as any })
-    activeBabyId = (user as any)?.activeBabyId ?? null
+    return (user as any)?.activeBabyId ?? null
   } catch {
-    // Prisma client not regenerated yet — fall back to raw SQL
     const rows = await prisma.$queryRaw<Array<{ active_baby_id: string | null }>>`
       SELECT active_baby_id FROM users WHERE id = ${userId} LIMIT 1
     `
-    activeBabyId = rows[0]?.active_baby_id ?? null
+    return rows[0]?.active_baby_id ?? null
+  }
+}
+
+async function setActiveBabyId(userId: string, babyId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await prisma.user.update({ where: { id: userId }, data: { activeBabyId: babyId } as any })
+  } catch {
+    await prisma.$executeRaw`UPDATE users SET active_baby_id = ${babyId} WHERE id = ${userId}`
+  }
+}
+
+async function ensureBabyMembership(userId: string, babyId: string, options: { role?: 'owner' | 'editor' | 'viewer'; displayName?: string | null } = {}) {
+  const role = options.role ?? 'owner'
+  const displayName = options.displayName?.trim() || null
+
+  const existing = await prisma.babyMember.findFirst({
+    where: { babyId, userId }
+  })
+
+  if (existing) {
+    await prisma.babyMember.update({
+      where: { id: existing.id },
+      data: {
+        role: role === 'owner' ? 'owner' : role === 'viewer' ? 'viewer' : 'collaborator',
+        displayName: displayName ?? existing.displayName ?? null
+      }
+    })
+    return
   }
 
-  return prisma.baby.findFirst({
-    where: activeBabyId ? { id: activeBabyId, userId } : { userId },
-    include: {
-      allergens: true
-    },
-    orderBy: {
-      birthDate: 'asc'
+  await prisma.babyMember.create({
+    data: {
+      babyId,
+      userId,
+      role: role === 'owner' ? 'owner' : role === 'viewer' ? 'viewer' : 'collaborator',
+      displayName
     }
   })
+}
+
+async function getCurrentBaby(userId: string) {
+  const [activeBabyId, accessRecords] = await Promise.all([
+    getActiveBabyId(userId),
+    getBabyAccessRecords(userId)
+  ])
+
+  const preferred = activeBabyId
+    ? accessRecords.find((record) => record.baby.id === activeBabyId)
+    : undefined
+  const current = preferred ?? accessRecords[0]
+
+  if (!current) {
+    return null
+  }
+
+  return {
+    ...current.baby,
+    accessRole: current.role,
+    isOwner: current.isOwner
+  }
 }
 
 async function ensureCurrentBaby(userId: string) {
@@ -431,6 +554,7 @@ async function buildPreviewMealPlan(
 
   return {
     id: '',
+    isSaved: false,
     title: isSameDate(planDate, getToday()) ? '今日辅食计划' : `${formatPlanDateLabel(planDate)}推荐计划`,
     planDate: formatDateKey(planDate),
     dateLabel: getPlanDateLabel(planDate),
@@ -454,6 +578,16 @@ function buildMealEntries(items: Array<{
   snapshotTagsJson: string | null
   recipe: { coverImage: string | null; tags: Array<{ name: string }> } | null
   customRecipe: { coverImage: string | null; tagsJson: string } | null
+  feedingRecords: Array<{
+    id: string
+    mealPlanId: string
+    mealPlanItemId: string
+    status: 'fed' | 'skipped'
+    note: string | null
+    fedAt: Date | null
+    createdAt: Date
+    updatedAt: Date
+  }>
 }>) {
   return items.map((item) => {
     const image = item.recipe?.coverImage
@@ -465,6 +599,7 @@ function buildMealEntries(items: Array<{
       : item.snapshotTagsJson
         ? parseJsonStringArray(item.snapshotTagsJson)
         : parseJsonStringArray(item.customRecipe?.tagsJson)
+    const feedingRecord = item.feedingRecords[0]
 
     return {
       id: item.id,
@@ -476,7 +611,19 @@ function buildMealEntries(items: Array<{
       title: item.snapshotTitle ?? item.title,
       image,
       tags,
-      focus: item.snapshotFocus ?? item.focus ?? '均衡搭配'
+      focus: item.snapshotFocus ?? item.focus ?? '均衡搭配',
+      feedingRecord: feedingRecord
+        ? {
+            id: feedingRecord.id,
+            mealPlanId: feedingRecord.mealPlanId,
+            mealPlanItemId: feedingRecord.mealPlanItemId,
+            status: feedingRecord.status,
+            note: feedingRecord.note ?? undefined,
+            fedAt: feedingRecord.fedAt?.toISOString(),
+            createdAt: feedingRecord.createdAt.toISOString(),
+            updatedAt: feedingRecord.updatedAt.toISOString()
+          }
+        : undefined
     }
   })
 }
@@ -502,10 +649,21 @@ function buildDailyMealPlan(mealPlan: {
     snapshotTagsJson: string | null
     recipe: { coverImage: string | null; tags: Array<{ name: string }> } | null
     customRecipe: { coverImage: string | null; tagsJson: string } | null
+    feedingRecords: Array<{
+      id: string
+      mealPlanId: string
+      mealPlanItemId: string
+      status: 'fed' | 'skipped'
+      note: string | null
+      fedAt: Date | null
+      createdAt: Date
+      updatedAt: Date
+    }>
   }>
 }) {
   return {
     id: mealPlan.id,
+    isSaved: true,
     title: mealPlan.title,
     planDate: formatDateKey(mealPlan.planDate),
     dateLabel: mealPlan.dateLabel,
@@ -663,7 +821,8 @@ export async function getAppAuthState(userId: string) {
   return {
     user: formatAppUser(user),
     hasBaby: Boolean(baby),
-    babyProfile: baby ? formatBabyProfile(baby) : null
+    babyProfile: baby ? formatBabyProfile(baby) : null,
+    accessibleBabies: await getAccessibleBabies(userId)
   }
 }
 
@@ -732,13 +891,8 @@ export async function createBabyProfile(userId: string, payload: {
     }
   }
 
-  // Set as active baby (automatically activate the newly created baby)
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await prisma.user.update({ where: { id: userId }, data: { activeBabyId: baby.id } as any })
-  } catch {
-    await prisma.$executeRaw`UPDATE users SET active_baby_id = ${baby.id} WHERE id = ${userId}`
-  }
+  await ensureBabyMembership(userId, baby.id, { role: 'owner' })
+  await setActiveBabyId(userId, baby.id)
 
   return {
     babyProfile: formatBabyProfile({ ...baby, avatarUrl: payload.avatarUrl || null })
@@ -814,41 +968,26 @@ export async function updateBabyProfile(userId: string, babyId: string, payload:
 }
 
 export async function listBabyProfiles(userId: string) {
-  const babies = await prisma.baby.findMany({
-    where: { userId },
-    include: { allergens: true },
-    orderBy: { birthDate: 'asc' }
-  })
-
-  let activeBabyId: string | null = null
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { activeBabyId: true } as any })
-    activeBabyId = (user as any)?.activeBabyId ?? null
-  } catch {
-    const rows = await prisma.$queryRaw<Array<{ active_baby_id: string | null }>>`
-      SELECT active_baby_id FROM users WHERE id = ${userId} LIMIT 1
-    `
-    activeBabyId = rows[0]?.active_baby_id ?? null
-  }
+  const [babies, activeBabyId] = await Promise.all([
+    getAccessibleBabies(userId),
+    getActiveBabyId(userId)
+  ])
 
   return {
-    babies: babies.map((b) => ({ ...formatBabyProfile(b), isActive: b.id === activeBabyId }))
+    babies: babies.map((baby) => ({ ...baby, isActive: baby.id === activeBabyId }))
   }
 }
 
 export async function setActiveBaby(userId: string, babyId: string) {
-  const baby = await prisma.baby.findFirst({ where: { id: babyId, userId }, include: { allergens: true } })
+  const babies = await getAccessibleBabies(userId)
+  const baby = babies.find((item) => item.id === babyId)
+
   if (!baby) {
     throw new Error('未找到可编辑的宝宝档案')
   }
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await prisma.user.update({ where: { id: userId }, data: { activeBabyId: babyId } as any })
-  } catch {
-    await prisma.$executeRaw`UPDATE users SET active_baby_id = ${babyId} WHERE id = ${userId}`
-  }
-  return { babyProfile: formatBabyProfile(baby) }
+
+  await setActiveBabyId(userId, babyId)
+  return { babyProfile: { ...baby, isActive: true } }
 }
 
 export async function getHomePageData(userId: string) {
@@ -890,7 +1029,7 @@ export async function getPlanPageData(userId: string) {
 
   const todaySavedPlan = mealPlans.find((plan) => isSameDate(plan.planDate, today))
   const currentPlan = todaySavedPlan ? buildDailyMealPlan(todaySavedPlan) : await buildPreviewMealPlan(baby, { planDate: today })
-  const historyPlans = mealPlans.filter((plan) => !isSameDate(plan.planDate, today))
+  const historyPlans = mealPlans
   const weeklyPlans = mealPlans.filter((plan) => plan.planDate >= start && plan.planDate <= end)
   const weeklyMap = new Map(weeklyPlans.map((plan) => [formatDateKey(plan.planDate), plan]))
   const fallbackPreview = currentPlan
@@ -1104,6 +1243,83 @@ export async function updateMealPlan(userId: string, mealPlanId: string, payload
   }
 }
 
+export async function saveFeedingRecord(userId: string, mealPlanId: string, itemId: string, payload: {
+  status: 'fed' | 'skipped'
+  note?: string
+  fedAt?: string
+}) {
+  const baby = await ensureCurrentBaby(userId)
+  const mealPlan = await prisma.mealPlan.findFirst({
+    where: {
+      id: mealPlanId,
+      babyId: baby.id
+    },
+    include: mealPlanInclude
+  })
+
+  if (!mealPlan) {
+    throw new Error('未找到对应计划')
+  }
+
+  const targetItem = mealPlan.items.find((item) => item.id === itemId)
+
+  if (!targetItem) {
+    throw new Error('未找到可记录的餐次')
+  }
+
+  const status = payload.status === 'skipped' ? 'skipped' : 'fed'
+  const note = payload.note?.trim() || null
+  const fedAt = payload.fedAt ? new Date(payload.fedAt) : new Date()
+
+  if (Number.isNaN(fedAt.getTime())) {
+    throw new Error('喂养时间格式不正确')
+  }
+
+  const feedingRecord = await prisma.feedingRecord.upsert({
+    where: {
+      mealPlanItemId: itemId
+    },
+    create: {
+      mealPlanId,
+      mealPlanItemId: itemId,
+      status,
+      note,
+      fedAt
+    },
+    update: {
+      status,
+      note,
+      fedAt
+    }
+  })
+
+  const refreshedMealPlan = await prisma.mealPlan.findFirst({
+    where: {
+      id: mealPlanId,
+      babyId: baby.id
+    },
+    include: mealPlanInclude
+  })
+
+  if (!refreshedMealPlan) {
+    throw new Error('计划刷新失败')
+  }
+
+  return {
+    mealPlan: buildDailyMealPlan(refreshedMealPlan),
+    feedingRecord: {
+      id: feedingRecord.id,
+      mealPlanId: feedingRecord.mealPlanId,
+      mealPlanItemId: feedingRecord.mealPlanItemId,
+      status: feedingRecord.status,
+      note: feedingRecord.note ?? undefined,
+      fedAt: feedingRecord.fedAt?.toISOString(),
+      createdAt: feedingRecord.createdAt.toISOString(),
+      updatedAt: feedingRecord.updatedAt.toISOString()
+    }
+  }
+}
+
 export async function swapMealPlanEntry(userId: string, mealPlanId: string, itemId: string) {
   const baby = await ensureCurrentBaby(userId)
   const mealPlan = await prisma.mealPlan.findFirst({
@@ -1212,6 +1428,211 @@ export async function getBatchRecipeSummaries(recipeIds: string[]) {
       description: recipe.summary ?? ''
     }))
   }
+}
+
+function toFamilyRole(role: 'owner' | 'collaborator' | 'caregiver' | 'viewer') {
+  if (role === 'owner') {
+    return 'owner' as const
+  }
+
+  if (role === 'viewer') {
+    return 'viewer' as const
+  }
+
+  return 'editor' as const
+}
+
+function createInviteCode() {
+  return randomBytes(4).toString('hex').toUpperCase()
+}
+
+function formatFamilyMember(member: {
+  id: string
+  userId: string
+  role: 'owner' | 'collaborator' | 'caregiver' | 'viewer'
+  createdAt: Date
+  user: { id: string; nickname: string; avatarUrl: string | null }
+}) {
+  return {
+    id: member.id,
+    userId: member.userId,
+    nickname: member.user.nickname,
+    avatarUrl: member.user.avatarUrl ?? '',
+    role: toFamilyRole(member.role),
+    joinedAt: member.createdAt.toISOString(),
+    isOwner: member.role === 'owner'
+  }
+}
+
+function formatFamilyInvite(invite: {
+  id: string
+  babyId: string
+  inviteCode: string
+  role: 'owner' | 'collaborator' | 'caregiver' | 'viewer'
+  status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired'
+  expiresAt: Date | null
+  createdAt: Date
+  inviterUserId: string
+  inviterUser: { nickname: string }
+}) {
+  return {
+    id: invite.id,
+    babyId: invite.babyId,
+    inviteCode: invite.inviteCode,
+    role: toFamilyRole(invite.role),
+    status: invite.status === 'declined' ? 'revoked' : invite.status,
+    invitedByUserId: invite.inviterUserId,
+    invitedByName: invite.inviterUser.nickname,
+    expiresAt: (invite.expiresAt ?? addDays(getToday(), 7)).toISOString(),
+    createdAt: invite.createdAt.toISOString()
+  }
+}
+
+async function ensureOwnerBaby(userId: string, babyId?: string) {
+  const baby = babyId
+    ? await prisma.baby.findFirst({ where: { id: babyId, userId }, include: { allergens: true, user: true } })
+    : await ensureCurrentBaby(userId)
+
+  if (!baby || baby.userId !== userId) {
+    throw new Error('未找到可编辑的宝宝档案')
+  }
+
+  return baby
+}
+
+async function ensureAccessibleBaby(userId: string, babyId?: string) {
+  if (!babyId) {
+    return ensureCurrentBaby(userId)
+  }
+
+  const accessRecord = (await getBabyAccessRecords(userId)).find((record) => record.baby.id === babyId)
+
+  if (!accessRecord) {
+    throw new Error('未找到可访问的宝宝档案')
+  }
+
+  return {
+    ...accessRecord.baby,
+    accessRole: accessRecord.role,
+    isOwner: accessRecord.isOwner
+  }
+}
+
+export async function getFamilyMembers(userId: string, babyId?: string) {
+  const baby = await ensureAccessibleBaby(userId, babyId)
+  const members = await prisma.babyMember.findMany({
+    where: { babyId: baby.id },
+    include: { user: true },
+    orderBy: [
+      { role: 'asc' },
+      { createdAt: 'asc' }
+    ]
+  })
+
+  return {
+    baby: formatBabyProfile(baby),
+    members: members.map((member) => ({
+      ...formatFamilyMember(member),
+      isCurrentUser: member.userId === userId
+    }))
+  }
+}
+
+export async function createFamilyInvite(userId: string, payload: {
+  babyId?: string
+  role?: 'owner' | 'editor' | 'viewer'
+}) {
+  const baby = await ensureOwnerBaby(userId, payload.babyId)
+  const invite = await prisma.babyInvite.create({
+    data: {
+      babyId: baby.id,
+      inviterUserId: userId,
+      role: payload.role === 'viewer' ? 'viewer' : payload.role === 'owner' ? 'owner' : 'collaborator',
+      status: 'pending',
+      inviteCode: createInviteCode(),
+      expiresAt: addDays(getToday(), 7)
+    },
+    include: {
+      inviterUser: {
+        select: { nickname: true }
+      }
+    }
+  })
+
+  return {
+    invite: formatFamilyInvite(invite)
+  }
+}
+
+export async function getFamilyInvites(userId: string, babyId?: string) {
+  const baby = await ensureAccessibleBaby(userId, babyId)
+
+  if (baby.accessRole !== 'owner' && !baby.isOwner) {
+    return {
+      baby: formatBabyProfile(baby),
+      invites: []
+    }
+  }
+
+  const invites = await prisma.babyInvite.findMany({
+    where: {
+      babyId: baby.id,
+      status: {
+        in: ['pending', 'accepted', 'revoked', 'expired']
+      }
+    },
+    include: {
+      inviterUser: {
+        select: { nickname: true }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  })
+
+  return {
+    baby: formatBabyProfile({ ...baby, accessRole: 'owner', isOwner: true }),
+    invites: invites.map((invite) => formatFamilyInvite(invite))
+  }
+}
+
+export async function acceptFamilyInvite(userId: string, inviteCode: string) {
+  const invite = await prisma.babyInvite.findFirst({
+    where: { inviteCode },
+    include: {
+      inviterUser: {
+        select: { nickname: true }
+      }
+    }
+  })
+
+  if (!invite || invite.status !== 'pending') {
+    throw new Error('邀请不存在或已失效')
+  }
+
+  if (invite.expiresAt && invite.expiresAt.getTime() < Date.now()) {
+    await prisma.babyInvite.update({
+      where: { id: invite.id },
+      data: { status: 'expired', respondedAt: new Date() }
+    })
+    throw new Error('邀请不存在或已失效')
+  }
+
+  await ensureBabyMembership(userId, invite.babyId, {
+    role: toFamilyRole(invite.role),
+    displayName: invite.inviteeNickname ?? null
+  })
+  await setActiveBabyId(userId, invite.babyId)
+
+  await prisma.babyInvite.update({
+    where: { id: invite.id },
+    data: {
+      status: 'accepted',
+      inviteeUserId: userId,
+      respondedAt: new Date()
+    }
+  })
+
+  return getFamilyMembers(userId, invite.babyId)
 }
 
 function buildGuideStage(stage: {
@@ -1420,6 +1841,7 @@ export async function getProfilePageData(userId: string) {
     babyProfile: baby ? formatBabyProfile(baby) : null,
     profileMenus: [
       { key: 'baby', title: '宝宝档案', subtitle: hasBaby ? `当前：${baby?.nickname ?? ''} · ${baby?.allergens.length ?? 0} 项过敏原` : '添加宝宝昵称、生日与过敏原', icon: '👶' },
+      { key: 'family', title: '家庭协作', subtitle: hasBaby ? baby?.isOwner ? '邀请家人共同查看计划与记录' : `当前身份：${baby?.accessRole === 'viewer' ? '只读成员' : baby?.accessRole === 'owner' ? '拥有者' : '协作成员'}` : '完善宝宝档案后邀请家人协作', icon: '🏠' },
       { key: 'favorite', title: '我的收藏', subtitle: '保存喜欢的辅食与饮食指南', icon: '❤️' },
       { key: 'history', title: '历史记录', subtitle: '查看过往生成计划与查询记录', icon: '🕘' },
       { key: 'allergy', title: '过敏管理', subtitle: hasBaby ? `当前已记录 ${baby?.allergens.length ?? 0} 项过敏原` : '完善宝宝档案后管理过敏原', icon: '⚠️' },

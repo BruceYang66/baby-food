@@ -53,6 +53,14 @@
       }
     },
     {
+      "path": "pages/family/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
+      }
+    },
+    {
       "path": "pages/baby-form/index",
       "style": {
         "navigationStyle": "custom"

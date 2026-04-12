@@ -182,10 +182,9 @@ async function swapMeal(entry: MealPlanEntry) {
 
   try {
     let currentPlan = plan.value
-    const isSyntheticPlan = !currentPlan.id || currentPlan.id.startsWith('recommended-') || currentPlan.id.startsWith('generated-')
     let targetEntryId = entry.id
 
-    if (isSyntheticPlan) {
+    if (!currentPlan.isSaved) {
       const saved = await saveMealPlan(buildSavePayload(currentPlan))
       currentPlan = saved.mealPlan
       plan.value = currentPlan
@@ -239,13 +238,9 @@ async function persistPlan() {
 
   try {
     const payload = buildSavePayload(plan.value)
-    // id 为 synthetic（'meal-snack' 或 'recommended-*'）时表示尚未写入 DB，需要新建
-    const isSyntheticId = !plan.value.id
-      || plan.value.id === 'meal-snack'
-      || plan.value.id.startsWith('recommended-')
-    const result = isSyntheticId
-      ? await saveMealPlan(payload)
-      : await updateMealPlan(plan.value.id, payload)
+    const result = plan.value.isSaved
+      ? await updateMealPlan(plan.value.id, payload)
+      : await saveMealPlan(payload)
 
     plan.value = result.mealPlan
     uni.setStorageSync(SAVED_PLAN_KEY, {

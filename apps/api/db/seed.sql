@@ -18,6 +18,16 @@ INSERT INTO baby_allergens (id, baby_id, name, severity) VALUES
 ('allergy-003', 'baby-002', '虾', '中'),
 ('allergy-004', 'baby-004', '牛奶', '低');
 
+INSERT INTO baby_members (id, baby_id, user_id, role, display_name, created_at) VALUES
+('member-001', 'baby-001', 'user-001', 'owner', '妈妈', '2026-04-01 08:00:00'),
+('member-002', 'baby-001', 'user-004', 'caregiver', '外婆', '2026-04-03 09:30:00'),
+('member-003', 'baby-002', 'user-002', 'owner', '爸爸', '2026-04-01 08:10:00'),
+('member-004', 'baby-005', 'user-005', 'owner', '妈妈', '2026-04-01 08:20:00');
+
+INSERT INTO baby_invites (id, baby_id, inviter_user_id, invitee_user_id, invitee_nickname, invitee_contact, role, status, invite_code, expires_at, responded_at, created_at) VALUES
+('invite-001', 'baby-001', 'user-001', 'user-004', '乐乐外婆', 'wechat:lele-waipo', 'caregiver', 'accepted', 'invite-baby001-caregiver', '2026-04-20 23:59:59', '2026-04-03 09:20:00', '2026-04-02 18:00:00'),
+('invite-002', 'baby-002', 'user-002', NULL, '暖暖妈妈', 'wechat:nuannuan-mom', 'collaborator', 'pending', 'invite-baby002-collab', '2026-04-20 23:59:59', NULL, '2026-04-10 20:00:00');
+
 INSERT INTO recipes (id, title, summary, cover_image, age_label, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
 ('recipe-001', '红薯山药小米粥', '适合 8 个月宝宝的温和早餐，帮助晨起胃口打开。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '8个月+', '20分钟', '初级', '营养师精品', '陈营养师', 928, '健脾唤醒肠胃', 'published', 'approved'),
 ('recipe-002', '鳕鱼西兰花软饭', '高蛋白午餐主食，适合提升优质蛋白摄入。', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80', '8-10月', '25分钟', '中级', '批量导入', '运营-小顾', 314, '补充优质蛋白', 'pending_review', 'pending'),

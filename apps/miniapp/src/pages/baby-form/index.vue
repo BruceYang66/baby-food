@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { BabyProfilePayload } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
-import { createBabyProfile, listBabyProfiles, updateBabyProfile, updateUserProfile } from '@/services/api'
+import { createBabyProfile, listBabyProfiles, takePostLoginRedirect, updateBabyProfile, updateUserProfile } from '@/services/api'
 
 const isNewMode = ref(false)
 const editingBabyId = ref('')
@@ -106,6 +106,12 @@ async function submitForm() {
       if (validAvatarUrl) {
         updateUserProfile({ avatarUrl: validAvatarUrl }).catch(() => {/* 静默失败 */})
       }
+    }
+
+    const redirectUrl = takePostLoginRedirect()
+    if (redirectUrl) {
+      uni.reLaunch({ url: redirectUrl })
+      return
     }
 
     const pageStack = getCurrentPages()

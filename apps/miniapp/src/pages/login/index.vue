@@ -41,9 +41,7 @@ async function enterApp() {
       throw new Error('未获取到微信登录凭证')
     }
 
-    const session = await wechatLogin(code)
-
-    uni.reLaunch({ url: session.hasBaby ? '/pages/home/index' : '/pages/baby-form/index' })
+    await wechatLogin(code)
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : '微信登录失败',
