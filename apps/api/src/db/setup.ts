@@ -54,6 +54,11 @@ async function initVaccines() {
   console.log('疫苗数据初始化完成。')
 }
 
+async function seedPopularRecipes() {
+  await executeSqlFile('seed_popular_all.sql')
+  console.log('大众化辅食食谱数据写入完成。')
+}
+
 async function resetDatabase() {
   await client.query(`
     DROP TABLE IF EXISTS user_knowledge_favorites, knowledge_article_sections, knowledge_articles, vaccine_records, vaccine_schedules, user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
@@ -103,12 +108,17 @@ async function main() {
     return
   }
 
+  if (command === 'seed:popular') {
+    await seedPopularRecipes()
+    return
+  }
+
   if (command === 'reset') {
     await resetDatabase()
     return
   }
 
-  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | comment | vaccine:init | reset`)
+  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | comment | vaccine:init | seed:popular | reset`)
 }
 
 main()

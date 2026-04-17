@@ -948,12 +948,13 @@ async function ensureCurrentUser(userId: string) {
   return user
 }
 
-async function getMealPlanRecipes(limit = 3, goals: string[] = [], excludeIds: string[] = []) {
+async function getMealPlanRecipes(limit = 3, goals: string[] = [], excludeIds: string[] = [], randomSeed = 0) {
   // Build tag-based filter when goals are specified
   const tagFilter = goals.length
     ? { tags: { some: { name: { in: goals } } } }
     : {}
 
+  // 添加随机排序以避免每次返回相同的食谱
   const publishedRecipes = await prisma.recipe.findMany({
     where: {
       contentStatus: 'published',
@@ -961,43 +962,41 @@ async function getMealPlanRecipes(limit = 3, goals: string[] = [], excludeIds: s
       ...tagFilter
     },
     include: { tags: true },
-    orderBy: { favorites: 'desc' },
-    take: limit
+    orderBy: [
+      { favorites: 'desc' }
+    ],
+    take: limit * 5 // 取更多候选，然后随机选择
   })
 
-  if (publishedRecipes.length >= limit) {
-    return publishedRecipes
+  // 使用随机种子进行打乱，确保每次调用返回不同结果
+  const shuffled = publishedRecipes
+    .map((recipe, index) => ({ recipe, sort: Math.sin(randomSeed + index) }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ recipe }) => recipe)
+    .slice(0, limit)
+
+  if (shuffled.length >= limit) {
+    return shuffled
   }
 
   // Fallback: relax tag filter, just exclude already-used recipes
   const fallbackRecipes = await prisma.recipe.findMany({
     where: {
       contentStatus: 'published',
-      id: { notIn: [...excludeIds, ...publishedRecipes.map((r) => r.id)] }
+      id: { notIn: [...excludeIds, ...shuffled.map((r) => r.id)] }
     },
     include: { tags: true },
     orderBy: { favorites: 'desc' },
-    take: limit - publishedRecipes.length
+    take: (limit - shuffled.length) * 3
   })
 
-  const combined = [...publishedRecipes, ...fallbackRecipes]
+  const shuffledFallback = fallbackRecipes
+    .map((recipe, index) => ({ recipe, sort: Math.sin(randomSeed + index + 1000) }))
+    .sort((a, b) => a.sort - b.sort)
+    .map(({ recipe }) => recipe)
+    .slice(0, limit - shuffled.length)
 
-  if (combined.length >= limit) {
-    return combined
-  }
-
-  // Final fallback: any recipe
-  const anyRecipes = await prisma.recipe.findMany({
-    include: { tags: true },
-    orderBy: { favorites: 'desc' },
-    take: limit
-  })
-
-  if (!anyRecipes.length) {
-    throw new Error('数据库中没有可用食谱数据')
-  }
-
-  return anyRecipes
+  return [...shuffled, ...shuffledFallback]
 }
 
 function isSameDate(left: Date, right: Date) {
@@ -1024,7 +1023,11 @@ async function buildPreviewMealPlan(
   const monthAge = getMonthAge(baby.birthDate)
   const allergenNames = baby.allergens.map((item) => item.name)
   const slotCount = mealCount === '2餐' ? 2 : 3
-  const recipes = await getMealPlanRecipes(slotCount, selectedGoals, [])
+
+  // 添加时间戳作为随机种子，确保每次调用返回不同结果
+  const randomSeed = Date.now()
+  const recipes = await getMealPlanRecipes(slotCount, selectedGoals, [], randomSeed)
+
   const safeRecipes = recipes.filter((recipe) =>
     !allergenNames.some((allergen) => recipe.title.includes(allergen) || recipe.tags.some((tag) => tag.name.includes(allergen)))
   )
@@ -1041,7 +1044,7 @@ async function buildPreviewMealPlan(
     tags: string[]
     focus: string
   }> = finalRecipes.slice(0, slotCount).map((recipe, index) => ({
-    id: `generated-${formatDateKey(planDate)}-${recipe.id}-${index}`,
+    id: `generated-${formatDateKey(planDate)}-${recipe.id}-${index}-${randomSeed}`,
     recipeId: recipe.id,
     slot: mealSlots[index]?.slot ?? 'dinner',
     time: mealSlots[index]?.time ?? '18:00',
@@ -1052,12 +1055,12 @@ async function buildPreviewMealPlan(
   }))
 
   if (mealCount === '3餐+点心') {
-    const snackCandidates = await getMealPlanRecipes(1, ['能量加餐', '手抓点心', '加餐'], finalRecipes.map((recipe) => recipe.id))
+    const snackCandidates = await getMealPlanRecipes(1, ['能量加餐', '手抓点心', '加餐'], finalRecipes.map((recipe) => recipe.id), randomSeed + 1)
     const snackRecipe = snackCandidates[0]
 
     if (snackRecipe) {
       entries.push({
-        id: `generated-${formatDateKey(planDate)}-snack-${snackRecipe.id}`,
+        id: `generated-${formatDateKey(planDate)}-snack-${snackRecipe.id}-${randomSeed}`,
         recipeId: snackRecipe.id,
         slot: 'snack',
         time: '15:30',

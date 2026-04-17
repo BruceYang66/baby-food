@@ -283,34 +283,37 @@ onShareTimeline(() => ({ title: '宝宝干货百科' }))
   position: relative;
   display: flex;
   align-items: center;
-  padding: 20rpx 28rpx;
-  background: var(--mini-surface-container-low);
-  border-radius: 999rpx;
+  padding: 24rpx 32rpx;
+  background: #fff;
+  border-radius: 16rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.06);
+  border: 2rpx solid rgba(0, 93, 170, 0.12);
 }
 
 .search-icon {
-  font-size: 32rpx;
-  margin-right: 16rpx;
-  opacity: 0.6;
+  font-size: 36rpx;
+  margin-right: 18rpx;
+  opacity: 0.7;
 }
 
 .search-input {
   flex: 1;
-  font-size: 26rpx;
+  font-size: 28rpx;
   color: var(--mini-text);
   background: transparent;
 }
 
 .search-placeholder {
   color: var(--mini-text-muted);
+  opacity: 0.7;
 }
 
 .clear-icon {
-  font-size: 32rpx;
+  font-size: 36rpx;
   padding: 8rpx;
   margin-left: 8rpx;
   color: var(--mini-text-muted);
-  opacity: 0.6;
+  opacity: 0.7;
 }
 
 .chip-scroll {

@@ -12,11 +12,17 @@ const SAVED_PLAN_KEY = 'savedGeneratePlan'
 const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
 const PREFERRED_INGREDIENT_KEY = 'preferredIngredient'
 const DEFAULT_GOALS: NutritionGoal[] = ['补铁', '补钙', 'DHA', '通便', '开胃', '挑食', '免疫力', '手抓食', '病期适用']
+const AGE_RANGES = ['6-8月', '9-11月', '12-18月', '19-24月', '2岁+']
+const EXCLUDE_TAGS = ['鱼虾', '蛋类', '奶制品', '坚果', '豆类', '肉类', '海鲜', '辛辣']
+const AVOID_REPEAT_OPTIONS = ['不限制', '近一周', '近一个月']
 
 const baby = ref<BabyProfile>()
 const plan = ref<DailyMealPlan>()
 const selectedCount = ref<MealCount>('3餐')
 const selectedGoals = ref<NutritionGoal[]>(['补钙'])
+const selectedAgeRange = ref('')
+const excludeTags = ref<string[]>([])
+const avoidRepeat = ref('不限制')
 const goals = ref<NutritionGoal[]>(DEFAULT_GOALS)
 const loading = ref(false)
 const saving = ref(false)
@@ -150,6 +156,7 @@ async function loadPlan() {
     baby.value = data.babyProfile
     plan.value = data.todayMealPlan
     goals.value = data.nutritionGoals
+
     applyPendingRecipe()
     applyPreferredIngredient()
   } catch (error) {
@@ -162,7 +169,50 @@ async function loadPlan() {
   }
 }
 
-onMounted(loadPlan)
+// 初始化时设置默认年龄段
+async function initializeAgeRange() {
+  if (!ensureProtectedPageAccess()) {
+    return
+  }
+
+  try {
+    const data = await getGeneratePageData({
+      mealCount: selectedCount.value,
+      goals: selectedGoals.value
+    })
+
+    baby.value = data.babyProfile
+
+    // 根据宝宝月龄自动设置年龄段
+    if (baby.value) {
+      const monthAge = baby.value.monthAgeLabel
+      if (monthAge.includes('6') || monthAge.includes('7') || monthAge.includes('8')) {
+        selectedAgeRange.value = '6-8月'
+      } else if (monthAge.includes('9') || monthAge.includes('10') || monthAge.includes('11')) {
+        selectedAgeRange.value = '9-11月'
+      } else if (monthAge.includes('12') || monthAge.includes('13') || monthAge.includes('14') || monthAge.includes('15') || monthAge.includes('16') || monthAge.includes('17') || monthAge.includes('18')) {
+        selectedAgeRange.value = '12-18月'
+      } else if (monthAge.includes('19') || monthAge.includes('20') || monthAge.includes('21') || monthAge.includes('22') || monthAge.includes('23') || monthAge.includes('24')) {
+        selectedAgeRange.value = '19-24月'
+      } else {
+        selectedAgeRange.value = '2岁+'
+      }
+    }
+
+    plan.value = data.todayMealPlan
+    goals.value = data.nutritionGoals
+
+    applyPendingRecipe()
+    applyPreferredIngredient()
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '初始化失败',
+      icon: 'none'
+    })
+  }
+}
+
+onMounted(initializeAgeRange)
 
 function toggleGoal(goal: NutritionGoal) {
   if (selectedGoals.value.includes(goal)) {
@@ -171,6 +221,15 @@ function toggleGoal(goal: NutritionGoal) {
   }
 
   selectedGoals.value = [...selectedGoals.value, goal]
+}
+
+function toggleExcludeTag(tag: string) {
+  if (excludeTags.value.includes(tag)) {
+    excludeTags.value = excludeTags.value.filter((item) => item !== tag)
+    return
+  }
+
+  excludeTags.value = [...excludeTags.value, tag]
 }
 
 async function swapMeal(entry: MealPlanEntry) {
@@ -292,6 +351,17 @@ onShareTimeline(() => ({
     </view>
 
     <view class="soft-card setting-panel">
+      <text class="setting-label">月龄段选择</text>
+      <view class="count-row">
+        <view
+          v-for="range in AGE_RANGES"
+          :key="range"
+          class="count-chip"
+          :class="{ active: selectedAgeRange === range }"
+          @tap="selectedAgeRange = range"
+        >{{ range }}</view>
+      </view>
+
       <text class="setting-label">每日餐数</text>
       <view class="count-row">
         <view class="count-chip" :class="{ active: selectedCount === '2餐' }" @tap="selectedCount = '2餐'">2餐</view>
@@ -312,7 +382,34 @@ onShareTimeline(() => ({
         </view>
       </view>
 
+      <text class="setting-label">排除食材</text>
+      <view class="chip-row">
+        <view
+          v-for="tag in EXCLUDE_TAGS"
+          :key="tag"
+          class="chip exclude-chip"
+          :class="{ active: excludeTags.includes(tag) }"
+          @tap="toggleExcludeTag(tag)"
+        >
+          {{ tag }}
+        </view>
+      </view>
+
+      <text class="setting-label">避免重复</text>
+      <view class="count-row">
+        <view
+          v-for="option in AVOID_REPEAT_OPTIONS"
+          :key="option"
+          class="count-chip"
+          :class="{ active: avoidRepeat === option }"
+          @tap="avoidRepeat = option"
+        >{{ option }}</view>
+      </view>
+
       <view class="allergy-tip" v-if="baby && baby.allergens.length">过敏提醒：已避开 {{ baby.allergens.join('、') }}</view>
+      <view class="tip-text" v-if="avoidRepeat !== '不限制'">
+        💡 系统将尽量避免推荐{{ avoidRepeat }}内吃过的食谱
+      </view>
       <view class="primary-button" @tap="loadPlan">{{ loading ? '生成中...' : '一键生成' }}</view>
     </view>
 
@@ -407,6 +504,26 @@ onShareTimeline(() => ({
   background: rgba(214, 106, 106, 0.08);
   font-size: 24rpx;
   color: #a94f4f;
+}
+
+.tip-text {
+  margin: 16rpx 0;
+  padding: 18rpx 22rpx;
+  border-radius: 24rpx;
+  background: rgba(168, 230, 207, 0.12);
+  font-size: 24rpx;
+  color: var(--mini-secondary-deep);
+  line-height: 1.6;
+}
+
+.exclude-chip {
+  background: rgba(214, 106, 106, 0.08);
+  color: #a94f4f;
+}
+
+.exclude-chip.active {
+  background: linear-gradient(135deg, #d66a6a, #c85a5a);
+  color: #fff;
 }
 
 .section {
