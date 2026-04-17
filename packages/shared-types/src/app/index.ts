@@ -321,3 +321,152 @@ export interface WechatEntry {
   title: string
   icon: string
 }
+
+export type AppModuleKey = 'home' | 'feeding' | 'vaccine' | 'knowledge' | 'profile'
+export type HomeModuleAccent = 'primary' | 'secondary' | 'tertiary' | 'neutral'
+export type HomeTodoStatus = 'pending' | 'done'
+export type FavoriteTargetType = 'recipe' | 'knowledge'
+export type KnowledgeContentType = 'article' | 'guide' | 'taboo'
+export type VaccineCategory = 'free' | 'optional'
+export type VaccineRecordStatus = 'pending' | 'completed' | 'optional'
+
+export interface HomeModuleEntry {
+  key: AppModuleKey
+  title: string
+  subtitle: string
+  icon: string
+  accent: HomeModuleAccent
+  route: string
+  description?: string
+  badge?: string
+}
+
+export interface HomeTodoItem {
+  id: string
+  title: string
+  description: string
+  timeLabel?: string
+  status: HomeTodoStatus
+  accent?: HomeModuleAccent
+  route?: string
+}
+
+export interface HomeRecommendationItem {
+  id: string
+  title: string
+  subtitle: string
+  summary?: string
+  image?: string
+  tag?: string
+  accent?: HomeModuleAccent
+  route: string
+}
+
+export interface ParentingHomePageData {
+  babyProfile: BabyProfile
+  moduleEntries: HomeModuleEntry[]
+  todoItems: HomeTodoItem[]
+  recommendations: HomeRecommendationItem[]
+}
+
+export interface VaccineScheduleItem {
+  id: string
+  name: string
+  disease: string
+  stageLabel: string
+  recommendedAgeLabel: string
+  category: VaccineCategory
+  description?: string
+  precautions?: string[]
+}
+
+export interface VaccineRecordItem extends VaccineScheduleItem {
+  recordId?: string
+  status: VaccineRecordStatus
+  vaccinatedAt?: string
+  note?: string
+}
+
+export interface VaccineTimelineGroup {
+  key: string
+  label: string
+  description?: string
+  items: VaccineRecordItem[]
+}
+
+export interface VaccineTip {
+  title: string
+  description: string
+}
+
+export interface VaccinePageData {
+  babyProfile: BabyProfile | null
+  nextPendingVaccine: VaccineRecordItem | null
+  timelineGroups: VaccineTimelineGroup[]
+  tips: VaccineTip[]
+}
+
+export interface SaveVaccineRecordPayload {
+  scheduleId: string
+  status: VaccineRecordStatus
+  vaccinatedAt?: string
+  note?: string
+}
+
+export interface KnowledgeCategory {
+  key: string
+  label: string
+}
+
+export interface KnowledgeArticleSummary {
+  id: string
+  title: string
+  subtitle: string
+  summary: string
+  image?: string
+  categoryKey: string
+  categoryLabel: string
+  tags: string[]
+  contentType: KnowledgeContentType
+  route: string
+}
+
+export interface KnowledgeArticleSection {
+  id: string
+  title?: string
+  content: string
+  images: string[]
+  sortOrder: number
+}
+
+export interface KnowledgeArticleDetail extends KnowledgeArticleSummary {
+  content: string
+  sections: KnowledgeArticleSection[]
+  isFavorite?: boolean
+  relatedArticles: KnowledgeArticleSummary[]
+}
+
+export interface KnowledgePageData {
+  babyProfile?: BabyProfile | null
+  categories: KnowledgeCategory[]
+  featuredArticle?: KnowledgeArticleSummary | null
+  articles: KnowledgeArticleSummary[]
+}
+
+export interface FavoriteRecipeItem {
+  id: string
+  savedAt: string
+  recipe: RecipeSummary
+}
+
+export interface FavoriteKnowledgeItem {
+  id: string
+  savedAt: string
+  article: KnowledgeArticleSummary
+}
+
+export interface FavoritesPageData {
+  recipeIds: string[]
+  recipes: FavoriteRecipeItem[]
+  articles: FavoriteKnowledgeItem[]
+}

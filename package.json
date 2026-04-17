@@ -13,9 +13,11 @@
   },
   "scripts": {
     "dev:miniapp": "npm run dev --workspace @baby-food/miniapp",
+    "dev:h5": "npm run dev:h5 --workspace @baby-food/miniapp",
     "dev:admin": "npm run dev --workspace @baby-food/admin-web",
     "dev:api": "npm run dev --workspace @baby-food/api",
     "build:miniapp": "npm run build --workspace @baby-food/miniapp",
+    "build:h5": "npm run build:h5 --workspace @baby-food/miniapp",
     "build:admin": "npm run build --workspace @baby-food/admin-web",
     "build:api": "npm run build --workspace @baby-food/api"
   }

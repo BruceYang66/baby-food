@@ -1,19 +1,27 @@
 {
   "pages": [
     {
-      "path": "pages/login/index",
-      "style": {
-        "navigationStyle": "custom"
-      }
-    },
-    {
       "path": "pages/home/index",
       "style": {
         "navigationStyle": "custom"
       }
     },
     {
+      "path": "pages/login/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/generate/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
+      }
+    },
+    {
+      "path": "pages/feeding/index",
       "style": {
         "navigationStyle": "custom",
         "enableShareAppMessage": true,
@@ -36,6 +44,30 @@
       "path": "pages/taboo/index",
       "style": {
         "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/vaccine/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
+      }
+    },
+    {
+      "path": "pages/knowledge/index",
+      "style": {
+        "navigationStyle": "custom",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
+      }
+    },
+    {
+      "path": "pages/knowledge/detail",
+      "style": {
+        "navigationStyle": "custom",
+        "enableShareAppMessage": true,
+        "enableShareTimeline": true
       }
     },
     {

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>育儿助手 - 辅食中心</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#ffb871",
+                    "outline-variant": "#d7c3b3",
+                    "tertiary-fixed-dim": "#87dc2c",
+                    "secondary": "#0060ac",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb871",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "secondary-container": "#68abff",
+                    "surface-container-highest": "#e6e2dd",
+                    "primary-container": "#ffb366",
+                    "surface-bright": "#fef8f3",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004883",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#315b00",
+                    "surface-container": "#f2ede8",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#8a5108",
+                    "outline": "#847466",
+                    "surface-dim": "#ded9d4",
+                    "tertiary-fixed": "#a1fa49",
+                    "surface-container-low": "#f8f3ee",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary-container": "#774400",
+                    "tertiary-container": "#83d928",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "surface-variant": "#e6e2dd",
+                    "background": "#fef8f3",
+                    "tertiary": "#3a6a00",
+                    "inverse-surface": "#32302d",
+                    "on-secondary-fixed": "#001c39",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#ffdcbe",
+                    "on-background": "#1d1b19",
+                    "on-surface": "#1d1b19",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#003e73",
+                    "on-surface-variant": "#524438",
+                    "surface-container-high": "#ece7e2",
+                    "on-tertiary-fixed": "#0e2000",
+                    "on-tertiary-fixed-variant": "#2a5000",
+                    "surface": "#fef8f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'PingFang SC', sans-serif;
+        background-color: #FEF8F3;
+      }
+      .signature-gradient {
+        background: linear-gradient(135deg, #8A5108 0%, #FFB366 100%);
+      }
+      .glass-nav {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(16px);
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#FEF8F3] dark:bg-slate-900 rounded-b-[32px] shadow-[0_32px_32px_rgba(29,27,25,0.04)] flex items-center justify-between px-6 py-4 w-full sticky top-0 z-40">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-container flex items-center justify-center overflow-hidden">
+<img alt="Brand Logo" class="w-full h-full object-cover" data-alt="minimalist logo icon for a baby parenting app with warm orange tones and a soft baby silhouette" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCgjiLIjtS5rkkYkqt1tFL20p6s3BQe616yQtNz2Uv66y4bJHrmqy3o7gJhlxnlBB0jswyH9qQ338R2mgvoY_XCSbH25JfMCIviWyQynTehIGKALcqR5cuYLtNEQso1glDn8sle0W7NnwEnQDIdu5mM_Jh14CJ94FYLEWnZY3Srmg5hXVZvR3Hbzx4qJrD3udXUxsiRYMmFuJa0sKwxVhFmQ6nQDcg7krFtpskSQpnWmq-_54sodxqWBB3b3a1Cv3eGjtqRGDSfabK"/>
+</div>
+<h1 class="text-2xl font-bold text-[#8A5108] dark:text-[#FFB366]">辅食中心</h1>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#8A5108] text-2xl">search</span>
+</button>
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#8A5108] text-2xl">notifications</span>
+</button>
+</div>
+</header>
+<main class="px-6 pt-6 space-y-8">
+<!-- Search Bar -->
+<section class="w-full">
+<div class="relative flex items-center">
+<span class="material-symbols-outlined absolute left-4 text-outline">search</span>
+<input class="w-full bg-surface-container-highest border-none rounded-2xl py-4 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 text-on-surface-variant placeholder-outline" placeholder="搜索食材或食谱..." type="text"/>
+</div>
+</section>
+<!-- Generation Hero Card -->
+<section class="relative overflow-hidden group">
+<div class="signature-gradient rounded-xl p-8 text-white relative z-10 shadow-[0_20px_40px_rgba(138,81,8,0.15)] flex flex-col justify-between min-h-[220px]">
+<div>
+<h2 class="text-3xl font-extrabold tracking-tight mb-2">生成今日辅食</h2>
+<p class="opacity-90 max-w-[200px] leading-relaxed">根据宝宝月龄与过敏史，智能匹配营养餐单</p>
+</div>
+<div class="mt-6">
+<button class="bg-white text-primary font-bold px-6 py-3 rounded-full flex items-center gap-2 scale-95 active:scale-90 transition-transform">
+                        立即开始
+                        <span class="material-symbols-outlined">auto_awesome</span>
+</button>
+</div>
+</div>
+<div class="absolute -right-4 -top-4 opacity-20 transform rotate-12">
+<span class="material-symbols-outlined text-[160px]" style="font-variation-settings: 'FILL' 1;">restaurant</span>
+</div>
+</section>
+<!-- Main Function Grid (Asymmetric) -->
+<section class="grid grid-cols-3 gap-4">
+<div class="col-span-1 flex flex-col items-center gap-3 p-4 bg-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+<div class="w-14 h-14 bg-secondary-fixed flex items-center justify-center rounded-2xl">
+<span class="material-symbols-outlined text-secondary text-3xl">calendar_month</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">本周计划</span>
+</div>
+<div class="col-span-1 flex flex-col items-center gap-3 p-4 bg-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+<div class="w-14 h-14 bg-error-container flex items-center justify-center rounded-2xl">
+<span class="material-symbols-outlined text-error text-3xl">block</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">生病忌口</span>
+</div>
+<div class="col-span-1 flex flex-col items-center gap-3 p-4 bg-white rounded-lg shadow-sm hover:scale-105 transition-transform">
+<div class="w-14 h-14 bg-tertiary-fixed flex items-center justify-center rounded-2xl">
+<span class="material-symbols-outlined text-tertiary text-3xl">menu_book</span>
+</div>
+<span class="text-xs font-bold text-on-surface-variant">月龄指南</span>
+</div>
+</section>
+<!-- Interaction Buttons -->
+<section class="flex gap-4">
+<button class="flex-1 flex items-center justify-center gap-2 py-4 bg-surface-container-high rounded-lg text-primary font-bold transition-all hover:bg-primary-fixed">
+<span class="material-symbols-outlined">favorite</span>
+                我的收藏
+            </button>
+<button class="flex-1 flex items-center justify-center gap-2 py-4 bg-surface-container-high rounded-lg text-primary font-bold transition-all hover:bg-primary-fixed">
+<span class="material-symbols-outlined">history</span>
+                历史记录
+            </button>
+</section>
+<!-- Today's Menu Review (Bento Layout) -->
+<section class="space-y-6 pb-4">
+<div class="flex items-end justify-between">
+<div>
+<h3 class="text-xl font-bold text-on-surface">今日餐单回顾</h3>
+<p class="text-sm text-outline">2024年5月12日 · 宝宝 8个月15天</p>
+</div>
+<button class="text-primary text-sm font-bold flex items-center">
+                    编辑餐单 <span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<!-- Breakfast Card -->
+<div class="bg-white rounded-lg p-5 shadow-sm space-y-4 col-span-2">
+<div class="flex justify-between items-center">
+<div class="flex items-center gap-2">
+<span class="text-xs font-bold text-primary uppercase tracking-widest bg-primary-fixed px-2 py-1 rounded-md">Morning</span>
+<h4 class="font-bold text-lg">南瓜小米粥</h4>
+</div>
+<span class="text-xs text-outline">08:30 AM</span>
+</div>
+<div class="flex gap-4 items-center">
+<div class="w-20 h-20 rounded-2xl overflow-hidden bg-surface-container">
+<img alt="Pumpkin Porridge" class="w-full h-full object-cover" data-alt="Close up of a warm bowl of creamy orange pumpkin porridge with a small wooden spoon on a light textured background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCxKvuEsGYMXrCUj1EQbigxq2oc8pFruItyyQ1QOnvRVNfWdwN8uy1zuoS5L64BO4uJVE7ydfSNPfCPopMVDjJHqBZNzFlKClGQEAsoqsYo4he7gNpRsbI83bRNzrqRPio0U5x0k4kEEoy6hM5XkaE4gAk_faUi30I8hETdYVm5izbmwK0RSTcXzmRncKEG3uJjDgZqET3KM3zsoow1VXktJCBi4KLJYy1l6HHsZTtFPjQdD5u7-5n3kbPa5SOompXd88QXwnQYVQZx"/>
+</div>
+<div class="flex-1">
+<p class="text-sm text-on-surface-variant line-clamp-2">富含β-胡萝卜素，保护宝宝视力，口感绵软易消化。</p>
+<div class="flex gap-2 mt-2">
+<span class="text-[10px] bg-surface-container-low px-2 py-0.5 rounded text-outline">高维A</span>
+<span class="text-[10px] bg-surface-container-low px-2 py-0.5 rounded text-outline">健脾胃</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Lunch Card -->
+<div class="bg-white rounded-lg p-5 shadow-sm space-y-3 relative overflow-hidden">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-secondary uppercase bg-secondary-fixed px-2 py-0.5 rounded-md">Lunch</span>
+</div>
+<h4 class="font-bold">西兰花三文鱼泥</h4>
+<p class="text-xs text-on-surface-variant">优质蛋白与DHA的完美结合...</p>
+<div class="w-full h-24 bg-surface-container rounded-xl overflow-hidden mt-2">
+<img alt="Salmon Puree" class="w-full h-full object-cover" data-alt="Vibrant green vegetable and pink salmon puree in a small white ceramic baby bowl, bright natural lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmhBfwZvtjx6buLz0hSkwSnaNq6OHOK-DrS_CbFGQrZavX4iK9NLn8grl_I9zTqyJLZ8zx3EDWZfC12OVTp_bW6kZUUp16YISQeuhFBsMTZPLhTCvqAZnDCNCSyvNFOJyex4PTRdYQDtAkE2GpUYZzIQGro_AxvLUSWVJjT9bdHf6rGORs0HfAv3fD-kdlAU9Niwq9ghi3d1_Urcf0OWYNpu0hSImbvkOa9Bi_FK_B3O96FlYbKiFs27NUMJvWG1kv4gQt24Bq3f7k"/>
+</div>
+</div>
+<!-- Snack Card -->
+<div class="bg-white rounded-lg p-5 shadow-sm space-y-3">
+<div class="flex items-center gap-2">
+<span class="text-[10px] font-bold text-tertiary uppercase bg-tertiary-fixed px-2 py-0.5 rounded-md">Snack</span>
+</div>
+<h4 class="font-bold">牛油果香蕉奶昔</h4>
+<p class="text-xs text-on-surface-variant">绵密细腻，天然健康脂肪...</p>
+<div class="w-full h-24 bg-surface-container rounded-xl overflow-hidden mt-2">
+<img alt="Fruit Puree" class="w-full h-full object-cover" data-alt="A refreshing glass of thick green avocado and yellow banana smoothie garnished with a mint leaf" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAHfS7K8UTiJ9YsFG11PAWIqWDGOtt9enijfhL4SoM9S3rN6bHbdAnck5HYb8gYXUpvlVhcRcVrF2kk3XD_yHAn7BZamK3YmN0MO9cA7GK35cGfnn-irmf0yIPAK8Jyhp57RMJelTSFgSV_qiVUbtakh2q5ylevYXEYTr2ZNK6H4X0ZVCic5OGIqeFGzOqLZzvv4susTHMr3Z8qbyRenu_4pa_CzU3QsXldmSVqW45qGoYyQdqmocJop_VMWJQhRDttyYAMDGbi1D5y"/>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg rounded-t-[24px] shadow-[0_-8px_24px_rgba(0,0,0,0.05)]">
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform cursor-pointer">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium tracking-wide">首页</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#FFB366] text-white rounded-full px-4 py-1.5 scale-96 active:scale-90 transition-transform cursor-pointer">
+<span class="material-symbols-outlined">restaurant</span>
+<span class="text-[10px] font-medium tracking-wide">辅食</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform cursor-pointer">
+<span class="material-symbols-outlined">vaccines</span>
+<span class="text-[10px] font-medium tracking-wide">疫苗</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform cursor-pointer">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium tracking-wide">干货</span>
+</div>
+</nav>
+<!-- FAB for adding custom record (Contextual) -->
+<button class="fixed right-6 bottom-28 w-14 h-14 rounded-full signature-gradient text-white flex items-center justify-center shadow-lg hover:scale-110 active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

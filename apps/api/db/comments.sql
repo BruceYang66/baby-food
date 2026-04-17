@@ -9,6 +9,9 @@ COMMENT ON TYPE review_status IS '食谱审核状态：none=未发起，pending=
 COMMENT ON TYPE baby_member_role IS '宝宝共享成员角色：owner=所有者，collaborator=协作者，caregiver=照护者，viewer=只读查看者';
 COMMENT ON TYPE baby_invite_status IS '宝宝共享邀请状态：pending=待处理，accepted=已接受，declined=已拒绝，revoked=已撤销，expired=已过期';
 COMMENT ON TYPE feeding_record_status IS '喂养记录状态：fed=已喂养，skipped=跳过/未进食';
+COMMENT ON TYPE vaccine_category IS '疫苗分类：free=免疫规划内，optional=非免疫规划可选';
+COMMENT ON TYPE vaccine_record_status IS '疫苗接种记录状态：pending=待接种，completed=已完成，optional=本次可选/暂不接种';
+COMMENT ON TYPE knowledge_content_type IS '干货内容类型：article=文章，guide=指南，taboo=禁忌/病症饮食';
 
 -- ── users ──────────────────────────────────────────────────────
 COMMENT ON TABLE  users                  IS '小程序用户表，每条记录对应一个微信登录用户';
@@ -217,6 +220,54 @@ COMMENT ON COLUMN user_favorites.id          IS '收藏记录唯一标识，cuid
 COMMENT ON COLUMN user_favorites.user_id     IS '收藏用户 ID，关联 users.id';
 COMMENT ON COLUMN user_favorites.recipe_id   IS '被收藏食谱 ID，关联 recipes.id';
 COMMENT ON COLUMN user_favorites.created_at  IS '收藏时间，也用于排序（最近收藏排前）';
+
+-- ── vaccine_schedules ───────────────────────────────────────────
+COMMENT ON TABLE  vaccine_schedules                    IS '疫苗计划表，定义不同月龄阶段的推荐疫苗与注意事项';
+COMMENT ON COLUMN vaccine_schedules.id                 IS '疫苗计划唯一标识';
+COMMENT ON COLUMN vaccine_schedules.name               IS '疫苗名称，如：乙肝疫苗第1剂';
+COMMENT ON COLUMN vaccine_schedules.disease            IS '预防疾病名称，如：乙型肝炎';
+COMMENT ON COLUMN vaccine_schedules.stage_label        IS '适用阶段标签，如：出生、2月龄、6月龄';
+COMMENT ON COLUMN vaccine_schedules.recommended_age_label IS '推荐接种年龄说明，如：出生24小时内';
+COMMENT ON COLUMN vaccine_schedules.category           IS '疫苗分类，见 vaccine_category 枚举';
+COMMENT ON COLUMN vaccine_schedules.description        IS '接种说明或补充背景，可为空';
+COMMENT ON COLUMN vaccine_schedules.precautions_json   IS '接种前后注意事项 JSON 数组';
+COMMENT ON COLUMN vaccine_schedules.sort_order         IS '展示排序，值越小越靠前';
+
+-- ── vaccine_records ─────────────────────────────────────────────
+COMMENT ON TABLE  vaccine_records                      IS '宝宝疫苗接种记录表，按宝宝维度记录每个疫苗计划的完成状态';
+COMMENT ON COLUMN vaccine_records.id                   IS '接种记录唯一标识';
+COMMENT ON COLUMN vaccine_records.baby_id              IS '所属宝宝 ID，关联 babies.id';
+COMMENT ON COLUMN vaccine_records.schedule_id          IS '关联疫苗计划 ID，关联 vaccine_schedules.id';
+COMMENT ON COLUMN vaccine_records.status               IS '接种状态，见 vaccine_record_status 枚举';
+COMMENT ON COLUMN vaccine_records.vaccinated_at        IS '实际接种日期，可为空';
+COMMENT ON COLUMN vaccine_records.note                 IS '接种备注，如：社区门诊完成、延期观察';
+COMMENT ON COLUMN vaccine_records.created_at           IS '记录创建时间';
+COMMENT ON COLUMN vaccine_records.updated_at           IS '记录更新时间';
+
+-- ── knowledge_articles ──────────────────────────────────────────
+COMMENT ON TABLE  knowledge_articles                   IS '干货文章表，承载文章、指南、禁忌类内容，用于小程序知识页展示';
+COMMENT ON COLUMN knowledge_articles.id                IS '文章唯一标识';
+COMMENT ON COLUMN knowledge_articles.title             IS '文章标题';
+COMMENT ON COLUMN knowledge_articles.subtitle          IS '文章副标题';
+COMMENT ON COLUMN knowledge_articles.summary           IS '列表摘要';
+COMMENT ON COLUMN knowledge_articles.cover_image       IS '封面图 URL，可为空';
+COMMENT ON COLUMN knowledge_articles.category_key      IS '分类键，如：feeding-basics、allergy、illness';
+COMMENT ON COLUMN knowledge_articles.category_label    IS '分类展示名称';
+COMMENT ON COLUMN knowledge_articles.tags_json         IS '标签 JSON 数组';
+COMMENT ON COLUMN knowledge_articles.content_type      IS '内容类型，见 knowledge_content_type 枚举';
+COMMENT ON COLUMN knowledge_articles.content           IS '正文内容，markdown/plain text 均可';
+COMMENT ON COLUMN knowledge_articles.is_featured       IS '是否为首页/知识页精选内容';
+COMMENT ON COLUMN knowledge_articles.content_status    IS '内容状态，沿用 content_status 枚举';
+COMMENT ON COLUMN knowledge_articles.sort_order        IS '展示排序，值越小越靠前';
+COMMENT ON COLUMN knowledge_articles.created_at        IS '内容创建时间';
+COMMENT ON COLUMN knowledge_articles.updated_at        IS '内容更新时间';
+
+-- ── user_knowledge_favorites ────────────────────────────────────
+COMMENT ON TABLE  user_knowledge_favorites             IS '用户干货收藏表，单独记录文章收藏，不影响既有食谱收藏接口';
+COMMENT ON COLUMN user_knowledge_favorites.id          IS '收藏记录唯一标识';
+COMMENT ON COLUMN user_knowledge_favorites.user_id     IS '收藏用户 ID，关联 users.id';
+COMMENT ON COLUMN user_knowledge_favorites.article_id  IS '被收藏文章 ID，关联 knowledge_articles.id';
+COMMENT ON COLUMN user_knowledge_favorites.created_at  IS '收藏时间，也用于排序';
 
 -- ── user_feedback ──────────────────────────────────────────────
 COMMENT ON TABLE  user_feedback             IS '用户意见反馈表，记录通过帮助中心提交的反馈内容';

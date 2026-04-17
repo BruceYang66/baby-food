@@ -49,9 +49,17 @@ async function seedExtendDatabase() {
   console.log('扩展种子数据写入完成。')
 }
 
+async function initVaccines() {
+  await executeSqlFile('vaccine_init.sql')
+  console.log('疫苗数据初始化完成。')
+}
+
 async function resetDatabase() {
   await client.query(`
-    DROP TABLE IF EXISTS user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
+    DROP TABLE IF EXISTS user_knowledge_favorites, knowledge_article_sections, knowledge_articles, vaccine_records, vaccine_schedules, user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
+    DROP TYPE IF EXISTS knowledge_content_type CASCADE;
+    DROP TYPE IF EXISTS vaccine_record_status CASCADE;
+    DROP TYPE IF EXISTS vaccine_category CASCADE;
     DROP TYPE IF EXISTS content_status CASCADE;
     DROP TYPE IF EXISTS review_status CASCADE;
     DROP TYPE IF EXISTS feeding_record_status CASCADE;
@@ -90,12 +98,17 @@ async function main() {
     return
   }
 
+  if (command === 'vaccine:init') {
+    await initVaccines()
+    return
+  }
+
   if (command === 'reset') {
     await resetDatabase()
     return
   }
 
-  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | comment | reset`)
+  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | comment | vaccine:init | reset`)
 }
 
 main()

@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#ffb871",
+                    "outline-variant": "#d7c3b3",
+                    "tertiary-fixed-dim": "#87dc2c",
+                    "secondary": "#0060ac",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb871",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "secondary-container": "#68abff",
+                    "surface-container-highest": "#e6e2dd",
+                    "primary-container": "#ffb366",
+                    "surface-bright": "#fef8f3",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004883",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#315b00",
+                    "surface-container": "#f2ede8",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#8a5108",
+                    "outline": "#847466",
+                    "surface-dim": "#ded9d4",
+                    "tertiary-fixed": "#a1fa49",
+                    "surface-container-low": "#f8f3ee",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary-container": "#774400",
+                    "tertiary-container": "#83d928",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "surface-variant": "#e6e2dd",
+                    "background": "#fef8f3",
+                    "tertiary": "#3a6a00",
+                    "inverse-surface": "#32302d",
+                    "on-secondary-fixed": "#001c39",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#ffdcbe",
+                    "on-background": "#1d1b19",
+                    "on-surface": "#1d1b19",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#003e73",
+                    "on-surface-variant": "#524438",
+                    "surface-container-high": "#ece7e2",
+                    "on-tertiary-fixed": "#0e2000",
+                    "on-tertiary-fixed-variant": "#2a5000",
+                    "surface": "#fef8f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+      .material-symbols-outlined {
+        font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', 'PingFang SC', sans-serif;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-24">
+<!-- Top Navigation Anchor (Manual Content based on JSON Logic) -->
+<header class="bg-[#FEF8F3] dark:bg-slate-900 rounded-b-[32px] shadow-[0_32px_32px_rgba(29,27,25,0.04)] flex items-center justify-between px-6 py-4 w-full sticky top-0 z-50">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" data-icon="child_care">child_care</span>
+</div>
+<span class="text-2xl font-bold text-[#8A5108] dark:text-[#FFB366]">干货百科</span>
+</div>
+<div class="flex gap-4">
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#8A5108] text-2xl" data-icon="search">search</span>
+</button>
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-[#8A5108] text-2xl" data-icon="notifications">notifications</span>
+</button>
+</div>
+</header>
+<main class="px-6 pt-6">
+<!-- Search Bar Section -->
+<div class="mb-8">
+<div class="relative group">
+<input class="w-full bg-surface-container-high border-none rounded-2xl py-4 pl-12 pr-4 text-on-surface focus:ring-2 focus:ring-tertiary transition-all placeholder:text-on-surface-variant/50" placeholder="搜索育儿知识、避坑指南..." type="text"/>
+<span class="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant" data-icon="search">search</span>
+</div>
+</div>
+<!-- Horizontal Category Scroll -->
+<div class="mb-8 -mx-6 px-6 overflow-x-auto no-scrollbar flex items-center gap-3">
+<button class="flex-shrink-0 px-5 py-2.5 bg-tertiary text-white rounded-full font-medium shadow-lg shadow-tertiary/20 scale-95">全部</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">办事攻略</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">宝宝护理</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">营养健康</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">早教启蒙</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">避坑指南</button>
+<button class="flex-shrink-0 px-5 py-2.5 bg-surface-container-high text-on-surface-variant rounded-full font-medium hover:bg-tertiary-container hover:text-on-tertiary-container transition-colors">广州本地</button>
+</div>
+<!-- Featured Bento Hero -->
+<section class="mb-10">
+<div class="relative w-full h-64 rounded-xl overflow-hidden shadow-xl">
+<img alt="Nurturing moments" class="w-full h-full object-cover" data-alt="Soft morning light illuminating a cozy nursery with a mother gently reading a picture book to her infant child" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCHj8DEy993yE6mdr91TcPFzLCGYJz1AcsP4b9U7-X48zfmR8P4bRT2UGIRAF2N7wYotbl4iXg2L0Qdg6H9GOJPGX5jszjsTHVwKVahfgsTntWh5kn9bmacGa51Jf9W5U-KXYO7z_FD56wHfdiPAenQiDcHLhLBCQWPt10BUBk3UEptQTtH4SE_UTYXagMkn8WeJymTlb5ywq5cn8b-YMDuZzNYECAT7N1NFPbxD-f5ARTxVms8eegDPpg5MVdYBdAmFyXhpkL_zszq"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-6">
+<span class="bg-tertiary text-white text-[10px] px-2 py-0.5 rounded-full w-fit mb-2 uppercase tracking-widest font-bold">每日必看</span>
+<h2 class="text-white text-2xl font-bold mb-1">广州新生儿医保办理全流程</h2>
+<p class="text-white/80 text-sm line-clamp-1">2024最新政策解读，3步搞定宝宝首个保障</p>
+</div>
+</div>
+</section>
+<!-- Encyclopedia Content Feed (Vertical Flow) -->
+<div class="space-y-6">
+<!-- Encyclopedia Item 1 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 shadow-[0_32px_32px_rgba(29,27,25,0.04)] hover:scale-[1.01] transition-transform duration-300">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-2xl bg-tertiary-container/30 flex items-center justify-center flex-shrink-0 overflow-hidden">
+<img alt="Baby food" class="w-full h-full object-cover" data-alt="Vibrant organic vegetable purée in small ceramic bowls with a wooden baby spoon on a linen surface" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCBGWiEm-iTSdIFpa4BULFymSWeqLyvTA4jbnr19QtYf-Anpgg68vsJi2YfOzV6NO0ArzJTe-vEcDg3-KrH8KSYgz7RlG5a0kA9stp7_MbY86d_IAPIsDYaQVqZkOYL9vIq4yB8BoHcAOyt8SEE1HtKOPzgERufcS_F8BayfY81U9XsVPSHIPXgODSCtKJycal25odGhC-KWBwZYzQW-7BL_wYzrc8QbHrpfXCVPCTRAtBxyopD5Twdm08mOYvf7-ctnh--CtrN9Znk"/>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 bg-tertiary-container text-on-tertiary-container text-[10px] font-bold rounded">宝宝护理</span>
+<span class="text-on-surface-variant/40 text-[10px] uppercase font-bold tracking-tighter italic">Recommended</span>
+</div>
+<h3 class="text-lg font-bold text-on-surface leading-tight mb-2">如何科学应对宝宝“落地醒”？</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 leading-relaxed mb-3">5个实用的睡眠诱导技巧，告别哄睡难，让宝宝睡得更安稳...</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-on-surface-variant/60">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span>
+<span class="text-xs">2.4k</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="bookmark">bookmark</span>
+<span class="text-xs">842</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Encyclopedia Item 2 -->
+<div class="bg-surface-container-lowest rounded-lg p-5 shadow-[0_32px_32px_rgba(29,27,25,0.04)] hover:scale-[1.01] transition-transform duration-300">
+<div class="flex gap-4">
+<div class="w-20 h-20 rounded-2xl bg-secondary-container/30 flex items-center justify-center flex-shrink-0">
+<span class="material-symbols-outlined text-secondary text-3xl" data-icon="health_and_safety" data-weight="fill" style="font-variation-settings: 'FILL' 1;">health_and_safety</span>
+</div>
+<div class="flex-1">
+<div class="flex items-center gap-2 mb-1.5">
+<span class="px-2 py-0.5 bg-secondary-container text-on-secondary-container text-[10px] font-bold rounded">避坑指南</span>
+</div>
+<h3 class="text-lg font-bold text-on-surface leading-tight mb-2">婴儿面霜成分大排雷</h3>
+<p class="text-on-surface-variant text-sm line-clamp-2 leading-relaxed mb-3">拒绝激素和过敏原！这10款热门面霜到底值不值得买？</p>
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-4 text-on-surface-variant/60">
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="visibility">visibility</span>
+<span class="text-xs">12.1k</span>
+</div>
+<div class="flex items-center gap-1">
+<span class="material-symbols-outlined text-sm text-error" data-icon="favorite" data-weight="fill" style="font-variation-settings: 'FILL' 1;">favorite</span>
+<span class="text-xs">3.5k</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-tertiary" data-icon="arrow_forward">arrow_forward</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Encyclopedia Item 3 (Bento Style Variation) -->
+<div class="bg-surface-container-lowest rounded-lg overflow-hidden shadow-[0_32px_32px_rgba(29,27,25,0.04)]">
+<div class="p-5">
+<div class="flex items-center gap-2 mb-3">
+<span class="px-2 py-0.5 bg-primary-container text-on-primary-container text-[10px] font-bold rounded">办事攻略</span>
+<span class="text-on-surface-variant/40 text-[10px] font-bold">GUANGZHOU ONLY</span>
+</div>
+<h3 class="text-xl font-bold text-on-surface mb-3 leading-snug">广州越秀区普惠托育机构红黑榜</h3>
+<div class="grid grid-cols-2 gap-3 mb-4">
+<div class="aspect-video rounded-xl bg-surface-container overflow-hidden">
+<img alt="Daycare center" class="w-full h-full object-cover" data-alt="Clean modern daycare playroom with soft floor mats, wooden toys, and bright natural light from large windows" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDMf39FOKZKjZ2eVaWoz9NqksoR6e_7IIFxaUtvODxr1-3TA31fEBdshd-kZU9jn_CtgL35Gmn5OMdM3-wUh8_4mlgb9OnPTT8kdVbPHKVW3RbW2FdN2CmAVjEq0Li8qEK2ADZH1eGnTxzZgMkE1UeKxbGI8DTtYjCTBZYKST2vpATri0-5_TpQco1k_R99CJ-jPOTc430XwGYyUTMPgH71DVeJcOF0WqvGCdQbCgUiev4EBdgyZqMeamwrz4IUGGfLTP5Y1s-i7zWl"/>
+</div>
+<div class="aspect-video rounded-xl bg-surface-container overflow-hidden">
+<img alt="Preschool" class="w-full h-full object-cover" data-alt="Close-up of children's hands playing with colorful building blocks in a modern educational setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBKv_XOsY6E3W4n6tpwGUbj20ix9nti3BqTYV_PN4qfulhNN8VXl7O0oaiBloUf0Nyh1WS72BCzdKDlwRcPugqmcd4ZcZCq_UVUrJ1083MySYTnan4kglha-FYJ6wUGcYvQ52a9SEq2ovJmqpzE7rfNSy6zpBrMXR08xPjANaB62sht3iJOlyYsPi-nNnZhRWVwSZofFZTUXVNBPmARlukWuurGiMXcSAt8U-E5PbZYPzwsE7CLdVyJRsrswF0EA23Io642IOuicf6Z"/>
+</div>
+</div>
+<p class="text-on-surface-variant text-sm mb-4">深入走访15家托育机构，从师生比、餐食、环境、价格全方位真实测评。</p>
+<div class="flex items-center justify-between border-t border-surface-container pt-4">
+<div class="flex -space-x-2">
+<div class="w-6 h-6 rounded-full border-2 border-white bg-slate-200"></div>
+<div class="w-6 h-6 rounded-full border-2 border-white bg-slate-300"></div>
+<div class="w-6 h-6 rounded-full border-2 border-white bg-slate-400"></div>
+<span class="text-[10px] text-on-surface-variant/60 ml-4 self-center">+ 500人已读</span>
+</div>
+<button class="flex items-center gap-1 text-tertiary font-bold text-sm">
+                            阅读原文 <span class="material-symbols-outlined text-sm" data-icon="keyboard_arrow_right">keyboard_arrow_right</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Bottom Navigation Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-[0_-8px_24px_rgba(0,0,0,0.05)] rounded-t-[24px]">
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium tracking-wide">首页</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="text-[10px] font-medium tracking-wide">辅食</span>
+</div>
+<div class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors scale-96 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="vaccines">vaccines</span>
+<span class="text-[10px] font-medium tracking-wide">疫苗</span>
+</div>
+<div class="flex flex-col items-center justify-center bg-[#FFB366] text-white rounded-full px-4 py-1.5 scale-96 active:scale-90 transition-transform">
+<span class="material-symbols-outlined" data-icon="menu_book" data-weight="fill" style="font-variation-settings: 'FILL' 1;">menu_book</span>
+<span class="text-[10px] font-medium tracking-wide">干货</span>
+</div>
+</nav>
+<!-- Floating Action Button for Knowledge Submission -->
+<button class="fixed bottom-24 right-6 w-14 h-14 bg-tertiary text-white rounded-full shadow-2xl flex items-center justify-center group active:scale-90 transition-transform">
+<span class="material-symbols-outlined text-3xl group-hover:rotate-90 transition-transform" data-icon="add">add</span>
+</button>
+</body></html>

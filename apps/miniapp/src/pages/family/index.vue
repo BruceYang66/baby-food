@@ -245,12 +245,26 @@ async function handleAcceptInvite(inviteCode = acceptCode.value.trim(), isAutoJo
 }
 
 function copyInviteCode(inviteCode: string) {
+  // #ifdef H5
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(inviteCode).then(() => {
+      uni.showToast({ title: '邀请码已复制', icon: 'success' })
+    }).catch(() => {
+      uni.showToast({ title: '复制失败，请手动复制', icon: 'none' })
+    })
+  } else {
+    uni.showToast({ title: `邀请码：${inviteCode}`, icon: 'none', duration: 3000 })
+  }
+  // #endif
+
+  // #ifdef MP-WEIXIN
   uni.setClipboardData({
     data: inviteCode,
     success: () => {
       uni.showToast({ title: '邀请码已复制', icon: 'success' })
     }
   })
+  // #endif
 }
 
 function getRoleLabel(role?: FamilyRole) {

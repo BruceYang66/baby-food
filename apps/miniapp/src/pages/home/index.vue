@@ -2,17 +2,54 @@
 import { computed, onMounted, ref } from 'vue'
 import type { BabyProfile, HomeFeature, HomeShortcut, IngredientHighlight } from '@baby-food/shared-types'
 import AppTabBar from '@/components/common/AppTabBar.vue'
-import { ensureProtectedPageAccess, getHomeData, openProtectedPage } from '@/services/api'
+import { readAuthSession, getHomeData, openProtectedPage } from '@/services/api'
 
 const SAVED_PLAN_KEY = 'savedGeneratePlan'
 const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
 const PREFERRED_INGREDIENT_KEY = 'preferredIngredient'
 
+const isLoggedIn = ref(false)
 const baby = ref<BabyProfile>()
 const features = ref<HomeFeature[]>([])
 const shortcuts = ref<HomeShortcut[]>([])
 const ingredients = ref<IngredientHighlight[]>([])
 const hasAnyPlan = ref(true)
+
+// 公开功能列表（不需要登录）
+const publicFeatures = [
+  {
+    key: 'guide',
+    icon: '📚',
+    title: '喂养指南',
+    subtitle: '各月龄科学喂养建议',
+    route: '/pages/guide/index',
+    accent: 'primary'
+  },
+  {
+    key: 'taboo',
+    icon: '⚠️',
+    title: '食材禁忌',
+    subtitle: '了解宝宝不能吃什么',
+    route: '/pages/taboo/index',
+    accent: 'secondary'
+  },
+  {
+    key: 'vaccine',
+    icon: '💉',
+    title: '疫苗计划',
+    subtitle: '疫苗接种时间表',
+    route: '/pages/vaccine/index',
+    accent: 'primary'
+  },
+  {
+    key: 'knowledge',
+    icon: '📖',
+    title: '育儿知识',
+    subtitle: '专业育儿知识库',
+    route: '/pages/knowledge/index',
+    accent: 'secondary'
+  }
+]
 
 function getStatusBarHeight() {
   if (typeof uni.getWindowInfo === 'function') {
@@ -27,19 +64,40 @@ const pageStyle = computed(() => ({
 }))
 
 onMounted(async () => {
-  if (!ensureProtectedPageAccess()) {
+  const session = readAuthSession()
+  isLoggedIn.value = !!session?.token
+
+  if (isLoggedIn.value) {
+    try {
+      const data = await getHomeData()
+      baby.value = data.babyProfile
+      features.value = data.homeFeatures
+      shortcuts.value = data.homeShortcuts
+      ingredients.value = data.ingredientHighlights
+      hasAnyPlan.value = (data as any).hasAnyPlan !== false
+    } catch (error) {
+      console.error('Failed to load home data:', error)
+      // 加载失败时显示公开内容
+      isLoggedIn.value = false
+    }
+  }
+})
+
+function goLogin() {
+  uni.navigateTo({ url: '/pages/login/index' })
+}
+
+function go(url: string) {
+  const routeBase = url.split('?')[0]
+
+  // 公开页面直接跳转
+  const publicPages = ['/pages/guide/index', '/pages/taboo/index', '/pages/vaccine/index', '/pages/knowledge/index']
+  if (publicPages.includes(routeBase)) {
+    uni.navigateTo({ url })
     return
   }
 
-  const data = await getHomeData()
-  baby.value = data.babyProfile
-  features.value = data.homeFeatures
-  shortcuts.value = data.homeShortcuts
-  ingredients.value = data.ingredientHighlights
-  hasAnyPlan.value = (data as any).hasAnyPlan !== false
-})
-
-function go(url: string) {
+  // 需要登录的页面
   openProtectedPage(url)
 }
 
@@ -91,81 +149,134 @@ function goShortcut(shortcut: HomeShortcut) {
 
 <template>
   <view class="page-shell home-page" :style="pageStyle">
-    <view class="topbar">
-      <view class="user-box" v-if="baby">
-        <view class="avatar-wrap">
-          <image v-if="baby.avatar && baby.avatar.startsWith('https://')" class="avatar" :src="baby.avatar" mode="aspectFill" />
-          <view v-else class="avatar-fallback">{{ baby.nickname[0] }}</view>
+    <!-- 未登录状态 -->
+    <view v-if="!isLoggedIn" class="guest-view">
+      <view class="topbar">
+        <view class="app-title">
+          <text class="app-name">宝宝辅食智囊</text>
+          <text class="app-slogan">科学喂养，健康成长</text>
         </view>
-        <view>
-          <text class="baby-name">{{ baby.nickname }}</text>
-          <text class="baby-meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
-        </view>
+        <view class="login-btn" @tap="goLogin">登录</view>
       </view>
-      <view class="notify" @tap="goMessage">🔔</view>
-    </view>
 
-    <!-- 首次用户引导卡（无任何历史计划时显示） -->
-    <view v-if="!hasAnyPlan" class="first-guide-card">
-      <view class="first-guide-inner">
-        <text class="first-guide-emoji">🌱</text>
-        <view>
-          <text class="first-guide-title">生成第一周辅食计划</text>
-          <text class="first-guide-desc">根据宝宝月龄智能推荐食材与餐次安排，一键开始</text>
+      <view class="welcome-card">
+        <text class="welcome-emoji">👶</text>
+        <text class="welcome-title">欢迎使用宝宝辅食智囊</text>
+        <text class="welcome-desc">为宝宝提供科学的辅食计划和喂养指导</text>
+        <view class="welcome-action" @tap="goLogin">
+          <text class="welcome-btn">登录体验完整功能 →</text>
         </view>
       </view>
-      <view class="first-guide-btn" @tap="go('/pages/generate/index')">立即生成 →</view>
-    </view>
 
-    <view class="hero-card" v-else>
-      <view>
-        <text class="hero-label">今日食谱</text>
-        <text class="hero-title">根据宝宝成长阶段，生成今天的科学辅食安排</text>
+      <view class="section">
+        <text class="section-title">公开功能</text>
+        <text class="section-subtitle">无需登录即可浏览</text>
       </view>
-      <view class="hero-button" @tap="go('/pages/generate/index')">🍚 生成今日辅食</view>
-      <view class="hero-decor">🌾</view>
-    </view>
 
-    <view class="feature-grid">
-      <view
-        v-for="feature in features"
-        :key="feature.key"
-        class="feature-card"
-        :class="feature.accent"
-        @tap="go(feature.route)"
-      >
-        <text class="feature-icon">{{ feature.icon }}</text>
-        <text class="feature-title">{{ feature.title }}</text>
-        <text class="feature-subtitle">{{ feature.subtitle }}</text>
+      <view class="feature-grid">
+        <view
+          v-for="feature in publicFeatures"
+          :key="feature.key"
+          class="feature-card"
+          :class="feature.accent"
+          @tap="go(feature.route)"
+        >
+          <text class="feature-icon">{{ feature.icon }}</text>
+          <text class="feature-title">{{ feature.title }}</text>
+          <text class="feature-subtitle">{{ feature.subtitle }}</text>
+        </view>
+      </view>
+
+      <view class="login-prompt-card">
+        <text class="login-prompt-title">🎯 登录后可使用</text>
+        <view class="login-prompt-list">
+          <text class="login-prompt-item">• 生成个性化辅食计划</text>
+          <text class="login-prompt-item">• 记录宝宝喂养历史</text>
+          <text class="login-prompt-item">• 收藏喜欢的食谱</text>
+          <text class="login-prompt-item">• 家庭成员协同管理</text>
+        </view>
+        <view class="login-prompt-btn" @tap="goLogin">立即登录</view>
       </view>
     </view>
 
-    <view class="section">
-      <text class="section-title">快捷操作</text>
-      <view class="shortcut-list">
-        <view v-for="item in shortcuts" :key="item.title" class="shortcut-card card" @tap="goShortcut(item)">
-          <text class="shortcut-icon">{{ item.icon }}</text>
+    <!-- 已登录状态 -->
+    <view v-else class="logged-view">
+      <view class="topbar">
+        <view class="user-box" v-if="baby">
+          <view class="avatar-wrap">
+            <image v-if="baby.avatar && baby.avatar.startsWith('https://')" class="avatar" :src="baby.avatar" mode="aspectFill" />
+            <view v-else class="avatar-fallback">{{ baby.nickname[0] }}</view>
+          </view>
           <view>
-            <text class="shortcut-title">{{ item.title }}</text>
-            <text class="shortcut-desc">{{ item.description }}</text>
+            <text class="baby-name">{{ baby.nickname }}</text>
+            <text class="baby-meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
           </view>
         </view>
+        <view class="notify" @tap="goMessage">🔔</view>
       </view>
-    </view>
 
-    <view class="section">
-      <view class="section-row">
-        <text class="section-title">本周推荐食材</text>
-        <text class="section-link" @tap="go('/pages/recipe-list/index')">查看更多</text>
-      </view>
-      <scroll-view scroll-x class="ingredients-scroll" show-scrollbar="false">
-        <view class="ingredients-row">
-          <view v-for="item in ingredients" :key="item.id" class="ingredient-card" @tap="goIngredient(item.name)">
-            <image class="ingredient-image" :src="item.image" mode="aspectFill" />
-            <text class="ingredient-name">{{ item.name }}</text>
+      <!-- 首次用户引导卡（无任何历史计划时显示） -->
+      <view v-if="!hasAnyPlan" class="first-guide-card">
+        <view class="first-guide-inner">
+          <text class="first-guide-emoji">🌱</text>
+          <view>
+            <text class="first-guide-title">生成第一周辅食计划</text>
+            <text class="first-guide-desc">根据宝宝月龄智能推荐食材与餐次安排，一键开始</text>
           </view>
         </view>
-      </scroll-view>
+        <view class="first-guide-btn" @tap="go('/pages/generate/index')">立即生成 →</view>
+      </view>
+
+      <view class="hero-card" v-else>
+        <view>
+          <text class="hero-label">今日食谱</text>
+          <text class="hero-title">根据宝宝成长阶段，生成今天的科学辅食安排</text>
+        </view>
+        <view class="hero-button" @tap="go('/pages/generate/index')">🍚 生成今日辅食</view>
+        <view class="hero-decor">🌾</view>
+      </view>
+
+      <view class="feature-grid">
+        <view
+          v-for="feature in features"
+          :key="feature.key"
+          class="feature-card"
+          :class="feature.accent"
+          @tap="go(feature.route)"
+        >
+          <text class="feature-icon">{{ feature.icon }}</text>
+          <text class="feature-title">{{ feature.title }}</text>
+          <text class="feature-subtitle">{{ feature.subtitle }}</text>
+        </view>
+      </view>
+
+      <view class="section" v-if="shortcuts.length > 0">
+        <text class="section-title">快捷操作</text>
+        <view class="shortcut-list">
+          <view v-for="item in shortcuts" :key="item.title" class="shortcut-card card" @tap="goShortcut(item)">
+            <text class="shortcut-icon">{{ item.icon }}</text>
+            <view>
+              <text class="shortcut-title">{{ item.title }}</text>
+              <text class="shortcut-desc">{{ item.description }}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+
+      <view class="section" v-if="ingredients.length > 0">
+        <view class="section-row">
+          <text class="section-title">本周推荐食材</text>
+          <text class="section-link" @tap="go('/pages/recipe-list/index')">查看更多</text>
+        </view>
+        <scroll-view scroll-x class="ingredients-scroll" show-scrollbar="false">
+          <view class="ingredients-row">
+            <view v-for="item in ingredients" :key="item.id" class="ingredient-card" @tap="goIngredient(item.name)">
+              <image class="ingredient-image" :src="item.image" mode="aspectFill" />
+              <text class="ingredient-name">{{ item.name }}</text>
+            </view>
+          </view>
+        </scroll-view>
+      </view>
     </view>
 
     <AppTabBar active="home" />
@@ -176,11 +287,144 @@ function goShortcut(shortcut: HomeShortcut) {
 .home-page {
 }
 
+.guest-view,
+.logged-view {
+  min-height: calc(100vh - 120rpx);
+}
+
 .topbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28rpx;
+}
+
+.app-title {
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.app-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: var(--mini-primary-deep);
+}
+
+.app-slogan {
+  font-size: 22rpx;
+  color: var(--mini-text-muted);
+}
+
+.login-btn {
+  padding: 16rpx 32rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  color: #fff;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.welcome-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48rpx 32rpx;
+  border-radius: 36rpx;
+  background: linear-gradient(135deg, rgba(255,179,102,0.25), rgba(255,255,255,0.9));
+  box-shadow: var(--mini-shadow-soft);
+  text-align: center;
+}
+
+.welcome-emoji {
+  font-size: 80rpx;
+  margin-bottom: 24rpx;
+}
+
+.welcome-title {
+  font-size: 38rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+  margin-bottom: 16rpx;
+}
+
+.welcome-desc {
+  font-size: 26rpx;
+  color: var(--mini-text-muted);
+  line-height: 1.6;
+  margin-bottom: 32rpx;
+}
+
+.welcome-action {
+  width: 100%;
+}
+
+.welcome-btn {
+  display: block;
+  padding: 24rpx 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
+  text-align: center;
+}
+
+.section {
+  margin-top: 36rpx;
+}
+
+.section-title {
+  display: block;
+  font-size: 32rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.section-subtitle {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  color: var(--mini-text-muted);
+}
+
+.login-prompt-card {
+  margin-top: 36rpx;
+  padding: 32rpx;
+  border-radius: 32rpx;
+  background: rgba(168, 230, 207, 0.25);
+  box-shadow: var(--mini-shadow-card);
+}
+
+.login-prompt-title {
+  display: block;
+  font-size: 30rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+  margin-bottom: 20rpx;
+}
+
+.login-prompt-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-bottom: 28rpx;
+}
+
+.login-prompt-item {
+  font-size: 26rpx;
+  color: var(--mini-text);
+  line-height: 1.6;
+}
+
+.login-prompt-btn {
+  padding: 22rpx 0;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-secondary-deep), #3db886);
+  text-align: center;
+  color: #fff;
+  font-size: 28rpx;
+  font-weight: 700;
 }
 
 .user-box {
@@ -375,10 +619,6 @@ function goShortcut(shortcut: HomeShortcut) {
   font-size: 22rpx;
   line-height: 1.6;
   color: var(--mini-text-muted);
-}
-
-.section {
-  margin-top: 36rpx;
 }
 
 .section-row {

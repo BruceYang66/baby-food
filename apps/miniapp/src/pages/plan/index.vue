@@ -408,7 +408,7 @@ const todayKey = getLocalDateKey()
       </view>
     </view>
 
-    <AppTabBar active="plan" />
+    <AppTabBar active="feeding" />
   </view>
 </template>
 

@@ -162,6 +162,534 @@ function parseJsonStringArray(value?: string | null) {
   }
 }
 
+type VaccineScheduleRow = {
+  id: string
+  name: string
+  disease: string
+  stageLabel: string
+  recommendedAgeLabel: string
+  category: 'free' | 'optional'
+  description: string | null
+  precautionsJson: string | null
+  sortOrder: number
+}
+
+type VaccineRecordRow = {
+  id: string
+  babyId: string
+  scheduleId: string
+  status: 'pending' | 'completed' | 'optional'
+  vaccinatedAt: Date | null
+  note: string | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+type KnowledgeArticleRow = {
+  id: string
+  title: string
+  subtitle: string
+  summary: string
+  coverImage: string | null
+  categoryKey: string
+  categoryLabel: string
+  tagsJson: string | null
+  contentType: 'article' | 'guide' | 'taboo'
+  content: string
+  isFeatured: boolean
+  sortOrder: number
+  createdAt: Date
+  updatedAt: Date
+}
+
+const vaccineTips = [
+  {
+    title: '接种前先确认宝宝状态',
+    description: '发热、急性腹泻或医生明确建议暂缓时，先和门诊沟通再安排接种。'
+  },
+  {
+    title: '带好接种本与既往记录',
+    description: '家庭成员代为陪同也能快速确认上一针时间，避免漏种或重复预约。'
+  },
+  {
+    title: '接种后观察 30 分钟',
+    description: '若出现持续高热、精神差或明显皮疹，请及时联系接种门诊或就医。'
+  }
+] as const
+
+function buildRecipeSummary(recipe: {
+  id: string
+  title: string
+  coverImage: string | null
+  ageLabel: string
+  durationLabel: string
+  difficultyLabel: string
+  summary: string | null
+  tags: Array<{ name: string }>
+}) {
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    image: recipe.coverImage ?? '',
+    ageLabel: recipe.ageLabel,
+    durationLabel: recipe.durationLabel,
+    difficultyLabel: recipe.difficultyLabel,
+    tags: recipe.tags.map((tag) => tag.name),
+    description: recipe.summary ?? ''
+  }
+}
+
+function buildKnowledgeRoute(article: Pick<KnowledgeArticleRow, 'contentType'>) {
+  if (article.contentType === 'guide') {
+    return '/pages/guide/index'
+  }
+
+  if (article.contentType === 'taboo') {
+    return '/pages/taboo/index'
+  }
+
+  return '/pages/knowledge/index'
+}
+
+function buildKnowledgeArticleSummary(article: Pick<KnowledgeArticleRow, 'id' | 'title' | 'subtitle' | 'summary' | 'coverImage' | 'categoryKey' | 'categoryLabel' | 'tagsJson' | 'contentType'>) {
+  return {
+    id: article.id,
+    title: article.title,
+    subtitle: article.subtitle,
+    summary: article.summary,
+    image: article.coverImage ?? undefined,
+    categoryKey: article.categoryKey,
+    categoryLabel: article.categoryLabel,
+    tags: parseJsonStringArray(article.tagsJson),
+    contentType: article.contentType,
+    route: buildKnowledgeRoute(article)
+  }
+}
+
+async function getVaccineScheduleRows() {
+  try {
+    return await (prisma as any).vaccineSchedule.findMany({
+      orderBy: [
+        { sortOrder: 'asc' },
+        { recommendedAgeLabel: 'asc' }
+      ]
+    }) as VaccineScheduleRow[]
+  } catch {
+    return prisma.$queryRaw<VaccineScheduleRow[]>`
+      SELECT
+        id,
+        name,
+        disease,
+        stage_label AS "stageLabel",
+        recommended_age_label AS "recommendedAgeLabel",
+        category,
+        description,
+        precautions_json AS "precautionsJson",
+        sort_order AS "sortOrder"
+      FROM vaccine_schedules
+      ORDER BY sort_order ASC, recommended_age_label ASC
+    `
+  }
+}
+
+async function getVaccineScheduleRow(scheduleId: string) {
+  try {
+    return await (prisma as any).vaccineSchedule.findUnique({
+      where: { id: scheduleId }
+    }) as VaccineScheduleRow | null
+  } catch {
+    const rows = await prisma.$queryRaw<VaccineScheduleRow[]>`
+      SELECT
+        id,
+        name,
+        disease,
+        stage_label AS "stageLabel",
+        recommended_age_label AS "recommendedAgeLabel",
+        category,
+        description,
+        precautions_json AS "precautionsJson",
+        sort_order AS "sortOrder"
+      FROM vaccine_schedules
+      WHERE id = ${scheduleId}
+      LIMIT 1
+    `
+    return rows[0] ?? null
+  }
+}
+
+async function getVaccineRecordRows(babyId: string) {
+  try {
+    return await (prisma as any).vaccineRecord.findMany({
+      where: { babyId },
+      orderBy: [
+        { updatedAt: 'desc' },
+        { createdAt: 'desc' }
+      ]
+    }) as VaccineRecordRow[]
+  } catch {
+    return prisma.$queryRaw<VaccineRecordRow[]>`
+      SELECT
+        id,
+        baby_id AS "babyId",
+        schedule_id AS "scheduleId",
+        status,
+        vaccinated_at AS "vaccinatedAt",
+        note,
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM vaccine_records
+      WHERE baby_id = ${babyId}
+      ORDER BY updated_at DESC, created_at DESC
+    `
+  }
+}
+
+async function getPublishedKnowledgeArticles() {
+  try {
+    return await (prisma as any).knowledgeArticle.findMany({
+      where: { contentStatus: 'published' },
+      orderBy: [
+        { isFeatured: 'desc' },
+        { sortOrder: 'asc' },
+        { updatedAt: 'desc' }
+      ]
+    }) as KnowledgeArticleRow[]
+  } catch {
+    return prisma.$queryRaw<KnowledgeArticleRow[]>`
+      SELECT
+        id,
+        title,
+        subtitle,
+        summary,
+        cover_image AS "coverImage",
+        category_key AS "categoryKey",
+        category_label AS "categoryLabel",
+        tags_json AS "tagsJson",
+        content_type AS "contentType",
+        content,
+        is_featured AS "isFeatured",
+        sort_order AS "sortOrder",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM knowledge_articles
+      WHERE content_status = 'published'
+      ORDER BY is_featured DESC, sort_order ASC, updated_at DESC
+    `
+  }
+}
+
+async function getKnowledgeArticleRow(articleId: string) {
+  try {
+    return await (prisma as any).knowledgeArticle.findFirst({
+      where: { id: articleId, contentStatus: 'published' }
+    }) as KnowledgeArticleRow | null
+  } catch {
+    const rows = await prisma.$queryRaw<KnowledgeArticleRow[]>`
+      SELECT
+        id,
+        title,
+        subtitle,
+        summary,
+        cover_image AS "coverImage",
+        category_key AS "categoryKey",
+        category_label AS "categoryLabel",
+        tags_json AS "tagsJson",
+        content_type AS "contentType",
+        content,
+        is_featured AS "isFeatured",
+        sort_order AS "sortOrder",
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
+      FROM knowledge_articles
+      WHERE id = ${articleId} AND content_status = 'published'
+      LIMIT 1
+    `
+    return rows[0] ?? null
+  }
+}
+
+async function getUserKnowledgeFavoriteArticleIds(userId: string) {
+  try {
+    const rows = await (prisma as any).userKnowledgeFavorite.findMany({
+      where: { userId },
+      select: { articleId: true },
+      orderBy: { createdAt: 'desc' }
+    }) as Array<{ articleId: string }>
+    return rows.map((row) => row.articleId)
+  } catch {
+    const rows = await prisma.$queryRaw<Array<{ articleId: string }>>`
+      SELECT article_id AS "articleId"
+      FROM user_knowledge_favorites
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `
+    return rows.map((row) => row.articleId)
+  }
+}
+
+function parseOptionalDate(value?: string) {
+  const normalized = value?.trim()
+
+  if (!normalized) {
+    return null
+  }
+
+  const parsed = parsePlanDate(normalized)
+
+  if (!parsed) {
+    throw new Error('接种日期格式不正确')
+  }
+
+  return parsed
+}
+
+function buildVaccineRecordItem(schedule: VaccineScheduleRow, record?: VaccineRecordRow) {
+  return {
+    id: record?.id ?? schedule.id,
+    name: schedule.name,
+    disease: schedule.disease,
+    stageLabel: schedule.stageLabel,
+    recommendedAgeLabel: schedule.recommendedAgeLabel,
+    category: schedule.category,
+    description: schedule.description ?? undefined,
+    precautions: parseJsonStringArray(schedule.precautionsJson),
+    status: record?.status ?? (schedule.category === 'optional' ? 'optional' : 'pending'),
+    vaccinatedAt: record?.vaccinatedAt ? formatDateKey(record.vaccinatedAt) : undefined,
+    note: record?.note ?? undefined
+  }
+}
+
+function buildKnowledgeCategories(articles: Array<Pick<KnowledgeArticleRow, 'categoryKey' | 'categoryLabel'>>) {
+  const categories = [{ key: 'all', label: '全部' }]
+  const categoryMap = new Map<string, string>()
+
+  for (const article of articles) {
+    if (!categoryMap.has(article.categoryKey)) {
+      categoryMap.set(article.categoryKey, article.categoryLabel)
+      categories.push({ key: article.categoryKey, label: article.categoryLabel })
+    }
+  }
+
+  return categories
+}
+
+function buildKnowledgeArticleDetail(
+  article: KnowledgeArticleRow,
+  options: { isFavorite: boolean; relatedArticles: KnowledgeArticleRow[] }
+) {
+  return {
+    ...buildKnowledgeArticleSummary(article),
+    content: article.content,
+    isFavorite: options.isFavorite,
+    relatedArticles: options.relatedArticles.map((item) => buildKnowledgeArticleSummary(item))
+  }
+}
+
+function parseKnowledgeRouteId(route: string) {
+  const matched = route.match(/[?&]id=([^&]+)/)
+  return matched ? decodeURIComponent(matched[1]) : ''
+}
+
+function ensureKnowledgeArticleExists(articleId: string) {
+  if (!articleId.trim()) {
+    throw new Error('未找到对应知识内容')
+  }
+
+  return articleId.trim()
+}
+
+function buildKnowledgeArticleRouteWithId(article: Pick<KnowledgeArticleRow, 'id' | 'contentType'>) {
+  if (article.contentType === 'article') {
+    return `/pages/knowledge/index?id=${article.id}`
+  }
+
+  return buildKnowledgeRoute(article)
+}
+
+function buildKnowledgeArticleSummaryWithDetailRoute(article: Pick<KnowledgeArticleRow, 'id' | 'title' | 'subtitle' | 'summary' | 'coverImage' | 'categoryKey' | 'categoryLabel' | 'tagsJson' | 'contentType'>) {
+  return {
+    ...buildKnowledgeArticleSummary(article),
+    route: buildKnowledgeArticleRouteWithId(article)
+  }
+}
+
+function buildKnowledgeArticleDetailResponse(
+  article: KnowledgeArticleRow,
+  isFavorite: boolean,
+  relatedArticles: KnowledgeArticleRow[]
+) {
+  return {
+    ...buildKnowledgeArticleSummaryWithDetailRoute(article),
+    content: article.content,
+    isFavorite,
+    relatedArticles: relatedArticles.map((item) => buildKnowledgeArticleSummaryWithDetailRoute(item))
+  }
+}
+
+function buildKnowledgePageArticleSummary(article: Pick<KnowledgeArticleRow, 'id' | 'title' | 'subtitle' | 'summary' | 'coverImage' | 'categoryKey' | 'categoryLabel' | 'tagsJson' | 'contentType'>) {
+  if (article.contentType === 'article') {
+    return buildKnowledgeArticleSummaryWithDetailRoute(article)
+  }
+
+  return buildKnowledgeArticleSummary(article)
+}
+
+function buildKnowledgePageArticleList(articles: KnowledgeArticleRow[]) {
+  return articles.map((article) => buildKnowledgePageArticleSummary(article))
+}
+
+function buildFeaturedKnowledgeArticle(article: KnowledgeArticleRow | null) {
+  if (!article) {
+    return null
+  }
+
+  return buildKnowledgePageArticleSummary(article)
+}
+
+function buildRelatedKnowledgeArticles(article: KnowledgeArticleRow, allArticles: KnowledgeArticleRow[]) {
+  return allArticles
+    .filter((item) => item.id !== article.id)
+    .sort((left, right) => {
+      const leftScore = Number(left.categoryKey === article.categoryKey) + Number(left.contentType === article.contentType)
+      const rightScore = Number(right.categoryKey === article.categoryKey) + Number(right.contentType === article.contentType)
+      return rightScore - leftScore
+    })
+    .slice(0, 2)
+}
+
+function buildFavoriteKnowledgeItems(
+  articles: KnowledgeArticleRow[],
+  favoriteIds: string[],
+  createdAtMap: Map<string, string>
+) {
+  return favoriteIds
+    .map((articleId) => articles.find((article) => article.id === articleId))
+    .filter((article): article is KnowledgeArticleRow => Boolean(article))
+    .map((article) => ({
+      id: article.id,
+      savedAt: createdAtMap.get(article.id) ?? '',
+      article: buildKnowledgePageArticleSummary(article)
+    }))
+}
+
+async function getUserKnowledgeFavoriteCreatedAtMap(userId: string) {
+  try {
+    const rows = await (prisma as any).userKnowledgeFavorite.findMany({
+      where: { userId },
+      select: { articleId: true, createdAt: true },
+      orderBy: { createdAt: 'desc' }
+    }) as Array<{ articleId: string; createdAt: Date }>
+    return new Map(rows.map((row) => [row.articleId, row.createdAt.toISOString()]))
+  } catch {
+    const rows = await prisma.$queryRaw<Array<{ articleId: string; createdAt: Date }>>`
+      SELECT article_id AS "articleId", created_at AS "createdAt"
+      FROM user_knowledge_favorites
+      WHERE user_id = ${userId}
+      ORDER BY created_at DESC
+    `
+    return new Map(rows.map((row) => [row.articleId, row.createdAt.toISOString()]))
+  }
+}
+
+async function getUserFavoriteRows(userId: string) {
+  try {
+    const rows = await (prisma as any).userFavorite.findMany({
+      where: { userId },
+      include: {
+        recipe: {
+          include: { tags: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    }) as Array<{
+      id: string
+      recipeId: string
+      createdAt: Date
+      recipe: {
+        id: string
+        title: string
+        coverImage: string | null
+        ageLabel: string
+        durationLabel: string
+        difficultyLabel: string
+        summary: string | null
+        tags: Array<{ name: string }>
+      }
+    }>
+    return rows
+  } catch {
+    const rows = await prisma.$queryRaw<Array<{
+      id: string
+      recipeId: string
+      createdAt: Date
+      recipeTitle: string
+      recipeImage: string | null
+      ageLabel: string
+      durationLabel: string
+      difficultyLabel: string
+      recipeSummary: string | null
+      recipeTagsJson: string | null
+    }>>`
+      SELECT
+        uf.id,
+        uf.recipe_id AS "recipeId",
+        uf.created_at AS "createdAt",
+        r.title AS "recipeTitle",
+        r.cover_image AS "recipeImage",
+        r.age_label AS "ageLabel",
+        r.duration_label AS "durationLabel",
+        r.difficulty_label AS "difficultyLabel",
+        r.summary AS "recipeSummary",
+        COALESCE(json_agg(rt.name ORDER BY rt.name) FILTER (WHERE rt.name IS NOT NULL), '[]'::json)::text AS "recipeTagsJson"
+      FROM user_favorites uf
+      JOIN recipes r ON r.id = uf.recipe_id
+      LEFT JOIN recipe_tags_map rtm ON rtm.recipe_id = r.id
+      LEFT JOIN recipe_tags rt ON rt.id = rtm.tag_id
+      WHERE uf.user_id = ${userId}
+      GROUP BY uf.id, uf.recipe_id, uf.created_at, r.title, r.cover_image, r.age_label, r.duration_label, r.difficulty_label, r.summary
+      ORDER BY uf.created_at DESC
+    `
+
+    return rows.map((row) => ({
+      id: row.id,
+      recipeId: row.recipeId,
+      createdAt: row.createdAt,
+      recipe: {
+        id: row.recipeId,
+        title: row.recipeTitle,
+        coverImage: row.recipeImage,
+        ageLabel: row.ageLabel,
+        durationLabel: row.durationLabel,
+        difficultyLabel: row.difficultyLabel,
+        summary: row.recipeSummary,
+        tags: parseJsonStringArray(row.recipeTagsJson).map((name) => ({ name }))
+      }
+    }))
+  }
+}
+
+function parseFavoriteRecipeItems(rows: Array<{
+  id: string
+  recipeId: string
+  createdAt: Date
+  recipe: {
+    id: string
+    title: string
+    coverImage: string | null
+    ageLabel: string
+    durationLabel: string
+    difficultyLabel: string
+    summary: string | null
+    tags: Array<{ name: string }>
+  }
+}>) {
+  return rows.map((row) => ({
+    id: row.id,
+    savedAt: row.createdAt.toISOString(),
+    recipe: buildRecipeSummary(row.recipe)
+  }))
+}
+
 function parseBirthDate(value: string) {
   const birthDate = new Date(value)
 
@@ -1426,6 +1954,465 @@ export async function getBatchRecipeSummaries(recipeIds: string[]) {
       difficultyLabel: recipe.difficultyLabel,
       tags: recipe.tags.map((tag) => tag.name),
       description: recipe.summary ?? ''
+    }))
+  }
+}
+
+export async function getVaccinePageData(userId?: string) {
+  const baby = userId ? await ensureCurrentBaby(userId) : null
+  const rows = await prisma.$queryRaw<Array<{
+    schedule_id: string
+    name: string
+    disease: string
+    stage_label: string
+    recommended_age_label: string
+    category: 'free' | 'optional'
+    description: string | null
+    precautions_json: string | null
+    sort_order: number
+    record_id: string | null
+    record_status: 'pending' | 'completed' | 'optional' | null
+    vaccinated_at: Date | null
+    note: string | null
+  }>>`
+    SELECT
+      vs.id AS schedule_id,
+      vs.name,
+      vs.disease,
+      vs.stage_label,
+      vs.recommended_age_label,
+      vs.category,
+      vs.description,
+      vs.precautions_json,
+      vs.sort_order,
+      vr.id AS record_id,
+      vr.status AS record_status,
+      vr.vaccinated_at,
+      vr.note
+    FROM vaccine_schedules vs
+    LEFT JOIN vaccine_records vr
+      ON vr.schedule_id = vs.id
+     AND vr.baby_id = ${baby?.id ?? ''}
+    ORDER BY vs.sort_order ASC, vs.name ASC
+  `
+
+  const timelineGroups = rows.reduce<Array<{
+    key: string
+    label: string
+    description?: string
+    items: Array<{
+      id: string
+      name: string
+      disease: string
+      stageLabel: string
+      recommendedAgeLabel: string
+      category: 'free' | 'optional'
+      description?: string
+      precautions?: string[]
+      recordId?: string
+      status: 'pending' | 'completed' | 'optional'
+      vaccinatedAt?: string
+      note?: string
+    }>
+  }>>((groups, row) => {
+    const key = row.stage_label
+    const item = {
+      id: row.schedule_id,
+      name: row.name,
+      disease: row.disease,
+      stageLabel: row.stage_label,
+      recommendedAgeLabel: row.recommended_age_label,
+      category: row.category,
+      description: row.description ?? undefined,
+      precautions: parseJsonStringArray(row.precautions_json),
+      recordId: row.record_id ?? undefined,
+      status: row.record_status ?? 'pending',
+      vaccinatedAt: row.vaccinated_at ? formatDateKey(new Date(row.vaccinated_at)) : undefined,
+      note: row.note ?? undefined
+    }
+    const existingGroup = groups.find((group) => group.key === key)
+
+    if (existingGroup) {
+      existingGroup.items.push(item)
+      return groups
+    }
+
+    groups.push({
+      key,
+      label: row.stage_label,
+      description: row.description ?? undefined,
+      items: [item]
+    })
+    return groups
+  }, [])
+
+  const nextPendingVaccine = timelineGroups
+    .flatMap((group) => group.items)
+    .find((item) => item.status === 'pending') ?? null
+
+  // 未登录时返回通用数据
+  if (!baby) {
+    return {
+      babyProfile: null,
+      nextPendingVaccine,
+      timelineGroups,
+      tips: [...vaccineTips]
+    }
+  }
+
+  return {
+    babyProfile: formatBabyProfile(baby),
+    nextPendingVaccine,
+    timelineGroups,
+    tips: [...vaccineTips]
+  }
+}
+
+export async function saveVaccineRecord(userId: string, payload: {
+  scheduleId?: string
+  status?: 'pending' | 'completed' | 'optional'
+  vaccinatedAt?: string
+  note?: string
+}) {
+  console.log('saveVaccineRecord called with:', { userId, payload })
+
+  const baby = await ensureCurrentBaby(userId)
+  console.log('Current baby:', baby.id)
+
+  const scheduleId = payload.scheduleId?.trim() ?? ''
+  const status = payload.status
+
+  if (!scheduleId) {
+    throw new Error('缺少 scheduleId')
+  }
+
+  if (status !== 'pending' && status !== 'completed' && status !== 'optional') {
+    throw new Error('疫苗接种状态不正确')
+  }
+
+  const vaccinatedAt = payload.vaccinatedAt?.trim() ? parsePlanDate(payload.vaccinatedAt.trim()) : null
+  console.log('Parsed vaccinatedAt:', vaccinatedAt)
+
+  if (payload.vaccinatedAt?.trim() && !vaccinatedAt) {
+    throw new Error('接种日期格式不正确')
+  }
+
+  const scheduleRows = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM vaccine_schedules WHERE id = ${scheduleId} LIMIT 1
+  `
+  console.log('Schedule found:', scheduleRows.length > 0)
+
+  if (!scheduleRows[0]) {
+    throw new Error('未找到对应疫苗计划')
+  }
+
+  const recordId = `vrec-${Date.now()}-${randomBytes(4).toString('hex')}`
+  console.log('Inserting/updating record:', { recordId, babyId: baby.id, scheduleId, status, vaccinatedAt })
+
+  await prisma.$executeRaw`
+    INSERT INTO vaccine_records (id, baby_id, schedule_id, status, vaccinated_at, note, created_at, updated_at)
+    VALUES (${recordId}, ${baby.id}, ${scheduleId}, ${status}::vaccine_record_status, ${vaccinatedAt}, ${payload.note?.trim() || null}, NOW(), NOW())
+    ON CONFLICT (baby_id, schedule_id)
+    DO UPDATE SET
+      status = EXCLUDED.status,
+      vaccinated_at = EXCLUDED.vaccinated_at,
+      note = EXCLUDED.note,
+      updated_at = NOW()
+  `
+
+  console.log('Record saved successfully')
+
+  return {
+    saved: true
+  }
+}
+
+export async function getKnowledgePageData(userId?: string) {
+  const [baby, rows] = await Promise.all([
+    userId ? getCurrentBaby(userId) : Promise.resolve(null),
+    prisma.$queryRaw<Array<{
+      id: string
+      title: string
+      subtitle: string
+      summary: string
+      cover_image: string | null
+      category_key: string
+      category_label: string
+      tags_json: string | null
+      content_type: 'article' | 'guide' | 'taboo'
+      is_featured: boolean
+      sort_order: number
+      updated_at: Date
+    }>>`
+      SELECT
+        id,
+        title,
+        subtitle,
+        summary,
+        cover_image,
+        category_key,
+        category_label,
+        tags_json,
+        content_type,
+        is_featured,
+        sort_order,
+        updated_at
+      FROM knowledge_articles
+      WHERE content_status = 'published'
+      ORDER BY is_featured DESC, sort_order ASC, updated_at DESC
+    `
+  ])
+
+  const articles = rows.map((row) => buildKnowledgeArticleSummary({
+    id: row.id,
+    title: row.title,
+    subtitle: row.subtitle,
+    summary: row.summary,
+    coverImage: row.cover_image,
+    categoryKey: row.category_key,
+    categoryLabel: row.category_label,
+    tagsJson: row.tags_json,
+    contentType: row.content_type
+  }))
+
+  const categories = [
+    { key: 'all', label: '全部' },
+    ...rows.reduce<Array<{ key: string; label: string }>>((result, row) => {
+      if (!result.find((item) => item.key === row.category_key)) {
+        result.push({ key: row.category_key, label: row.category_label })
+      }
+      return result
+    }, [])
+  ]
+
+  return {
+    babyProfile: baby ? formatBabyProfile(baby) : null,
+    categories,
+    featuredArticle: articles[0] ?? null,
+    articles
+  }
+}
+
+export async function getKnowledgeArticleDetailData(articleId: string, userId?: string) {
+  const articleRows = await prisma.$queryRaw<Array<{
+    id: string
+    title: string
+    subtitle: string
+    summary: string
+    cover_image: string | null
+    category_key: string
+    category_label: string
+    tags_json: string | null
+    content_type: 'article' | 'guide' | 'taboo'
+    content: string
+  }>>`
+    SELECT
+      id,
+      title,
+      subtitle,
+      summary,
+      cover_image,
+      category_key,
+      category_label,
+      tags_json,
+      content_type,
+      content
+    FROM knowledge_articles
+    WHERE id = ${articleId} AND content_status = 'published'
+    LIMIT 1
+  `
+
+  const article = articleRows[0]
+  if (!article) {
+    throw new Error('未找到对应干货内容')
+  }
+
+  const [sectionRows, relatedRows, favoriteRows] = await Promise.all([
+    prisma.$queryRaw<Array<{
+      id: string
+      title: string | null
+      content: string
+      images_json: string
+      sort_order: number
+    }>>`
+      SELECT
+        id,
+        title,
+        content,
+        images_json,
+        sort_order
+      FROM knowledge_article_sections
+      WHERE article_id = ${articleId}
+      ORDER BY sort_order ASC
+    `,
+    prisma.$queryRaw<Array<{
+      id: string
+      title: string
+      subtitle: string
+      summary: string
+      cover_image: string | null
+      category_key: string
+      category_label: string
+      tags_json: string | null
+      content_type: 'article' | 'guide' | 'taboo'
+    }>>`
+      SELECT
+        id,
+        title,
+        subtitle,
+        summary,
+        cover_image,
+        category_key,
+        category_label,
+        tags_json,
+        content_type
+      FROM knowledge_articles
+      WHERE content_status = 'published'
+        AND id <> ${article.id}
+        AND category_key = ${article.category_key}
+      ORDER BY sort_order ASC, updated_at DESC
+      LIMIT 2
+    `,
+    userId
+      ? prisma.$queryRaw<Array<{ article_id: string }>>`
+          SELECT article_id
+          FROM user_knowledge_favorites
+          WHERE user_id = ${userId} AND article_id = ${article.id}
+          LIMIT 1
+        `
+      : Promise.resolve([])
+  ])
+
+  return {
+    ...buildKnowledgeArticleSummary({
+      id: article.id,
+      title: article.title,
+      subtitle: article.subtitle,
+      summary: article.summary,
+      coverImage: article.cover_image,
+      categoryKey: article.category_key,
+      categoryLabel: article.category_label,
+      tagsJson: article.tags_json,
+      contentType: article.content_type
+    }),
+    content: article.content,
+    sections: sectionRows.map((row) => ({
+      id: row.id,
+      title: row.title ?? undefined,
+      content: row.content,
+      images: JSON.parse(row.images_json || '[]') as string[],
+      sortOrder: row.sort_order
+    })),
+    isFavorite: favoriteRows.length > 0,
+    relatedArticles: relatedRows.map((row) => buildKnowledgeArticleSummary({
+      id: row.id,
+      title: row.title,
+      subtitle: row.subtitle,
+      summary: row.summary,
+      coverImage: row.cover_image,
+      categoryKey: row.category_key,
+      categoryLabel: row.category_label,
+      tagsJson: row.tags_json,
+      contentType: row.content_type
+    }))
+  }
+}
+
+export async function getFavoritesPageData(userId: string) {
+  const [recipeFavoriteRows, knowledgeFavoriteRows] = await Promise.all([
+    prisma.$queryRaw<Array<{
+      id: string
+      created_at: Date
+      recipe_id: string
+      title: string
+      cover_image: string | null
+      age_label: string
+      duration_label: string
+      difficulty_label: string
+      summary: string | null
+      tags_json: string | null
+    }>>`
+      SELECT
+        uf.id,
+        uf.created_at,
+        r.id AS recipe_id,
+        r.title,
+        r.cover_image,
+        r.age_label,
+        r.duration_label,
+        r.difficulty_label,
+        r.summary,
+        COALESCE(json_agg(rt.name ORDER BY rt.name) FILTER (WHERE rt.name IS NOT NULL), '[]'::json)::text AS tags_json
+      FROM user_favorites uf
+      JOIN recipes r ON r.id = uf.recipe_id
+      LEFT JOIN recipe_tags rt ON rt.recipe_id = r.id
+      WHERE uf.user_id = ${userId}
+      GROUP BY uf.id, uf.created_at, r.id, r.title, r.cover_image, r.age_label, r.duration_label, r.difficulty_label, r.summary
+      ORDER BY uf.created_at DESC
+    `,
+    prisma.$queryRaw<Array<{
+      id: string
+      created_at: Date
+      article_id: string
+      title: string
+      subtitle: string
+      summary: string
+      cover_image: string | null
+      category_key: string
+      category_label: string
+      tags_json: string | null
+      content_type: 'article' | 'guide' | 'taboo'
+    }>>`
+      SELECT
+        uf.id,
+        uf.created_at,
+        ka.id AS article_id,
+        ka.title,
+        ka.subtitle,
+        ka.summary,
+        ka.cover_image,
+        ka.category_key,
+        ka.category_label,
+        ka.tags_json,
+        ka.content_type
+      FROM user_knowledge_favorites uf
+      JOIN knowledge_articles ka ON ka.id = uf.article_id
+      WHERE uf.user_id = ${userId}
+        AND ka.content_status = 'published'
+      ORDER BY uf.created_at DESC
+    `
+  ])
+
+  return {
+    recipeIds: recipeFavoriteRows.map((row) => row.recipe_id),
+    recipes: recipeFavoriteRows.map((row) => ({
+      id: row.id,
+      savedAt: row.created_at.toISOString(),
+      recipe: {
+        id: row.recipe_id,
+        title: row.title,
+        image: row.cover_image ?? '',
+        ageLabel: row.age_label,
+        durationLabel: row.duration_label,
+        difficultyLabel: row.difficulty_label,
+        tags: parseJsonStringArray(row.tags_json),
+        description: row.summary ?? ''
+      }
+    })),
+    articles: knowledgeFavoriteRows.map((row) => ({
+      id: row.id,
+      savedAt: row.created_at.toISOString(),
+      article: buildKnowledgeArticleSummary({
+        id: row.article_id,
+        title: row.title,
+        subtitle: row.subtitle,
+        summary: row.summary,
+        coverImage: row.cover_image,
+        categoryKey: row.category_key,
+        categoryLabel: row.category_label,
+        tagsJson: row.tags_json,
+        contentType: row.content_type
+      })
     }))
   }
 }

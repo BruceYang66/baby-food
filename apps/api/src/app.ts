@@ -21,9 +21,12 @@ import {
   getBatchRecipeSummaries,
   getFamilyInvites,
   getFamilyMembers,
+  getFavoritesPageData,
   getGeneratePageData,
   getGuideStageData,
   getHomePageData,
+  getKnowledgeArticleDetailData,
+  getKnowledgePageData,
   getMealPlanDetailData,
   getPlanPageData,
   getProfilePageData,
@@ -31,9 +34,11 @@ import {
   getRecipeList,
   getTabooGuideData,
   getUserFavoriteIds,
+  getVaccinePageData,
   addUserFavorite,
   removeUserFavorite,
   listBabyProfiles,
+  saveVaccineRecord,
   setActiveBaby,
   saveFeedingRecord,
   saveMealPlan,
@@ -79,7 +84,12 @@ class HttpError extends Error {
 }
 
 const app = express()
-const allowedOrigins = new Set(['http://localhost:5173', 'http://127.0.0.1:5173'])
+const allowedOrigins = new Set([
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174'
+])
 
 app.use((req, res, next) => {
   const origin = req.headers.origin
@@ -129,6 +139,9 @@ function getStatusCode(error: unknown) {
     || error.message === '未找到可记录的餐次'
     || error.message === '喂养时间格式不正确'
     || error.message === '未找到可访问的宝宝档案'
+    || error.message === '疫苗接种状态不正确'
+    || error.message === '接种日期格式不正确'
+    || error.message === '缺少 scheduleId'
   ) {
     return 400
   }
@@ -137,7 +150,12 @@ function getStatusCode(error: unknown) {
     return 401
   }
 
-  if (error.message === '未找到对应月龄指南' || error.message === '未找到对应食谱') {
+  if (
+    error.message === '未找到对应月龄指南'
+    || error.message === '未找到对应食谱'
+    || error.message === '未找到对应疫苗计划'
+    || error.message === '未找到对应干货内容'
+  ) {
     return 404
   }
 
@@ -647,6 +665,56 @@ app.get('/api/app/taboo/query', async (req, res) => {
   }
 })
 
+app.get('/api/app/vaccines', async (req, res) => {
+  const authorization = req.headers.authorization
+  const token = typeof authorization === 'string' && authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : ''
+
+  try {
+    const userId = token ? verifyAppToken(token) : undefined
+    res.json({ ok: true, data: await getVaccinePageData(userId) })
+  } catch (error) {
+    sendError(res, error, '疫苗记录读取失败')
+  }
+})
+
+app.post('/api/app/vaccines/records', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await saveVaccineRecord(getAppUserId(req), req.body ?? {}) })
+  } catch (error) {
+    sendError(res, error, '疫苗记录保存失败')
+  }
+})
+
+app.get('/api/app/knowledge', async (req, res) => {
+  const authorization = req.headers.authorization
+  const token = typeof authorization === 'string' && authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : ''
+
+  try {
+    const userId = token ? verifyAppToken(token) : undefined
+    res.json({ ok: true, data: await getKnowledgePageData(userId) })
+  } catch (error) {
+    sendError(res, error, '干货列表读取失败')
+  }
+})
+
+app.get('/api/app/knowledge/:id', async (req, res) => {
+  const authorization = req.headers.authorization
+  const token = typeof authorization === 'string' && authorization.startsWith('Bearer ')
+    ? authorization.slice('Bearer '.length).trim()
+    : ''
+
+  try {
+    const userId = token ? verifyAppToken(token) : undefined
+    res.json({ ok: true, data: await getKnowledgeArticleDetailData(getRouteParam(req.params.id), userId) })
+  } catch (error) {
+    sendError(res, error, '干货详情读取失败')
+  }
+})
+
 app.get('/api/app/profile', requireAppAuth, async (req, res) => {
   try {
     res.json({ ok: true, data: await getProfilePageData(getAppUserId(req)) })
@@ -660,6 +728,14 @@ app.get('/api/app/favorites', requireAppAuth, async (req, res) => {
     res.json({ ok: true, data: { recipeIds: await getUserFavoriteIds(getAppUserId(req)) } })
   } catch (error) {
     sendError(res, error, '收藏读取失败')
+  }
+})
+
+app.get('/api/app/favorites/page', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getFavoritesPageData(getAppUserId(req)) })
+  } catch (error) {
+    sendError(res, error, '收藏页面读取失败')
   }
 })
 

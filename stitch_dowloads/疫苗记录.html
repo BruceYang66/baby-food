@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+
+<html class="light" lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#ffb871",
+                    "outline-variant": "#d7c3b3",
+                    "tertiary-fixed-dim": "#87dc2c",
+                    "secondary": "#0060ac",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb871",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "secondary-container": "#68abff",
+                    "surface-container-highest": "#e6e2dd",
+                    "primary-container": "#ffb366",
+                    "surface-bright": "#fef8f3",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004883",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#315b00",
+                    "surface-container": "#f2ede8",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#8a5108",
+                    "outline": "#847466",
+                    "surface-dim": "#ded9d4",
+                    "tertiary-fixed": "#a1fa49",
+                    "surface-container-low": "#f8f3ee",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary-container": "#774400",
+                    "tertiary-container": "#83d928",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "surface-variant": "#e6e2dd",
+                    "background": "#fef8f3",
+                    "tertiary": "#3a6a00",
+                    "inverse-surface": "#32302d",
+                    "on-secondary-fixed": "#001c39",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#ffdcbe",
+                    "on-background": "#1d1b19",
+                    "on-surface": "#1d1b19",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#003e73",
+                    "on-surface-variant": "#524438",
+                    "surface-container-high": "#ece7e2",
+                    "on-tertiary-fixed": "#0e2000",
+                    "on-tertiary-fixed-variant": "#2a5000",
+                    "surface": "#fef8f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body { font-family: 'Plus Jakarta Sans', 'PingFang SC', sans-serif; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-nav { backdrop-filter: blur(16px); }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen pb-32">
+<!-- TopAppBar -->
+<header class="bg-[#FEF8F3] dark:bg-slate-900 shadow-[0_32px_32px_rgba(29,27,25,0.04)] rounded-b-[32px] sticky top-0 z-50">
+<div class="flex items-center justify-between px-6 py-4 w-full">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full overflow-hidden bg-primary-container flex items-center justify-center">
+<img alt="Baby Avatar" class="w-full h-full object-cover" data-alt="cute animated baby avatar with a soft smile and tiny hat in warm pastel colors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC-qcA02UA-H8BZQL2QszhGHE1bLoE3i3Q72z5TJ9F7kyIHEA4gsyPrPKtxRmr8p_N2THWr8VVn4caYFnlM1NnKi-zCf4w5EoJqELrNBYYpgOMDSmk08VHBk6Gw_EcPTlxTDhJZ5XHDGoM5nDjrvBF4KyKKYCGWwhofNOBwEqZQm5fAhR0bpi37t3hie4awypqdx34aqTa5LjuqdVrDPhJEO2pKQr5vC02JU2r84zhvw26ACODaRlXWVpZjjKAz5WTn3NihWyPThTTp"/>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1">
+<span class="font-['Plus_Jakarta_Sans'] leading-relaxed text-2xl font-bold text-[#8A5108] dark:text-[#FFB366]">疫苗记录</span>
+<span class="material-symbols-outlined text-primary text-lg">expand_more</span>
+</div>
+<span class="text-[10px] text-on-surface-variant uppercase tracking-wider">小糯米 · 8个月</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="hover:opacity-80 transition-opacity scale-95 duration-200 ease-in-out">
+<span class="material-symbols-outlined text-orange-400 dark:text-orange-300">notifications</span>
+</button>
+</div>
+</div>
+</header>
+<main class="px-6 mt-8 space-y-10">
+<!-- Section 1: 接种时间表 -->
+<section>
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-xl font-bold text-on-surface tracking-tight">接种时间表</h2>
+<div class="bg-surface-container-high px-4 py-1.5 rounded-full">
+<span class="text-xs font-semibold text-secondary">0-6岁全计划</span>
+</div>
+</div>
+<!-- Timeline Structure -->
+<div class="relative space-y-8 before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-[2px] before:bg-surface-container-highest">
+<!-- Group: 0-6 Months (Past/Current) -->
+<div class="relative pl-10">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-tertiary-container border-4 border-background z-10"></div>
+<h3 class="text-sm font-bold text-tertiary mb-4">0-6个月 (已完成)</h3>
+<div class="space-y-3">
+<!-- Completed Item -->
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-sm border-l-4 border-tertiary">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="text-sm font-bold text-on-surface">乙肝疫苗</p>
+<p class="text-[11px] text-on-surface-variant">第一剂 · 2023.10.12</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">已接种</span>
+</div>
+<!-- Completed Item -->
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-sm border-l-4 border-tertiary">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-tertiary" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<div>
+<p class="text-sm font-bold text-on-surface">卡介苗</p>
+<p class="text-[11px] text-on-surface-variant">第一剂 · 2023.10.12</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-tertiary bg-tertiary/10 px-2 py-0.5 rounded">已接种</span>
+</div>
+</div>
+</div>
+<!-- Group: 8 Months (Current Month) -->
+<div class="relative pl-10">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-primary-container border-4 border-background z-10 ring-4 ring-primary-container/20"></div>
+<h3 class="text-sm font-bold text-primary mb-4">8个月 (当月接种)</h3>
+<div class="space-y-3">
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-sm border-l-4 border-primary">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-md border-2 border-primary flex items-center justify-center">
+<span class="material-symbols-outlined text-primary text-xs">add</span>
+</div>
+<div>
+<p class="text-sm font-bold text-on-surface">麻腮风联合减毒活疫苗</p>
+<p class="text-[11px] text-on-surface-variant">第一剂 · 建议本周内</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">预约中</span>
+</div>
+<div class="bg-surface-container-lowest p-4 rounded-lg flex items-center justify-between shadow-sm border-l-4 border-primary">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-md border-2 border-primary flex items-center justify-center"></div>
+<div>
+<p class="text-sm font-bold text-on-surface">乙脑减毒活疫苗</p>
+<p class="text-[11px] text-on-surface-variant">第一剂 · 建议本月内</p>
+</div>
+</div>
+<span class="text-[10px] font-bold text-primary bg-primary/10 px-2 py-0.5 rounded">当月</span>
+</div>
+</div>
+</div>
+<!-- Group: Future -->
+<div class="relative pl-10">
+<div class="absolute left-0 top-1.5 w-6 h-6 rounded-full bg-surface-container-highest border-4 border-background z-10"></div>
+<h3 class="text-sm font-bold text-on-surface-variant mb-4">12-18个月 (待接种)</h3>
+<div class="space-y-3 opacity-60">
+<div class="bg-surface-container-low p-4 rounded-lg flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-6 h-6 rounded-md border-2 border-outline-variant flex items-center justify-center"></div>
+<div>
+<p class="text-sm font-bold text-on-surface">甲肝减毒活疫苗</p>
+<p class="text-[11px] text-on-surface-variant">第一剂 · 预计 2024.10</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: 我的接种记录 -->
+<section class="bg-secondary-fixed/30 rounded-xl p-6">
+<div class="flex items-center justify-between mb-4">
+<h2 class="text-lg font-bold text-secondary">已接种记录</h2>
+<span class="text-xs text-on-secondary-fixed-variant">共 6 针</span>
+</div>
+<div class="grid grid-cols-1 gap-2">
+<div class="bg-white/80 p-3 rounded-lg flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">vaccines</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-xs font-bold text-on-surface">五联疫苗 (第一剂)</p>
+<span class="text-[10px] text-on-surface-variant">2023.12.15</span>
+</div>
+<p class="text-[10px] text-secondary font-medium">社区卫生中心 · 2号诊室</p>
+</div>
+</div>
+<div class="bg-white/80 p-3 rounded-lg flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-secondary-container/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-secondary">vaccines</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<p class="text-xs font-bold text-on-surface">13价肺炎 (第二剂)</p>
+<span class="text-[10px] text-on-surface-variant">2024.01.20</span>
+</div>
+<p class="text-[10px] text-secondary font-medium">社区卫生中心 · 1号诊室</p>
+</div>
+</div>
+</div>
+<button class="w-full mt-4 py-2 text-xs font-bold text-secondary text-center">查看全部历史记录</button>
+</section>
+<!-- Section 3: 疫苗注意事项 -->
+<section>
+<h2 class="text-xl font-bold text-on-surface mb-6 px-1">接种小课堂</h2>
+<div class="grid grid-cols-2 gap-4">
+<!-- Card 1 -->
+<div class="bg-tertiary-container/10 p-5 rounded-lg border-t-4 border-tertiary flex flex-col gap-3 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-16 h-16 bg-tertiary/5 rounded-full"></div>
+<div class="w-8 h-8 rounded-full bg-tertiary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">preliminary</span>
+</div>
+<div>
+<h3 class="text-sm font-extrabold text-tertiary">接种前必看</h3>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-relaxed">避免空腹，确认宝宝无发热或过敏症状。</p>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-secondary-container/10 p-5 rounded-lg border-t-4 border-secondary flex flex-col gap-3 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 w-16 h-16 bg-secondary/5 rounded-full"></div>
+<div class="w-8 h-8 rounded-full bg-secondary text-white flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">medical_services</span>
+</div>
+<div>
+<h3 class="text-sm font-extrabold text-secondary">接种后护理</h3>
+<p class="text-[11px] text-on-surface-variant mt-1 leading-relaxed">留观30分钟，24小时内针眼不沾水。</p>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="col-span-2 bg-error-container/20 p-5 rounded-lg flex items-center gap-4 border-l-4 border-error">
+<span class="material-symbols-outlined text-error text-3xl">report_problem</span>
+<div>
+<h3 class="text-sm font-bold text-on-error-container">不良反应处理</h3>
+<p class="text-[11px] text-on-surface-variant mt-0.5">轻微发热属正常现象，如高烧不退请及时就医。</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- BottomNavBar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-[0_-8px_24px_rgba(0,0,0,0.05)] rounded-t-[24px]">
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">home</span>
+<span class="text-[10px] font-medium tracking-wide">首页</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">restaurant</span>
+<span class="text-[10px] font-medium tracking-wide">辅食</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-[#FFB366] text-white rounded-full px-4 py-1.5 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">vaccines</span>
+<span class="text-[10px] font-medium tracking-wide">疫苗</span>
+</a>
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-colors active:scale-90 duration-200" href="#">
+<span class="material-symbols-outlined">menu_book</span>
+<span class="text-[10px] font-medium tracking-wide">干货</span>
+</a>
+</nav>
+<!-- Floating Action Button (Optional Contextual: Add Record) -->
+<button class="fixed right-6 bottom-24 w-14 h-14 bg-secondary rounded-full shadow-lg flex items-center justify-center text-white active:scale-90 transition-transform z-40">
+<span class="material-symbols-outlined text-3xl">add</span>
+</button>
+</body></html>

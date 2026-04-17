@@ -38,21 +38,34 @@ function handleBack() {
     return
   }
 
+  emit('back')
+
   const pages = getCurrentPages()
 
   if (pages.length > 1) {
     uni.navigateBack({
       delta: 1,
       fail: () => {
-        goHome()
+        // 如果返回失败，尝试跳转到首页
+        uni.switchTab({
+          url: '/pages/home/index',
+          fail: () => {
+            // 如果 switchTab 也失败，使用 reLaunch
+            uni.reLaunch({ url: '/pages/home/index' })
+          }
+        })
       }
     })
-    emit('back')
     return
   }
 
-  goHome()
-  emit('back')
+  // 如果只有一个页面，跳转到首页
+  uni.switchTab({
+    url: '/pages/home/index',
+    fail: () => {
+      uni.reLaunch({ url: '/pages/home/index' })
+    }
+  })
 }
 
 function handleRight() {

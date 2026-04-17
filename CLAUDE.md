@@ -17,11 +17,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ```bash
 # 启动各应用（在项目根目录执行）
 npm run dev:miniapp   # 微信小程序，编译到 dist/mp-weixin，用微信开发者工具打开
+npm run dev:h5        # H5 网页版，http://localhost:5174（浏览器预览）
 npm run dev:admin     # 管理后台，http://localhost:5173
 npm run dev:api       # API 服务，http://localhost:3000
 
 # 构建
 npm run build:miniapp
+npm run build:h5
 npm run build:admin
 npm run build:api
 
@@ -87,4 +89,6 @@ schema 文件：`apps/api/prisma/schema.prisma`。数据库 SQL 文件在 `apps/
 
 ### CORS
 
-API 仅允许 `http://localhost:5173` 和 `http://127.0.0.1:5173` 跨域（`apps/api/src/app.ts` 顶部 `allowedOrigins`）。
+API 允许以下源跨域访问（`apps/api/src/app.ts` 顶部 `allowedOrigins`）：
+- `http://localhost:5173` / `http://127.0.0.1:5173` — 管理后台
+- `http://localhost:5174` / `http://127.0.0.1:5174` — H5 网页版

@@ -3,6 +3,9 @@ CREATE TYPE review_status AS ENUM ('none', 'pending', 'approved', 'rejected');
 CREATE TYPE baby_member_role AS ENUM ('owner', 'collaborator', 'caregiver', 'viewer');
 CREATE TYPE baby_invite_status AS ENUM ('pending', 'accepted', 'declined', 'revoked', 'expired');
 CREATE TYPE feeding_record_status AS ENUM ('fed', 'skipped');
+CREATE TYPE vaccine_category AS ENUM ('free', 'optional');
+CREATE TYPE vaccine_record_status AS ENUM ('pending', 'completed', 'optional');
+CREATE TYPE knowledge_content_type AS ENUM ('article', 'guide', 'taboo');
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
@@ -225,6 +228,67 @@ CREATE TABLE user_favorites (
   recipe_id TEXT NOT NULL REFERENCES recipes(id),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   UNIQUE(user_id, recipe_id)
+);
+
+CREATE TABLE vaccine_schedules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  disease TEXT NOT NULL,
+  stage_label TEXT NOT NULL,
+  recommended_age_label TEXT NOT NULL,
+  category vaccine_category NOT NULL,
+  description TEXT,
+  precautions_json TEXT NOT NULL DEFAULT '[]',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE vaccine_records (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  schedule_id TEXT NOT NULL REFERENCES vaccine_schedules(id),
+  status vaccine_record_status NOT NULL DEFAULT 'pending',
+  vaccinated_at DATE,
+  note TEXT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(baby_id, schedule_id)
+);
+
+CREATE INDEX idx_vaccine_records_baby_status ON vaccine_records(baby_id, status);
+
+CREATE TABLE knowledge_articles (
+  id TEXT PRIMARY KEY,
+  title TEXT NOT NULL,
+  subtitle TEXT NOT NULL,
+  summary TEXT NOT NULL,
+  cover_image TEXT,
+  category_key TEXT NOT NULL,
+  category_label TEXT NOT NULL,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  content_type knowledge_content_type NOT NULL,
+  content TEXT NOT NULL,
+  is_featured BOOLEAN NOT NULL DEFAULT FALSE,
+  content_status content_status NOT NULL DEFAULT 'published',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE knowledge_article_sections (
+  id TEXT PRIMARY KEY,
+  article_id TEXT NOT NULL REFERENCES knowledge_articles(id) ON DELETE CASCADE,
+  title TEXT,
+  content TEXT NOT NULL,
+  images_json TEXT NOT NULL DEFAULT '[]',
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE TABLE user_knowledge_favorites (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  article_id TEXT NOT NULL REFERENCES knowledge_articles(id),
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  UNIQUE(user_id, article_id)
 );
 
 CREATE TABLE user_feedback (

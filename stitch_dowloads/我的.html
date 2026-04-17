@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>我的 - 育儿助手</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-primary": "#ffffff",
+                        "primary-fixed-dim": "#ffb871",
+                        "outline-variant": "#d7c3b3",
+                        "tertiary-fixed-dim": "#87dc2c",
+                        "secondary": "#0060ac",
+                        "error": "#ba1a1a",
+                        "inverse-primary": "#ffb871",
+                        "on-secondary": "#ffffff",
+                        "on-primary-fixed": "#2d1600",
+                        "secondary-container": "#68abff",
+                        "surface-container-highest": "#e6e2dd",
+                        "primary-container": "#ffb366",
+                        "surface-bright": "#fef8f3",
+                        "on-error": "#ffffff",
+                        "on-error-container": "#93000a",
+                        "on-secondary-fixed-variant": "#004883",
+                        "secondary-fixed": "#d4e3ff",
+                        "on-tertiary-container": "#315b00",
+                        "surface-container": "#f2ede8",
+                        "primary": "#8a5108",
+                        "on-tertiary": "#ffffff",
+                        "surface-tint": "#8a5108",
+                        "outline": "#847466",
+                        "surface-dim": "#ded9d4",
+                        "tertiary-fixed": "#a1fa49",
+                        "surface-container-low": "#f8f3ee",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "inverse-on-surface": "#f5f0eb",
+                        "on-primary-container": "#774400",
+                        "tertiary-container": "#83d928",
+                        "on-primary-fixed-variant": "#6a3c00",
+                        "surface-variant": "#e6e2dd",
+                        "background": "#fef8f3",
+                        "tertiary": "#3a6a00",
+                        "inverse-surface": "#32302d",
+                        "on-secondary-fixed": "#001c39",
+                        "surface-container-lowest": "#ffffff",
+                        "primary-fixed": "#ffdcbe",
+                        "on-background": "#1d1b19",
+                        "on-surface": "#1d1b19",
+                        "error-container": "#ffdad6",
+                        "on-secondary-container": "#003e73",
+                        "on-surface-variant": "#524438",
+                        "surface-container-high": "#ece7e2",
+                        "on-tertiary-fixed": "#0e2000",
+                        "on-tertiary-fixed-variant": "#2a5000",
+                        "surface": "#fef8f3"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Plus Jakarta Sans"],
+                        "label": ["Plus Jakarta Sans"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 48;
+        }
+        .bg-signature-gradient {
+            background: linear-gradient(135deg, #8A5108 0%, #FFB366 100%);
+        }
+        .organic-shape {
+            border-radius: 60% 40% 70% 30% / 30% 60% 40% 70%;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background font-body min-h-screen pb-32">
+<!-- Header Section (Profile) -->
+<header class="relative pt-12 pb-24 px-8 overflow-hidden rounded-b-xl">
+<!-- Background Orbs (Organic Asymmetry) -->
+<div class="absolute -top-20 -right-20 w-80 h-80 bg-primary-container opacity-20 blur-[80px] rounded-full"></div>
+<div class="absolute top-10 -left-10 w-60 h-60 bg-secondary-container opacity-10 blur-[60px] rounded-full"></div>
+<div class="relative z-10 flex flex-col items-center text-center">
+<div class="relative mb-6">
+<div class="w-28 h-28 rounded-full border-4 border-surface-container-lowest shadow-lg overflow-hidden">
+<img alt="User Avatar" class="w-full h-full object-cover" data-alt="portrait of a young smiling mother in soft natural morning light, warm indoor setting with organic textures" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDIhWbVmk1MaTdraNLDh_3MGu36eIGNkFTe4xPv82we9eiTRUd4SN_qLlvtfKc-NRYTUwn2lgrmO7Q9NbhmxsQgFrxEU20y20XuhHt2qj4LJQgMfU0-Fyp173RjKPOFqOpUr68Y_6x-8brdCmaA7uZV4lKcdMFw6n7abkDmuR_w_lLUUaVrebtTOqp4VmW1uqANobLkMfdVJ9jMf8IC8I_uWTclb7zoLoChqBWhN3KP_cbDVckTL9vewRrNh-bh91a2nJ32xiZ4NaKo"/>
+</div>
+<div class="absolute bottom-0 right-0 bg-signature-gradient p-2 rounded-full border-2 border-surface-container-lowest shadow-sm">
+<span class="material-symbols-outlined text-white text-sm" style="font-variation-settings: 'FILL' 1;">edit</span>
+</div>
+</div>
+<h1 class="text-3xl font-extrabold text-on-surface tracking-tight mb-2">陈夏妈妈</h1>
+<div class="inline-flex items-center px-4 py-1.5 bg-primary-fixed text-on-primary-fixed-variant rounded-full text-xs font-bold tracking-wide">
+                加入育儿助手第 365 天
+            </div>
+</div>
+</header>
+<!-- Main Content: Bento Grid Layout -->
+<main class="px-6 -mt-12 relative z-20 space-y-6">
+<!-- Quick Stats / Status -->
+<div class="grid grid-cols-2 gap-4">
+<div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_32px_32px_rgba(29,27,25,0.04)] flex flex-col items-center justify-center space-y-2">
+<span class="text-primary font-extrabold text-2xl">2</span>
+<span class="text-on-surface-variant text-xs font-medium">宝宝档案</span>
+</div>
+<div class="bg-surface-container-lowest p-6 rounded-lg shadow-[0_32px_32px_rgba(29,27,25,0.04)] flex flex-col items-center justify-center space-y-2">
+<span class="text-secondary font-extrabold text-2xl">12</span>
+<span class="text-on-surface-variant text-xs font-medium">我的收藏</span>
+</div>
+</div>
+<!-- Function List: Asymmetric Editorial Style -->
+<section class="space-y-4">
+<h2 class="text-sm font-bold uppercase tracking-[0.2em] text-outline ml-2 mb-4">功能列表</h2>
+<div class="flex flex-col space-y-3">
+<!-- 宝宝档案 -->
+<button class="group w-full flex items-center justify-between p-5 bg-surface-container-low rounded-lg transition-transform active:scale-[0.98] duration-200">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 flex items-center justify-center bg-primary-container rounded-full text-on-primary-container">
+<span class="material-symbols-outlined">child_care</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface">宝宝档案</p>
+<p class="text-xs text-on-surface-variant opacity-70">管理及添加宝宝信息</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 我的收藏 -->
+<button class="group w-full flex items-center justify-between p-5 bg-surface-container-low rounded-lg transition-transform active:scale-[0.98] duration-200">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 flex items-center justify-center bg-tertiary-container rounded-full text-on-tertiary-container">
+<span class="material-symbols-outlined">favorite</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface">我的收藏</p>
+<p class="text-xs text-on-surface-variant opacity-70">辅食谱、育儿百科干货</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 我的疫苗记录 -->
+<button class="group w-full flex items-center justify-between p-5 bg-surface-container-low rounded-lg transition-transform active:scale-[0.98] duration-200">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 flex items-center justify-center bg-secondary-container rounded-full text-on-secondary-container">
+<span class="material-symbols-outlined">vaccines</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface">我的疫苗记录</p>
+<p class="text-xs text-on-surface-variant opacity-70">已完成及待接种计划</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 我的辅食计划 -->
+<button class="group w-full flex items-center justify-between p-5 bg-surface-container-low rounded-lg transition-transform active:scale-[0.98] duration-200">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 flex items-center justify-center bg-primary-fixed-dim rounded-full text-on-primary-fixed-variant">
+<span class="material-symbols-outlined">restaurant_menu</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface">我的辅食计划</p>
+<p class="text-xs text-on-surface-variant opacity-70">本周科学喂养排班</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+<!-- 设置 -->
+<button class="group w-full flex items-center justify-between p-5 bg-surface-container-low rounded-lg transition-transform active:scale-[0.98] duration-200">
+<div class="flex items-center space-x-4">
+<div class="w-12 h-12 flex items-center justify-center bg-surface-container-high rounded-full text-on-surface-variant">
+<span class="material-symbols-outlined">settings</span>
+</div>
+<div class="text-left">
+<p class="font-bold text-on-surface">设置</p>
+<p class="text-xs text-on-surface-variant opacity-70">通知、隐私、关于我们</p>
+</div>
+</div>
+<span class="material-symbols-outlined text-outline group-hover:translate-x-1 transition-transform">chevron_right</span>
+</button>
+</div>
+</section>
+<!-- Logout Action -->
+<div class="pt-8 pb-12">
+<button class="w-full py-4 rounded-xl border-2 border-error-container text-error font-bold flex items-center justify-center space-x-2 transition-all hover:bg-error-container active:scale-[0.96]">
+<span class="material-symbols-outlined">logout</span>
+<span>退出登录</span>
+</button>
+</div>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-[0_-8px_24px_rgba(0,0,0,0.05)] rounded-t-[24px]">
+<!-- 首页 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="home">home</span>
+<span class="text-[10px] font-medium tracking-wide">首页</span>
+</a>
+<!-- 辅食 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="restaurant">restaurant</span>
+<span class="text-[10px] font-medium tracking-wide">辅食</span>
+</a>
+<!-- 疫苗 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined" data-icon="vaccines">vaccines</span>
+<span class="text-[10px] font-medium tracking-wide">疫苗</span>
+</a>
+<!-- 干货 (Using it as "My" or last tab logically for this profile screen) -->
+<a class="flex flex-col items-center justify-center bg-[#FFB366] text-white rounded-full px-4 py-1.5 scale-96 active:scale-90 transition-transform" href="#">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+<span class="text-[10px] font-medium tracking-wide">我的</span>
+</a>
+</nav>
+</body></html>

@@ -1,19 +1,16 @@
 <script setup lang="ts">
+import { rootTabs, type RootTabKey } from '@/config/app'
+
 const props = defineProps<{
-  active: 'home' | 'plan' | 'profile'
+  active: RootTabKey
 }>()
 
-const tabs = [
-  { key: 'home', label: '首页', icon: '⌂', path: '/pages/home/index' },
-  { key: 'plan', label: '辅食计划', icon: '☰', path: '/pages/plan/index' },
-  { key: 'profile', label: '我的', icon: '☺', path: '/pages/profile/index' }
-] as const
-
-function go(path: string, key: 'home' | 'plan' | 'profile') {
+function go(path: string, key: RootTabKey) {
   if (key === props.active) {
     return
   }
 
+  // Tab 页面都支持未登录访问，直接跳转
   uni.reLaunch({ url: path })
 }
 </script>
@@ -21,7 +18,7 @@ function go(path: string, key: 'home' | 'plan' | 'profile') {
 <template>
   <view class="tabbar-shell">
     <view
-      v-for="tab in tabs"
+      v-for="tab in rootTabs"
       :key="tab.key"
       class="tab-item"
       :class="{ active: active === tab.key }"
@@ -41,8 +38,10 @@ function go(path: string, key: 'home' | 'plan' | 'profile') {
   bottom: 28rpx;
   z-index: 20;
   display: flex;
-  justify-content: space-around;
-  padding: 20rpx 12rpx;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: 8rpx;
+  padding: 18rpx 12rpx;
   border-radius: 36rpx;
   background: rgba(253, 248, 243, 0.94);
   backdrop-filter: blur(20rpx);
@@ -50,25 +49,32 @@ function go(path: string, key: 'home' | 'plan' | 'profile') {
 }
 
 .tab-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
-  min-width: 160rpx;
+  justify-content: center;
+  min-width: 0;
+  padding: 8rpx 0;
+  border-radius: 999rpx;
   color: #9b8d83;
 }
 
 .tab-item.active {
   color: var(--mini-secondary-deep);
+  background: rgba(255, 179, 102, 0.2);
   transform: translateY(-4rpx);
 }
 
 .tab-icon {
-  font-size: 34rpx;
+  font-size: 30rpx;
+  line-height: 1;
 }
 
 .tab-label {
   margin-top: 6rpx;
-  font-size: 22rpx;
+  font-size: 20rpx;
   font-weight: 600;
+  white-space: nowrap;
 }
 </style>

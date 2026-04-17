@@ -13,6 +13,8 @@ import type {
   HomeFeature,
   HomeShortcut,
   IngredientHighlight,
+  KnowledgeArticleDetail,
+  KnowledgePageData,
   MealCount,
   MealPlanDetail,
   NutritionGoal,
@@ -22,8 +24,10 @@ import type {
   SaveFeedingRecordResponse,
   SaveMealPlanPayload,
   SaveMealPlanResponse,
+  SaveVaccineRecordPayload,
   SwapMealPlanResponse,
-  TabooGuide
+  TabooGuide,
+  VaccinePageData
 } from '@baby-food/shared-types'
 import { appConfig } from '@/config/app'
 
@@ -57,11 +61,9 @@ const HOME_PAGE = '/pages/home/index'
 const BABY_FORM_PAGE = '/pages/baby-form/index'
 const FAMILY_PAGE = '/pages/family/index'
 const PROTECTED_PAGES = new Set([
-  '/pages/home/index',
   '/pages/generate/index',
   '/pages/plan/index',
   '/pages/plan-detail/index',
-  '/pages/profile/index',
   FAMILY_PAGE
 ])
 
@@ -515,6 +517,31 @@ export function getTabooData(symptom = '腹泻') {
   })
 }
 
+export function getVaccinePageData() {
+  return request<VaccinePageData>('/app/vaccines', {
+    redirectOnUnauthorized: false
+  })
+}
+
+export function saveVaccineRecord(payload: SaveVaccineRecordPayload) {
+  return request<{ saved: boolean }>('/app/vaccines/records', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function getKnowledgePageData() {
+  return request<KnowledgePageData>('/app/knowledge', {
+    redirectOnUnauthorized: false
+  })
+}
+
+export function getKnowledgeArticleDetail(articleId: string) {
+  return request<KnowledgeArticleDetail>(`/app/knowledge/${articleId}`, {
+    redirectOnUnauthorized: false
+  })
+}
+
 export function getProfileData() {
   return request<ProfilePageData>('/app/profile')
 }
@@ -605,6 +632,10 @@ export async function addFavorite(recipeId: string) {
 export async function removeFavorite(recipeId: string) {
   await request<null>(`/app/favorites/${recipeId}`, { method: 'DELETE' })
   writeFavoriteCache(readFavoriteRecipeIds().filter((id) => id !== recipeId))
+}
+
+export function getFavoritesPageData() {
+  return request<import('@baby-food/shared-types').FavoritesPageData>('/app/favorites/page')
 }
 
 // ---- 消息 ----

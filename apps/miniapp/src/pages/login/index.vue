@@ -31,9 +31,19 @@ async function enterApp() {
     return
   }
 
+  // #ifdef H5
+  uni.showToast({
+    title: 'H5 环境暂不支持微信登录，请使用游客模式',
+    icon: 'none',
+    duration: 2000
+  })
+  return
+  // #endif
+
   loggingIn.value = true
 
   try {
+    // #ifdef MP-WEIXIN
     const loginResult = await uni.login({ provider: 'weixin' })
     const code = loginResult.code
 
@@ -42,6 +52,7 @@ async function enterApp() {
     }
 
     await wechatLogin(code)
+    // #endif
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : '微信登录失败',
@@ -53,7 +64,7 @@ async function enterApp() {
 }
 
 function guestEnter() {
-  uni.reLaunch({ url: '/pages/guide/index' })
+  uni.reLaunch({ url: '/pages/home/index' })
 }
 </script>
 

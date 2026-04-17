@@ -9,8 +9,9 @@
     "prisma:generate": "prisma generate",
     "db:init": "tsx src/db/setup.ts init",
     "db:seed": "tsx src/db/setup.ts seed",
-    "db:seed:extend": "tsx src/db/setup.ts seed:extend",  
-    "db:comment": "tsx src/db/setup.ts comment", 
+    "db:seed:extend": "tsx src/db/setup.ts seed:extend",
+    "db:comment": "tsx src/db/setup.ts comment",
+    "db:vaccine:init": "tsx src/db/setup.ts vaccine:init",
     "db:reset": "tsx src/db/setup.ts reset"
   },
   "dependencies": {

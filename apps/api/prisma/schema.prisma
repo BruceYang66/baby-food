@@ -52,37 +52,62 @@ enum FeedingRecordStatus {
   @@map("feeding_record_status")
 }
 
+enum VaccineCategory {
+  free
+  optional
+
+  @@map("vaccine_category")
+}
+
+enum VaccineRecordStatus {
+  pending
+  completed
+  optional
+
+  @@map("vaccine_record_status")
+}
+
+enum KnowledgeContentType {
+  article
+  guide
+  taboo
+
+  @@map("knowledge_content_type")
+}
+
 model User {
-  id               String       @id @default(cuid())
-  nickname         String
-  avatarUrl        String?      @map("avatar_url")
-  wechatOpenId     String?      @unique @map("wechat_open_id")
-  activityLabel    String?      @map("activity_label")
-  statusLabel      String?      @map("status_label")
-  activeBabyId     String?      @map("active_baby_id")
-  createdAt        DateTime     @default(now()) @map("created_at")
-  babies           Baby[]
-  ownedBabyInvites BabyInvite[] @relation("BabyInviteCreator")
-  babyMembers      BabyMember[]
-  receivedInvites  BabyInvite[] @relation("BabyInviteRecipient")
-  favorites        UserFavorite[]
+  id                String                  @id @default(cuid())
+  nickname          String
+  avatarUrl         String?                 @map("avatar_url")
+  wechatOpenId      String?                 @unique @map("wechat_open_id")
+  activityLabel     String?                 @map("activity_label")
+  statusLabel       String?                 @map("status_label")
+  activeBabyId      String?                 @map("active_baby_id")
+  createdAt         DateTime                @default(now()) @map("created_at")
+  babies            Baby[]
+  ownedBabyInvites  BabyInvite[]            @relation("BabyInviteCreator")
+  babyMembers       BabyMember[]
+  receivedInvites   BabyInvite[]            @relation("BabyInviteRecipient")
+  favorites         UserFavorite[]
+  knowledgeFavorites UserKnowledgeFavorite[]
 
   @@map("users")
 }
 
 model Baby {
-  id            String         @id @default(cuid())
-  userId        String         @map("user_id")
-  nickname      String
-  birthDate     DateTime       @map("birth_date")
-  stageLabel    String         @map("stage_label")
-  avatarUrl     String?        @map("avatar_url")
-  allergens     BabyAllergen[]
-  mealPlans     MealPlan[]
-  customRecipes CustomRecipe[]
-  members       BabyMember[]
-  invites       BabyInvite[]
-  user          User           @relation(fields: [userId], references: [id])
+  id             String          @id @default(cuid())
+  userId         String          @map("user_id")
+  nickname       String
+  birthDate      DateTime        @map("birth_date")
+  stageLabel     String          @map("stage_label")
+  avatarUrl      String?         @map("avatar_url")
+  allergens      BabyAllergen[]
+  mealPlans      MealPlan[]
+  customRecipes  CustomRecipe[]
+  vaccineRecords VaccineRecord[]
+  members        BabyMember[]
+  invites        BabyInvite[]
+  user           User            @relation(fields: [userId], references: [id])
 
   @@map("babies")
 }
@@ -361,6 +386,84 @@ model UserFavorite {
 
   @@unique([userId, recipeId])
   @@map("user_favorites")
+}
+
+model VaccineSchedule {
+  id                  String           @id @default(cuid())
+  name                String
+  disease             String
+  stageLabel          String           @map("stage_label")
+  recommendedAgeLabel String           @map("recommended_age_label")
+  category            VaccineCategory
+  description         String?
+  precautionsJson     String           @default("[]") @map("precautions_json")
+  sortOrder           Int              @default(0) @map("sort_order")
+  records             VaccineRecord[]
+
+  @@map("vaccine_schedules")
+}
+
+model VaccineRecord {
+  id           String              @id @default(cuid())
+  babyId        String              @map("baby_id")
+  scheduleId    String              @map("schedule_id")
+  status        VaccineRecordStatus @default(pending)
+  vaccinatedAt  DateTime?           @map("vaccinated_at") @db.Date
+  note          String?
+  createdAt     DateTime            @default(now()) @map("created_at")
+  updatedAt     DateTime            @updatedAt @map("updated_at")
+  baby          Baby                @relation(fields: [babyId], references: [id])
+  schedule      VaccineSchedule     @relation(fields: [scheduleId], references: [id])
+
+  @@unique([babyId, scheduleId])
+  @@index([babyId, status])
+  @@map("vaccine_records")
+}
+
+model KnowledgeArticle {
+  id            String               @id @default(cuid())
+  title         String
+  subtitle      String
+  summary       String
+  coverImage    String?              @map("cover_image")
+  categoryKey   String               @map("category_key")
+  categoryLabel String               @map("category_label")
+  tagsJson      String               @default("[]") @map("tags_json")
+  contentType   KnowledgeContentType @map("content_type")
+  content       String
+  isFeatured    Boolean              @default(false) @map("is_featured")
+  contentStatus ContentStatus        @default(published) @map("content_status")
+  sortOrder     Int                  @default(0) @map("sort_order")
+  createdAt     DateTime             @default(now()) @map("created_at")
+  updatedAt     DateTime             @updatedAt @map("updated_at")
+  sections      KnowledgeArticleSection[]
+  favorites     UserKnowledgeFavorite[]
+
+  @@map("knowledge_articles")
+}
+
+model KnowledgeArticleSection {
+  id         String           @id @default(cuid())
+  articleId  String           @map("article_id")
+  title      String?
+  content    String
+  imagesJson String           @default("[]") @map("images_json")
+  sortOrder  Int              @default(0) @map("sort_order")
+  article    KnowledgeArticle @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  @@map("knowledge_article_sections")
+}
+
+model UserKnowledgeFavorite {
+  id         String           @id @default(cuid())
+  userId      String           @map("user_id")
+  articleId   String           @map("article_id")
+  createdAt   DateTime         @default(now()) @map("created_at")
+  user        User             @relation(fields: [userId], references: [id])
+  article     KnowledgeArticle @relation(fields: [articleId], references: [id])
+
+  @@unique([userId, articleId])
+  @@map("user_knowledge_favorites")
 }
 
 model UserFeedback {

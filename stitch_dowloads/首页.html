@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>育儿助手 - 首页</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "on-primary": "#ffffff",
+                    "primary-fixed-dim": "#ffb871",
+                    "outline-variant": "#d7c3b3",
+                    "tertiary-fixed-dim": "#87dc2c",
+                    "secondary": "#0060ac",
+                    "error": "#ba1a1a",
+                    "inverse-primary": "#ffb871",
+                    "on-secondary": "#ffffff",
+                    "on-primary-fixed": "#2d1600",
+                    "secondary-container": "#68abff",
+                    "surface-container-highest": "#e6e2dd",
+                    "primary-container": "#ffb366",
+                    "surface-bright": "#fef8f3",
+                    "on-error": "#ffffff",
+                    "on-error-container": "#93000a",
+                    "on-secondary-fixed-variant": "#004883",
+                    "secondary-fixed": "#d4e3ff",
+                    "on-tertiary-container": "#315b00",
+                    "surface-container": "#f2ede8",
+                    "primary": "#8a5108",
+                    "on-tertiary": "#ffffff",
+                    "surface-tint": "#8a5108",
+                    "outline": "#847466",
+                    "surface-dim": "#ded9d4",
+                    "tertiary-fixed": "#a1fa49",
+                    "surface-container-low": "#f8f3ee",
+                    "secondary-fixed-dim": "#a4c9ff",
+                    "inverse-on-surface": "#f5f0eb",
+                    "on-primary-container": "#774400",
+                    "tertiary-container": "#83d928",
+                    "on-primary-fixed-variant": "#6a3c00",
+                    "surface-variant": "#e6e2dd",
+                    "background": "#fef8f3",
+                    "tertiary": "#3a6a00",
+                    "inverse-surface": "#32302d",
+                    "on-secondary-fixed": "#001c39",
+                    "surface-container-lowest": "#ffffff",
+                    "primary-fixed": "#ffdcbe",
+                    "on-background": "#1d1b19",
+                    "on-surface": "#1d1b19",
+                    "error-container": "#ffdad6",
+                    "on-secondary-container": "#003e73",
+                    "on-surface-variant": "#524438",
+                    "surface-container-high": "#ece7e2",
+                    "on-tertiary-fixed": "#0e2000",
+                    "on-tertiary-fixed-variant": "#2a5000",
+                    "surface": "#fef8f3"
+            },
+            "borderRadius": {
+                    "DEFAULT": "1rem",
+                    "lg": "2rem",
+                    "xl": "3rem",
+                    "full": "9999px"
+            },
+            "fontFamily": {
+                    "headline": ["Plus Jakarta Sans"],
+                    "body": ["Plus Jakarta Sans"],
+                    "label": ["Plus Jakarta Sans"]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .signature-gradient {
+            background: linear-gradient(135deg, #8a5108 0%, #ffb366 100%);
+        }
+        .hero-gradient {
+            background: linear-gradient(180deg, #FEF8F3 0%, #F1FAF7 100%);
+        }
+        body {
+            font-family: 'Plus Jakarta Sans', 'PingFang SC', sans-serif;
+            background-color: #fef8f3;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="text-on-surface pb-24">
+<!-- TopAppBar Section -->
+<header class="hero-gradient rounded-b-[32px] shadow-[0_32px_32px_rgba(29,27,25,0.04)] px-6 pt-6 pb-8">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 bg-primary-container rounded-full flex items-center justify-center text-white">
+<span class="material-symbols-outlined" data-icon="child_care">child_care</span>
+</div>
+<div>
+<h1 class="text-2xl font-bold text-[#8A5108] leading-none">育儿助手</h1>
+<p class="text-[10px] text-on-surface-variant opacity-70 mt-1 font-medium tracking-widest uppercase">Nurturing Light</p>
+</div>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm text-on-surface-variant hover:opacity-80 transition-opacity">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+</div>
+<p class="text-on-surface-variant font-medium mb-6 text-sm">吃得好，打得全，学得会</p>
+<!-- Baby Card -->
+<div class="bg-surface-container-lowest p-5 rounded-xl shadow-[0_8px_24px_rgba(0,0,0,0.03)] flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="relative">
+<img alt="Baby Avatar" class="w-16 h-16 rounded-full object-cover border-2 border-primary-fixed" data-alt="close-up portrait of a cute smiling baby with chubby cheeks in a soft natural light nursery setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD8tSHvqKWxCUYbXJIoNtBNQJ38Vt9uXqMoJKAHc2xRjv4q55hGbsv53o7VYvKulrArLvQ6D8MbWtk_3qPI4Pq1S_DbAtdIGkapQS9UaxYtfcuZu7uw2U3HIrx4yMRYxqharxW-RiQeS2MY5BhPkiC_f8FeB4Rlb4ZTGlqw3iRdJb0Zcpmj9mmcPNVw6KXg93jkix6OaboQKa9nivalH9gWMd66jU3eQd1QG0BSHhCAbpSJBpSl0z-7hHstfK1WDJGtgJ1-fqd377wn"/>
+<div class="absolute -bottom-1 -right-1 bg-tertiary w-6 h-6 rounded-full flex items-center justify-center text-white border-2 border-white">
+<span class="material-symbols-outlined text-[14px]" data-icon="verified">verified</span>
+</div>
+</div>
+<div>
+<h2 class="text-xl font-extrabold text-on-surface">小汤圆</h2>
+<div class="flex items-center gap-2 mt-1">
+<span class="text-xs bg-primary-fixed text-on-primary-fixed-variant px-2 py-0.5 rounded-full font-bold">8个月15天</span>
+</div>
+</div>
+</div>
+<button class="p-2 text-on-surface-variant opacity-60 hover:opacity-100 transition-opacity active:scale-90 duration-200">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+</button>
+</div>
+</header>
+<!-- Bento Grid Navigation (2x2) -->
+<main class="px-6 -mt-4 space-y-8">
+<section class="grid grid-cols-2 gap-4">
+<!-- 辅食中心 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex flex-col justify-between h-48 shadow-[0_4px_16px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-bold text-on-surface mb-1">辅食中心</h3>
+<p class="text-[10px] text-on-surface-variant leading-tight">科学辅食吃出健康</p>
+</div>
+<img alt="Food center" class="absolute top-8 -right-4 w-32 h-32 object-cover rounded-full opacity-40 group-hover:scale-110 transition-transform duration-500" data-alt="appetizing bowl of colorful organic vegetable puree for infants, warm morning sunlight on a wooden table" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6aX3b-vGJSI2Fw585ENWDPBRukDOpe58WBYwxv2nPzjmJbt4FarGuOL1PRz8VwSLyXWnqMgnLExXNdH-p8sv8IAUPi5z1CAoXAwRpkje7-VDmKYegNk0n-CD6jBxp90jZisUWzbe4kKIfAw6d_Xu6aKNavq0iPgPCMxrElnQRSEuA_7xfHd3HigIBWngPnj8a-ATYqrG2xU2A7MRj0dI73f2LLzFMsvByTBu4GKOx-iz_ZOHbxo1ys43xXjHvwL-sYlkRZyp-A_7I"/>
+<button class="relative z-10 w-fit px-4 py-1.5 signature-gradient text-white text-[10px] font-bold rounded-full active:scale-95 transition-transform">
+                    去生成
+                </button>
+</div>
+<!-- 疫苗记录 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex flex-col justify-between h-48 shadow-[0_4px_16px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-bold text-on-surface mb-1">疫苗记录</h3>
+<p class="text-[10px] text-on-surface-variant leading-tight">接种记录一目了然</p>
+</div>
+<div class="absolute top-10 -right-2 text-secondary opacity-10 group-hover:rotate-12 transition-transform duration-500">
+<span class="material-symbols-outlined text-[100px]" data-icon="vaccines">vaccines</span>
+</div>
+<button class="relative z-10 w-fit px-4 py-1.5 bg-secondary text-white text-[10px] font-bold rounded-full active:scale-95 transition-transform">
+                    查记录
+                </button>
+</div>
+<!-- 干货百科 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex flex-col justify-between h-48 shadow-[0_4px_16px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-bold text-on-surface mb-1">干货百科</h3>
+<p class="text-[10px] text-on-surface-variant leading-tight">办事攻略护理避坑</p>
+</div>
+<div class="absolute top-10 -right-2 text-tertiary opacity-10 group-hover:-rotate-12 transition-transform duration-500">
+<span class="material-symbols-outlined text-[100px]" data-icon="menu_book">menu_book</span>
+</div>
+<button class="relative z-10 w-fit px-4 py-1.5 bg-tertiary text-white text-[10px] font-bold rounded-full active:scale-95 transition-transform">
+                    看干货
+                </button>
+</div>
+<!-- 今日精选 -->
+<div class="bg-surface-container-lowest rounded-lg p-4 flex flex-col justify-between h-48 shadow-[0_4px_16px_rgba(0,0,0,0.02)] relative overflow-hidden group">
+<div class="relative z-10">
+<h3 class="font-bold text-on-surface mb-1">今日精选</h3>
+<p class="text-[10px] text-on-surface-variant leading-tight">8月龄辅食全攻略</p>
+</div>
+<img alt="Daily Pick" class="absolute top-12 -right-4 w-28 h-28 object-cover rounded-xl opacity-50 group-hover:scale-105 transition-transform duration-500" data-alt="stacks of cozy baby blankets and high-quality educational children books in a warm aesthetic room" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAoIAGu65nDbH2732Acx1XoTSdIqe_k7j5QTxtITtYF9FQwKJyuKmHs467fnfrjAcBZGZtUw6ASEJ32CUQTrRI_tV_cEw5UIL7-YKDYRlYLOvbMob186cTkaD_yy54OtP5NU-qekTsqswkKPacBtYs4g09uGhBBIJ5UKRLBATXX6XBd1IaRBZIbqPaIovpSIfbQpZ6l0Yd89tjabdsYpoJjr28kkkN-TnuKm-3yDOIh4HmCjazwEW85dBcBesKiVlhhGVMxVx2U7yRg"/>
+<button class="relative z-10 w-fit px-4 py-1.5 bg-[#D4AF37] text-white text-[10px] font-bold rounded-full active:scale-95 transition-transform">
+                    阅读
+                </button>
+</div>
+</section>
+<!-- Task List Area -->
+<section>
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-extrabold text-on-surface">今日待办</h3>
+<span class="text-[10px] font-bold uppercase tracking-widest text-on-surface-variant">4 Tasks Today</span>
+</div>
+<div class="space-y-3">
+<div class="bg-surface-container-low p-4 rounded-lg flex items-center gap-4 group">
+<div class="w-6 h-6 border-2 border-primary-container rounded-full flex items-center justify-center group-hover:bg-primary-container transition-colors">
+<span class="material-symbols-outlined text-transparent group-hover:text-white text-[16px]" data-icon="check">check</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">补充维生素D</p>
+<p class="text-[10px] text-on-surface-variant">建议 09:00 完成</p>
+</div>
+<span class="text-[10px] bg-primary-fixed text-primary px-2 py-0.5 rounded-full font-bold">每日</span>
+</div>
+<div class="bg-surface-container-low p-4 rounded-lg flex items-center gap-4 group">
+<div class="w-6 h-6 border-2 border-secondary-container rounded-full flex items-center justify-center group-hover:bg-secondary-container transition-colors">
+<span class="material-symbols-outlined text-transparent group-hover:text-white text-[16px]" data-icon="check">check</span>
+</div>
+<div class="flex-1">
+<p class="text-sm font-bold text-on-surface">体检预约</p>
+<p class="text-[10px] text-on-surface-variant">下周一进行 9月龄体检</p>
+</div>
+<span class="text-[10px] bg-secondary-fixed text-secondary px-2 py-0.5 rounded-full font-bold">重要</span>
+</div>
+</div>
+</section>
+<!-- Recommended Area (Horizontal Scroll) -->
+<section class="pb-8">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-lg font-extrabold text-on-surface">为您推荐</h3>
+</div>
+<div class="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-6 px-6">
+<div class="min-w-[240px] bg-white rounded-lg overflow-hidden shadow-sm">
+<img alt="Article 1" class="h-32 w-full object-cover" data-alt="gentle baby massage therapy session, hands softly touching baby's skin in a sun-drenched serene atmosphere" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDPau2iZaZdzJiohw6HFT7xIFq-gNlARhOVEu5cbt4mEu3Ub2QHAEkLbiggRJujbFgFqmEp3p60E5LLyyzJ2T8M3IByM_nfKiYE0NoCZONdMKcZk8m5URhKhg7M0zoTWaUyDKfMUwEg62paiYjwfaPIRV0DYinl2B3X9IKohJzAgWxf-C8s__GFpSitKTvHKCtVvnfE8qlX0lsal_aajFy5YA1SaJ1-lPtHAfZOYcT-53DTACqyFz7Ilh7yONgDO9fo8fzAOPRiISyn"/>
+<div class="p-4">
+<h4 class="text-sm font-bold text-on-surface line-clamp-1">睡前按摩操：告别惊醒</h4>
+<p class="text-[10px] text-on-surface-variant mt-1">1.2w人已收藏 · 专家指导</p>
+</div>
+</div>
+<div class="min-w-[240px] bg-white rounded-lg overflow-hidden shadow-sm">
+<img alt="Article 2" class="h-32 w-full object-cover" data-alt="colorful developmental toys for infants scattered on a soft carpet, focus on a wooden sensory toy" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBF5ZLO_TlZpf3r3BVpC5AgoGasCwo9lSGDS3T9Kq8ItRX6UzP_-nIeL3j5XWta3jRGvVqivzgIZW493EHtp01cmgRMGE0Es8KATcL5_ozX7OyfVwIxGDkiIv38_8DVgUBbMo1kUDrs9LSirYLbncUnUukdGF8WiRfOkApEkVhUzmLqzwzH-oXa8uVXW-nqrszbc9yclDuDFY2wNLmK5EYDmDEGUk0HDU0P2LoONlbWZYMapevB1ODDa9ON-P_0dLuXCaHInY36TZOq"/>
+<div class="p-4">
+<h4 class="text-sm font-bold text-on-surface line-clamp-1">8月龄精细动作训练</h4>
+<p class="text-[10px] text-on-surface-variant mt-1">8900人已学习 · 育儿百科</p>
+</div>
+</div>
+</div>
+</section>
+</main>
+<!-- Bottom Navigation Shell -->
+<nav class="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 bg-white/80 dark:bg-slate-900/80 backdrop-blur-lg shadow-[0_-8px_24px_rgba(0,0,0,0.05)] rounded-t-[24px]">
+<!-- Active Item: 首页 -->
+<a class="flex flex-col items-center justify-center bg-[#FFB366] text-white rounded-full px-4 py-1.5 transition-transform active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="home" style="font-variation-settings: 'FILL' 1;">home</span>
+<span class="text-[10px] font-medium tracking-wide">首页</span>
+</a>
+<!-- Inactive Item: 辅食 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-all rounded-full p-2 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="restaurant">restaurant</span>
+<span class="text-[10px] font-medium tracking-wide">辅食</span>
+</a>
+<!-- Inactive Item: 疫苗 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-all rounded-full p-2 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="vaccines">vaccines</span>
+<span class="text-[10px] font-medium tracking-wide">疫苗</span>
+</a>
+<!-- Inactive Item: 干货 -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-all rounded-full p-2 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="menu_book">menu_book</span>
+<span class="text-[10px] font-medium tracking-wide">干货</span>
+</a>
+<!-- Profile Link (Additional as requested) -->
+<a class="flex flex-col items-center justify-center text-[#524438] opacity-60 hover:bg-[#FEF8F3] transition-all rounded-full p-2 active:scale-90" href="#">
+<span class="material-symbols-outlined text-[24px]" data-icon="person">person</span>
+<span class="text-[10px] font-medium tracking-wide">我的</span>
+</a>
+</nav>
+<!-- Floating Action Button for Contextual Quick Action -->
+<button class="fixed right-6 bottom-24 w-14 h-14 signature-gradient text-white rounded-full flex items-center justify-center shadow-xl z-40 active:scale-95 duration-200">
+<span class="material-symbols-outlined text-[28px]" data-icon="add" style="font-variation-settings: 'wght' 600;">add</span>
+</button>
+<style>
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+</body></html>

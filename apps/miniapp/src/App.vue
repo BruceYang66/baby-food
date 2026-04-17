@@ -6,6 +6,7 @@ let lastSyncAt = 0
 
 export default {
   onLaunch() {
+    // 启动时同步 session，但不强制跳转（首页已改为公开页面）
     lastSyncAt = Date.now()
     void syncAppSession()
   },

@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+
+<html lang="zh-CN"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&amp;family=Be+Vietnam+Pro:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed-dim": "#ffb871",
+                        "on-surface": "#1d1b19",
+                        "secondary-container": "#68abff",
+                        "background": "#fef8f3",
+                        "inverse-surface": "#32302d",
+                        "outline-variant": "#d7c3b3",
+                        "surface-container-lowest": "#ffffff",
+                        "outline": "#847466",
+                        "error-container": "#ffdad6",
+                        "on-tertiary-fixed": "#320047",
+                        "tertiary-fixed": "#f8d8ff",
+                        "secondary-fixed": "#d4e3ff",
+                        "inverse-on-surface": "#f5f0eb",
+                        "error": "#ba1a1a",
+                        "on-secondary-fixed-variant": "#004883",
+                        "surface-container-high": "#ece7e2",
+                        "surface-variant": "#e6e2dd",
+                        "surface-tint": "#8a5108",
+                        "on-tertiary-fixed-variant": "#6c228c",
+                        "tertiary": "#873da6",
+                        "surface-container-low": "#f8f3ee",
+                        "surface-container": "#f2ede8",
+                        "surface-dim": "#ded9d4",
+                        "on-primary": "#ffffff",
+                        "primary": "#8a5108",
+                        "surface": "#fef8f3",
+                        "surface-bright": "#fef8f3",
+                        "on-secondary": "#ffffff",
+                        "on-tertiary": "#ffffff",
+                        "on-primary-fixed": "#2d1600",
+                        "on-secondary-container": "#003e73",
+                        "on-surface-variant": "#524438",
+                        "on-primary-fixed-variant": "#6a3c00",
+                        "on-background": "#1d1b19",
+                        "inverse-primary": "#ffb871",
+                        "on-secondary-fixed": "#001c39",
+                        "secondary": "#0060ac",
+                        "on-primary-container": "#774400",
+                        "on-tertiary-container": "#772d96",
+                        "tertiary-container": "#eaadff",
+                        "secondary-fixed-dim": "#a4c9ff",
+                        "tertiary-fixed-dim": "#ecb2ff",
+                        "on-error-container": "#93000a",
+                        "surface-container-highest": "#e6e2dd",
+                        "primary-fixed": "#ffdcbe",
+                        "on-error": "#ffffff",
+                        "primary-container": "#ffb366"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "1rem",
+                        "lg": "2rem",
+                        "xl": "3rem",
+                        "full": "9999px"
+                    },
+                    "fontFamily": {
+                        "headline": ["Plus Jakarta Sans"],
+                        "body": ["Be Vietnam Pro"],
+                        "label": ["Be Vietnam Pro"]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .timeline-gradient {
+            background: linear-gradient(180deg, transparent 0%, #d7c3b3 15%, #d7c3b3 85%, transparent 100%);
+        }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background font-body text-on-surface antialiased">
+<!-- Top Navigation -->
+<header class="fixed top-0 w-full z-50 bg-[#fef8f3]/80 backdrop-blur-xl flex justify-between items-center px-6 h-16">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#8a5108] cursor-pointer hover:bg-stone-200/20 p-2 rounded-full transition-all">chevron_left</span>
+<div class="flex items-center gap-2 bg-surface-container-low px-4 py-1.5 rounded-full cursor-pointer border border-outline-variant/10">
+<span class="font-headline font-bold text-lg text-[#8a5108]">疫苗接种</span>
+<span class="material-symbols-outlined text-xs">expand_more</span>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<div class="w-8 h-8 rounded-full overflow-hidden border-2 border-primary-container">
+<img class="w-full h-full object-cover" data-alt="portrait of a cute smiling baby with soft warm lighting lifestyle photography" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqJlb6qmaaPMgdnBAeT7952BWAr1qk41FNqkbWWSsRQ_IBmveuRf7xBlqXpnVSKQspjtG4ES_cxsmexkqxhYT4h4D1b-lZz6TM28FycG_e1WGi0g1U41-ttbq9xL55FgDRqKiLGQi95DEDiw1yo3e_b2_9zmgc0lfb3UcfB9-tCN05u-jVGLsSCIeujP9-EthTUBFVEPAN-ZNEuShPADuOF57AIPwQQ2UTo_NJaa0uiDZm9E3uXUSzL1JIikil9NSxn94XN4cH7dGw"/>
+</div>
+<span class="material-symbols-outlined text-[#8a5108]">notifications</span>
+</div>
+</header>
+<main class="pt-20 pb-32 px-4 md:px-8 max-w-4xl mx-auto">
+<!-- Stats Bento Grid -->
+<div class="grid grid-cols-2 gap-4 mb-8">
+<div class="bg-secondary-container/10 p-5 rounded-lg border border-secondary-container/5 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10">
+<span class="material-symbols-outlined text-6xl text-secondary">verified_user</span>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<div class="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-weight="fill">shield</span>
+</div>
+<span class="text-sm font-semibold text-on-secondary-container">免费疫苗</span>
+</div>
+<div class="flex flex-col">
+<span class="text-2xl font-bold text-on-secondary-container">12 <span class="text-xs font-normal opacity-70">已完成</span></span>
+<span class="text-xs text-secondary mt-1 font-medium">剩余 8 剂待接种</span>
+</div>
+</div>
+<div class="bg-tertiary-container/10 p-5 rounded-lg border border-tertiary-container/5 relative overflow-hidden">
+<div class="absolute -right-4 -top-4 opacity-10">
+<span class="material-symbols-outlined text-6xl text-tertiary">add_moderator</span>
+</div>
+<div class="flex items-center gap-2 mb-3">
+<div class="w-8 h-8 rounded-full bg-tertiary flex items-center justify-center">
+<span class="material-symbols-outlined text-white text-sm" data-weight="fill">medical_services</span>
+</div>
+<span class="text-sm font-semibold text-on-tertiary-container">自费疫苗</span>
+</div>
+<div class="flex flex-col">
+<span class="text-2xl font-bold text-on-tertiary-container">4 <span class="text-xs font-normal opacity-70">已记录</span></span>
+<span class="text-xs text-tertiary mt-1 font-medium">可选 15 剂</span>
+</div>
+</div>
+</div>
+<!-- Tab Switcher -->
+<div class="flex bg-surface-container-low p-1.5 rounded-full mb-10 w-full">
+<button class="flex-1 py-2.5 rounded-full text-sm font-bold bg-[#8a5108] text-white shadow-md">时间轴</button>
+<button class="flex-1 py-2.5 rounded-full text-sm font-medium text-stone-500 hover:text-primary transition-colors">已接种记录</button>
+<button class="flex-1 py-2.5 rounded-full text-sm font-medium text-stone-500 hover:text-primary transition-colors">注意事项</button>
+</div>
+<!-- Timeline Container -->
+<div class="relative">
+<!-- Central Line -->
+<div class="absolute left-1/2 -translate-x-1/2 h-full w-[2px] timeline-gradient z-0"></div>
+<!-- Timeline Entries -->
+<div class="space-y-16">
+<!-- Birth Entry -->
+<div class="relative grid grid-cols-[1fr_auto_1fr] items-center">
+<div class="flex flex-col items-end pr-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-secondary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-secondary">卡介苗</p>
+<span class="material-symbols-outlined text-emerald-500 text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<p class="text-[10px] text-stone-400">第一剂 (共1剂)</p>
+</div>
+</div>
+<div class="z-10 bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-lg ring-4 ring-background">0月</div>
+<div class="pl-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-r-4 border-secondary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-secondary">乙肝疫苗</p>
+<span class="material-symbols-outlined text-emerald-500 text-sm" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+</div>
+<p class="text-[10px] text-stone-400">第一剂 (共3剂)</p>
+</div>
+</div>
+</div>
+<!-- 1 Month -->
+<div class="relative grid grid-cols-[1fr_auto_1fr] items-center">
+<div class="pr-8"></div>
+<div class="z-10 bg-surface-container-high text-stone-600 w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-background">1月</div>
+<div class="flex flex-col items-start pl-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-r-4 border-secondary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-secondary">乙肝疫苗</p>
+<input checked="" class="rounded-sm border-secondary text-secondary focus:ring-secondary w-4 h-4" type="checkbox"/>
+</div>
+<p class="text-[10px] text-stone-400 mb-2">第二剂 (共3剂)</p>
+<span class="text-[10px] bg-secondary/10 text-secondary px-2 py-0.5 rounded-full">进行中</span>
+</div>
+</div>
+</div>
+<!-- 2 Months -->
+<div class="relative grid grid-cols-[1fr_auto_1fr] items-center">
+<div class="flex flex-col items-end pr-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-secondary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-secondary">脊灰疫苗</p>
+<input class="rounded-sm border-secondary text-secondary focus:ring-secondary w-4 h-4" type="checkbox"/>
+</div>
+<p class="text-[10px] text-stone-400">第一剂 (共4剂)</p>
+</div>
+</div>
+<div class="z-10 bg-primary-container text-on-primary-container w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shadow-md ring-4 ring-background">2月</div>
+<div class="flex flex-col items-start pl-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-r-4 border-tertiary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-tertiary">13价肺炎</p>
+<input class="rounded-sm border-tertiary text-tertiary focus:ring-tertiary w-4 h-4" type="checkbox"/>
+</div>
+<p class="text-[10px] text-stone-400">第一剂 (共4剂)</p>
+</div>
+</div>
+</div>
+<!-- 3 Months -->
+<div class="relative grid grid-cols-[1fr_auto_1fr] items-center">
+<div class="flex flex-col items-end pr-8 gap-4">
+<div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-secondary max-w-[160px]">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-secondary">百白破</p>
+<input class="rounded-sm border-secondary text-secondary focus:ring-secondary w-4 h-4" type="checkbox"/>
+</div>
+<p class="text-[10px] text-stone-400">第一剂 (共4剂)</p>
+</div>
+<div class="bg-white p-4 rounded-lg shadow-sm border-l-4 border-secondary max-w-[160px] opacity-60">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-stone-500">脊灰疫苗</p>
+<input class="rounded-sm border-stone-300" disabled="" type="checkbox"/>
+</div>
+<p class="text-[10px] text-stone-400">第二剂 (共4剂)</p>
+</div>
+</div>
+<div class="z-10 bg-surface-container-high text-stone-400 w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs ring-4 ring-background">3月</div>
+<div class="flex flex-col items-start pl-8">
+<div class="bg-white p-4 rounded-lg shadow-sm border-r-4 border-tertiary max-w-[160px] ring-2 ring-error ring-offset-2">
+<div class="flex justify-between items-start mb-1">
+<p class="text-xs font-bold text-error">五联疫苗</p>
+<span class="material-symbols-outlined text-error text-sm">priority_high</span>
+</div>
+<p class="text-[10px] text-stone-400 mb-2">可选替代方案</p>
+<span class="text-[10px] bg-error/10 text-error px-2 py-0.5 rounded-full font-bold">建议接种</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Tip Card -->
+<div class="mt-16 bg-surface-container p-6 rounded-lg border border-outline-variant/20 flex gap-4">
+<div class="bg-primary/10 w-12 h-12 rounded-full flex-shrink-0 flex items-center justify-center">
+<span class="material-symbols-outlined text-primary">lightbulb</span>
+</div>
+<div>
+<h4 class="font-bold text-sm mb-1">接种小贴士</h4>
+<p class="text-xs text-on-surface-variant leading-relaxed">接种前请确保宝宝近2天无发热症状。接种后需留观30分钟，24小时内避免洗澡。</p>
+</div>
+</div>
+</main>
+<!-- Bottom Nav -->
+<nav class="fixed bottom-0 w-full z-50 rounded-t-[2rem] bg-[#fef8f3]/80 backdrop-blur-xl shadow-[0_-4px_40px_rgba(29,27,25,0.06)] flex justify-around items-end px-4 pb-6 pt-2">
+<a class="flex flex-col items-center justify-center text-stone-400 p-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">home</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium tracking-wide">首页</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 p-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">restaurant_menu</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium tracking-wide">辅食</span>
+</a>
+<a class="flex flex-col items-center justify-center bg-gradient-to-br from-[#8a5108] to-[#ffb366] text-white rounded-full p-3 mb-1 shadow-lg transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">vaccines</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium tracking-wide mt-1">疫苗</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 p-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">auto_stories</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium tracking-wide">干货</span>
+</a>
+<a class="flex flex-col items-center justify-center text-stone-400 p-2 transition-transform duration-200 active:scale-90" href="#">
+<span class="material-symbols-outlined mb-1">person</span>
+<span class="font-['Plus_Jakarta_Sans'] text-[10px] font-medium tracking-wide">我的</span>
+</a>
+</nav>
+</body></html>

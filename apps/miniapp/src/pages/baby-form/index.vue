@@ -61,6 +61,13 @@ function onChooseAvatar(event: { detail: { avatarUrl: string } }) {
   }
 }
 
+// H5 环境下的头像选择
+// #ifdef H5
+function onH5ChooseAvatar() {
+  uni.showToast({ title: 'H5 环境暂不支持头像上传', icon: 'none' })
+}
+// #endif
+
 // open-type="nickname" 的输入框在真机上会弹出微信昵称选择面板
 // 使用 @blur（失焦）或 @confirm（回车）事件捕获值，@input 与该 type 存在兼容性问题
 function onNicknameInput(event: { detail: { value: string } }) {
@@ -138,6 +145,7 @@ async function submitForm() {
     <view class="form-card card">
       <!-- 头像选择：open-type="chooseAvatar" 返回永久 CDN 链接 -->
       <view class="avatar-block">
+        <!-- #ifdef MP-WEIXIN -->
         <button class="avatar-btn" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
           <image
             v-if="avatarUrl"
@@ -150,12 +158,28 @@ async function submitForm() {
             <text class="avatar-placeholder-text">上传头像</text>
           </view>
         </button>
+        <!-- #endif -->
+        <!-- #ifdef H5 -->
+        <button class="avatar-btn" @tap="onH5ChooseAvatar">
+          <image
+            v-if="avatarUrl"
+            class="avatar-img"
+            :src="avatarUrl"
+            mode="aspectFill"
+          />
+          <view v-else class="avatar-placeholder">
+            <text class="avatar-placeholder-icon">+</text>
+            <text class="avatar-placeholder-text">上传头像</text>
+          </view>
+        </button>
+        <!-- #endif -->
         <text class="avatar-hint">{{ avatarUrl ? '点击更换头像' : '点击选择宝宝头像（选填）' }}</text>
       </view>
 
       <!-- 宝宝昵称：open-type="nickname" 触发微信昵称填写面板 -->
       <view class="field-block">
         <text class="field-label">宝宝昵称</text>
+        <!-- #ifdef MP-WEIXIN -->
         <input
           class="field-input"
           type="nickname"
@@ -165,6 +189,16 @@ async function submitForm() {
           @blur="onNicknameInput"
           @confirm="onNicknameInput"
         />
+        <!-- #endif -->
+        <!-- #ifdef H5 -->
+        <input
+          v-model="nickname"
+          class="field-input"
+          type="text"
+          placeholder="请输入宝宝昵称"
+          maxlength="20"
+        />
+        <!-- #endif -->
       </view>
 
       <view class="field-block">

@@ -2,6 +2,20 @@
   "name": "宝宝辅食智囊",
   "appid": "wx22461febd3e9ad52",
   "description": "宝宝辅食生成器微信小程序原型工程",
+  "versionName": "1.0.0",
+  "versionCode": "100",
+  "h5": {
+    "title": "宝宝辅食智囊",
+    "router": {
+      "mode": "hash",
+      "base": "/"
+    },
+    "devServer": {
+      "port": 5174,
+      "https": false
+    },
+    "publicPath": "/"
+  },
   "mp-weixin": {
     "appid": "wx22461febd3e9ad52",
     "setting": {
