@@ -13,7 +13,11 @@ export const env = {
   databaseUrl: process.env.DATABASE_URL || '',
   jwtSecret: process.env.JWT_SECRET || '',
   wechatAppId: process.env.WECHAT_APP_ID || '',
-  wechatSecret: process.env.WECHAT_SECRET || ''
+  wechatSecret: process.env.WECHAT_SECRET || '',
+  uploadBaseUrl: process.env.UPLOAD_BASE_URL || '',
+  uploadMode: process.env.UPLOAD_MODE || 'local',
+  remoteUploadUrl: process.env.REMOTE_UPLOAD_URL || '',
+  remoteUploadToken: process.env.REMOTE_UPLOAD_TOKEN || ''
 }
 
 export function hasDatabaseUrl() {

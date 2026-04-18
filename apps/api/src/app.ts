@@ -1,7 +1,12 @@
 import express, { type NextFunction, type Request, type Response } from 'express'
 import jwt from 'jsonwebtoken'
+import multer from 'multer'
+import path from 'path'
+import fs from 'fs'
+import { fileURLToPath } from 'url'
 import { env } from './config/env.js'
 import { wechatConfig } from './config/wechat.js'
+import { prisma } from './db/prisma.js'
 import {
   getAdminDashboardOverview,
   getAdminImportJobs,
@@ -9,7 +14,16 @@ import {
   getAdminRecipes,
   getAdminReviewQueue,
   getAdminSystemSettings,
-  getAdminUsers
+  getAdminUsers,
+  createRecipe,
+  updateRecipe,
+  batchUpdateRecipeStatus,
+  deleteRecipe,
+  getAdminKnowledgeArticles,
+  getAdminKnowledgeDetail,
+  createKnowledgeArticle,
+  updateKnowledgeArticle,
+  deleteKnowledgeArticle
 } from './data/admin.js'
 import {
   acceptFamilyInvite,
@@ -111,6 +125,49 @@ app.use((req, res, next) => {
 })
 
 app.use(express.json())
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+// 配置图片上传
+const uploadDir = path.join(__dirname, '../uploads/images')
+
+// 确保上传目录存在
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true })
+}
+
+// 根据上传模式配置 multer
+const storage = env.uploadMode === 'remote'
+  ? multer.memoryStorage() // 远程上传使用内存存储
+  : multer.diskStorage({   // 本地上传使用磁盘存储
+      destination: (_req, _file, cb) => {
+        cb(null, uploadDir)
+      },
+      filename: (_req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+        cb(null, uniqueSuffix + path.extname(file.originalname))
+      }
+    })
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    const mimetype = allowedTypes.test(file.mimetype)
+
+    if (mimetype && extname) {
+      cb(null, true)
+    } else {
+      cb(new Error('只支持图片格式：jpeg, jpg, png, gif, webp'))
+    }
+  }
+})
+
+// 静态文件服务
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
 function getErrorMessage(error: unknown, fallback: string) {
   return error instanceof Error ? error.message : fallback
@@ -783,6 +840,66 @@ app.post('/api/admin/auth/login', (_req, res) => {
   res.json({ ok: true, data: { token: 'mock-admin-token' } })
 })
 
+// 图片上传接口
+app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ ok: false, message: '未上传图片文件' })
+      return
+    }
+
+    let imageUrl: string
+
+    if (env.uploadMode === 'remote') {
+      // 远程上传模式
+      if (!env.remoteUploadUrl) {
+        res.status(500).json({ ok: false, message: '未配置远程上传地址' })
+        return
+      }
+
+      const FormData = (await import('form-data')).default
+      const formData = new FormData()
+      formData.append('image', req.file.buffer, {
+        filename: req.file.originalname,
+        contentType: req.file.mimetype
+      })
+
+      const headers: Record<string, string> = {}
+      if (env.remoteUploadToken) {
+        headers['Authorization'] = `Bearer ${env.remoteUploadToken}`
+      }
+
+      const response = await fetch(env.remoteUploadUrl, {
+        method: 'POST',
+        body: formData as any,
+        headers
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        res.status(500).json({ ok: false, message: `远程上传失败: ${response.status} ${errorText}` })
+        return
+      }
+
+      const result = await response.json() as { ok: boolean; data?: { url: string }; message?: string }
+
+      if (!result.ok || !result.data?.url) {
+        res.status(500).json({ ok: false, message: result.message || '远程上传失败' })
+        return
+      }
+
+      imageUrl = result.data.url
+    } else {
+      // 本地上传模式
+      imageUrl = `/uploads/images/${req.file.filename}`
+    }
+
+    res.json({ ok: true, data: { url: imageUrl } })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '图片上传失败' })
+  }
+})
+
 app.get('/api/admin/dashboard/overview', async (_req, res) => {
   try {
     res.json({ ok: true, data: await getAdminDashboardOverview() })
@@ -807,28 +924,96 @@ app.get('/api/admin/recipes/:id', async (req, res) => {
   }
 })
 
-app.post('/api/admin/recipes', (_req, res) => {
-  res.json({ ok: true, message: 'create recipe mock' })
+app.post('/api/admin/recipes', async (req, res) => {
+  try {
+    const data = await createRecipe(req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱创建失败' })
+  }
 })
 
-app.put('/api/admin/recipes/:id', (req, res) => {
-  res.json({ ok: true, message: `update recipe ${getRouteParam(req.params.id)} mock` })
+app.put('/api/admin/recipes/:id', async (req, res) => {
+  try {
+    const data = await updateRecipe(getRouteParam(req.params.id), req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱更新失败' })
+  }
 })
 
-app.post('/api/admin/recipes/:id/submit-review', (req, res) => {
-  res.json({ ok: true, message: `submit review ${getRouteParam(req.params.id)} mock` })
+app.delete('/api/admin/recipes/:id', async (req, res) => {
+  try {
+    await deleteRecipe(getRouteParam(req.params.id))
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱删除失败' })
+  }
 })
 
-app.post('/api/admin/recipes/:id/publish', (req, res) => {
-  res.json({ ok: true, message: `publish ${getRouteParam(req.params.id)} mock` })
+app.post('/api/admin/recipes/batch-update-status', async (req, res) => {
+  try {
+    const { recipeIds, contentStatus } = req.body as { recipeIds: string[], contentStatus: string }
+    await batchUpdateRecipeStatus(recipeIds, contentStatus)
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '批量更新失败' })
+  }
 })
 
-app.post('/api/admin/recipes/:id/offline', (req, res) => {
-  res.json({ ok: true, message: `offline ${getRouteParam(req.params.id)} mock` })
+app.post('/api/admin/recipes/:id/submit-review', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.id)
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: {
+        contentStatus: 'pending_review',
+        reviewStatus: 'pending'
+      }
+    })
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '提交审核失败' })
+  }
 })
 
-app.post('/api/admin/recipes/:id/restore', (req, res) => {
-  res.json({ ok: true, message: `restore ${getRouteParam(req.params.id)} mock` })
+app.post('/api/admin/recipes/:id/publish', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.id)
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: { contentStatus: 'published' }
+    })
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '发布失败' })
+  }
+})
+
+app.post('/api/admin/recipes/:id/offline', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.id)
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: { contentStatus: 'offline' }
+    })
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '下架失败' })
+  }
+})
+
+app.post('/api/admin/recipes/:id/restore', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.id)
+    await prisma.recipe.update({
+      where: { id: recipeId },
+      data: { contentStatus: 'draft' }
+    })
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '恢复失败' })
+  }
 })
 
 app.post('/api/admin/imports/recipes', (_req, res) => {
@@ -851,12 +1036,65 @@ app.get('/api/admin/reviews/pending', async (_req, res) => {
   }
 })
 
-app.post('/api/admin/reviews/:recipeId/approve', (req, res) => {
-  res.json({ ok: true, message: `approve ${getRouteParam(req.params.recipeId)} mock` })
+app.post('/api/admin/reviews/:recipeId/approve', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.recipeId)
+    const { comment } = req.body as { comment?: string }
+
+    await prisma.$transaction([
+      prisma.recipe.update({
+        where: { id: recipeId },
+        data: {
+          reviewStatus: 'approved',
+          contentStatus: 'published'
+        }
+      }),
+      prisma.recipeReview.create({
+        data: {
+          recipeId,
+          action: 'approved',
+          comment: comment || '审核通过'
+        }
+      })
+    ])
+
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '审核通过失败' })
+  }
 })
 
-app.post('/api/admin/reviews/:recipeId/reject', (req, res) => {
-  res.json({ ok: true, message: `reject ${getRouteParam(req.params.recipeId)} mock` })
+app.post('/api/admin/reviews/:recipeId/reject', async (req, res) => {
+  try {
+    const recipeId = getRouteParam(req.params.recipeId)
+    const { comment } = req.body as { comment: string }
+
+    if (!comment || !comment.trim()) {
+      res.status(400).json({ ok: false, message: '请填写拒绝原因' })
+      return
+    }
+
+    await prisma.$transaction([
+      prisma.recipe.update({
+        where: { id: recipeId },
+        data: {
+          reviewStatus: 'rejected',
+          contentStatus: 'draft'
+        }
+      }),
+      prisma.recipeReview.create({
+        data: {
+          recipeId,
+          action: 'rejected',
+          comment
+        }
+      })
+    ])
+
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '审核拒绝失败' })
+  }
 })
 
 app.get('/api/admin/users', async (_req, res) => {
@@ -872,6 +1110,51 @@ app.get('/api/admin/settings/system', async (_req, res) => {
     res.json({ ok: true, data: await getAdminSystemSettings() })
   } catch (error) {
     res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '系统设置读取失败' })
+  }
+})
+
+// 干货管理接口
+app.get('/api/admin/knowledge', async (req, res) => {
+  try {
+    const categoryKey = typeof req.query.categoryKey === 'string' ? req.query.categoryKey : undefined
+    res.json({ ok: true, data: await getAdminKnowledgeArticles(categoryKey) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货列表读取失败' })
+  }
+})
+
+app.get('/api/admin/knowledge/:id', async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getAdminKnowledgeDetail(getRouteParam(req.params.id)) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货详情读取失败' })
+  }
+})
+
+app.post('/api/admin/knowledge', async (req, res) => {
+  try {
+    const data = await createKnowledgeArticle(req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货创建失败' })
+  }
+})
+
+app.put('/api/admin/knowledge/:id', async (req, res) => {
+  try {
+    const data = await updateKnowledgeArticle(getRouteParam(req.params.id), req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货更新失败' })
+  }
+})
+
+app.delete('/api/admin/knowledge/:id', async (req, res) => {
+  try {
+    await deleteKnowledgeArticle(getRouteParam(req.params.id))
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货删除失败' })
   }
 })
 

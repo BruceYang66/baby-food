@@ -1,14 +1,64 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import type { ReviewQueueItem } from '@baby-food/shared-types'
 import ReviewDecisionPanel from '@/components/reviews/ReviewDecisionPanel.vue'
-import { getReviewQueue } from '@/services/api'
+import { getReviewQueue, approveRecipe, rejectRecipe } from '@/services/api'
 
+const router = useRouter()
 const reviewQueue = ref<ReviewQueueItem[]>([])
+const selectedRecipe = ref<ReviewQueueItem | null>(null)
+const rejectComment = ref('')
+const showRejectDialog = ref(false)
 
-onMounted(async () => {
+async function loadReviewQueue() {
   reviewQueue.value = await getReviewQueue()
-})
+}
+
+function viewRecipe(item: ReviewQueueItem) {
+  selectedRecipe.value = item
+  router.push({ path: '/recipes/editor', query: { id: item.id } })
+}
+
+async function handleApprove(recipeId: string) {
+  if (!confirm('确定通过此食谱的审核吗？')) {
+    return
+  }
+
+  try {
+    await approveRecipe(recipeId)
+    alert('审核通过成功')
+    await loadReviewQueue()
+  } catch (error) {
+    alert('审核通过失败：' + (error instanceof Error ? error.message : '未知错误'))
+  }
+}
+
+function showRejectForm(recipeId: string) {
+  selectedRecipe.value = reviewQueue.value.find(item => item.id === recipeId) || null
+  rejectComment.value = ''
+  showRejectDialog.value = true
+}
+
+async function handleReject() {
+  if (!selectedRecipe.value) return
+
+  if (!rejectComment.value.trim()) {
+    alert('请填写拒绝原因')
+    return
+  }
+
+  try {
+    await rejectRecipe(selectedRecipe.value.id, rejectComment.value)
+    alert('审核拒绝成功')
+    showRejectDialog.value = false
+    await loadReviewQueue()
+  } catch (error) {
+    alert('审核拒绝失败：' + (error instanceof Error ? error.message : '未知错误'))
+  }
+}
+
+onMounted(loadReviewQueue)
 </script>
 
 <template>
@@ -17,15 +67,17 @@ onMounted(async () => {
       <div style="display:flex; align-items:center; justify-content:space-between;">
         <div>
           <div class="panel-title" style="font-size:24px;">内容审核页</div>
-          <div style="margin-top:6px; color:var(--admin-text-muted);">支持待审 / 审核中 / 已通过 / 已拒绝筛选，以及批量审核。</div>
+          <div style="margin-top:6px; color:var(--admin-text-muted);">审核待发布的食谱内容，确保质量和安全性。</div>
         </div>
         <div style="display:flex; gap:10px;">
-          <button class="ghost-btn">批量通过</button>
-          <button class="ghost-btn">批量驳回</button>
+          <button class="ghost-btn" @click="loadReviewQueue">刷新列表</button>
         </div>
       </div>
       <div class="table-shell" style="margin-top:18px;">
-        <div v-for="item in reviewQueue" :key="item.id" class="table-row" style="grid-template-columns: 180px 1fr 140px 140px 120px;">
+        <div v-if="reviewQueue.length === 0" style="text-align: center; padding: 40px; color: var(--admin-text-muted);">
+          暂无待审核内容
+        </div>
+        <div v-for="item in reviewQueue" :key="item.id" class="table-row" style="grid-template-columns: 180px 1fr 140px 140px 200px;">
           <div>{{ item.submittedAt }}</div>
           <div>
             <div style="font-weight:700;">{{ item.title }}</div>
@@ -33,29 +85,56 @@ onMounted(async () => {
           </div>
           <div>{{ item.submittedBy }}</div>
           <div>{{ item.source }}</div>
-          <div><button class="ghost-btn" style="width:100%;">查看</button></div>
+          <div style="display: flex; gap: 8px;">
+            <button class="ghost-btn" style="padding: 8px 12px;" @click="viewRecipe(item)">查看</button>
+            <button class="ghost-btn" style="padding: 8px 12px; background: #e8f5e9; color: #2e7d32;" @click="handleApprove(item.id)">通过</button>
+            <button class="ghost-btn" style="padding: 8px 12px; background: #ffebee; color: #c62828;" @click="showRejectForm(item.id)">拒绝</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <section style="display:grid; grid-template-columns: 0.95fr 0.9fr 0.8fr; gap:20px; align-items:start;">
-      <div class="panel">
-        <div class="panel-title" style="font-size:20px;">左侧：食谱预览</div>
-        <div style="margin-top: 16px; border-radius: 12px; overflow:hidden; background: #FDF8F3;">
-          <div style="height: 220px; background: linear-gradient(180deg, rgba(255,179,102,0.38), rgba(255,255,255,0.86));"></div>
-          <div style="padding: 20px;">
-            <div style="font-weight: 800; font-size: 22px;">南瓜鸡肉烩面</div>
-            <div style="margin-top: 12px; color: var(--admin-text-muted); line-height: 1.8;">10-12 月龄，面条软烂，适合作为午餐主食。</div>
-          </div>
+    <!-- 拒绝对话框 -->
+    <div v-if="showRejectDialog" class="modal-overlay" @click.self="showRejectDialog = false">
+      <div class="modal-content panel" style="max-width: 500px; padding: 24px;">
+        <div class="panel-title" style="font-size: 20px; margin-bottom: 16px;">拒绝审核</div>
+        <div style="margin-bottom: 16px;">
+          <div style="font-weight: 600; margin-bottom: 8px;">食谱：{{ selectedRecipe?.title }}</div>
+          <div style="color: var(--admin-text-muted); font-size: 13px;">请说明拒绝原因，以便创建者改进</div>
+        </div>
+        <textarea
+          v-model="rejectComment"
+          class="ghost-textarea"
+          rows="5"
+          placeholder="请输入拒绝原因..."
+          style="margin-bottom: 16px;"
+        ></textarea>
+        <div style="display: flex; gap: 10px; justify-content: flex-end;">
+          <button class="ghost-btn" @click="showRejectDialog = false">取消</button>
+          <button class="primary-btn" @click="handleReject">确认拒绝</button>
         </div>
       </div>
-      <ReviewDecisionPanel />
-      <div class="panel grid-gap-16">
-        <div class="panel-title" style="font-size:20px;">参考信息</div>
-        <div class="panel" style="background: var(--admin-surface-low);">相似食谱：南瓜牛肉烩面 / 鳕鱼胡萝卜面</div>
-        <div class="panel" style="background: var(--admin-surface-low);">营养标准：蛋白质与铁含量需达到同龄午餐参考范围</div>
-        <div class="panel" style="background: var(--admin-surface-low);">用户关注点：面条软烂程度、腥味处理、是否便于吞咽</div>
-      </div>
-    </section>
+    </div>
   </div>
 </template>
+
+<style scoped>
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+</style>

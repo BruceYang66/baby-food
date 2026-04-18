@@ -5,8 +5,8 @@ const route = useRoute()
 
 const menus = [
   { label: '数据看板', path: '/dashboard' },
-  { label: '食谱库管理', path: '/recipes' },
-  { label: '编辑食谱', path: '/recipes/editor' },
+  { label: '食谱库管理', path: '/recipes/list' },
+  { label: '干货管理', path: '/knowledge/list' },
   { label: '批量导入', path: '/imports' },
   { label: '快速添加', path: '/quick-add' },
   { label: '内容审核', path: '/reviews' },
@@ -30,7 +30,7 @@ const menus = [
         :key="menu.path"
         :to="menu.path"
         class="panel"
-        :style="route.path === menu.path ? 'background: var(--admin-surface-lowest); color: var(--admin-primary); font-weight: 700;' : 'background: transparent; color: var(--admin-text-muted); padding: 16px 18px;'"
+        :style="route.path.startsWith(menu.path) ? 'background: var(--admin-surface-lowest); color: var(--admin-primary); font-weight: 700;' : 'background: transparent; color: var(--admin-text-muted); padding: 16px 18px;'"
       >
         {{ menu.label }}
       </RouterLink>

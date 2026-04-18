@@ -1,4 +1,5 @@
 import { prisma } from '../db/prisma.js'
+import type { ContentStatus } from '@prisma/client'
 
 export async function getAdminRecipes() {
   const recipes = await prisma.recipe.findMany({
@@ -205,4 +206,268 @@ export async function getAdminSystemSettings() {
       ]
     }
   ]
+}
+
+// 食谱管理
+type RecipeCreatePayload = {
+  title: string
+  summary?: string
+  coverImage?: string
+  ageLabel: string
+  durationLabel: string
+  difficultyLabel: string
+  source?: string
+  creator?: string
+  contentStatus?: ContentStatus
+  ingredients: Array<{ name: string; amount: string; unit?: string }>
+  steps: Array<{ stepNo: number; title: string; description: string; imageUrl?: string }>
+  tags: string[]
+}
+
+type RecipeUpdatePayload = Partial<RecipeCreatePayload>
+
+export async function createRecipe(payload: RecipeCreatePayload) {
+  const recipe = await prisma.recipe.create({
+    data: {
+      title: payload.title,
+      summary: payload.summary,
+      coverImage: payload.coverImage,
+      ageLabel: payload.ageLabel,
+      durationLabel: payload.durationLabel,
+      difficultyLabel: payload.difficultyLabel,
+      source: payload.source,
+      creator: payload.creator,
+      contentStatus: payload.contentStatus ?? 'draft',
+      ingredients: {
+        create: payload.ingredients.map((ing) => ({
+          name: ing.name,
+          amount: ing.amount,
+          unit: ing.unit
+        }))
+      },
+      steps: {
+        create: payload.steps.map((step) => ({
+          stepNo: step.stepNo,
+          title: step.title,
+          description: step.description,
+          imageUrl: step.imageUrl
+        }))
+      },
+      tags: {
+        create: payload.tags.map((tag) => ({ name: tag }))
+      }
+    },
+    include: {
+      ingredients: true,
+      steps: true,
+      tags: true
+    }
+  })
+
+  return { id: recipe.id }
+}
+
+export async function updateRecipe(recipeId: string, payload: RecipeUpdatePayload) {
+  // 删除旧的关联数据
+  await prisma.recipeIngredient.deleteMany({ where: { recipeId } })
+  await prisma.recipeStep.deleteMany({ where: { recipeId } })
+  await prisma.recipeTag.deleteMany({ where: { recipeId } })
+
+  // 更新食谱及关联数据
+  const recipe = await prisma.recipe.update({
+    where: { id: recipeId },
+    data: {
+      ...(payload.title && { title: payload.title }),
+      ...(payload.summary !== undefined && { summary: payload.summary }),
+      ...(payload.coverImage !== undefined && { coverImage: payload.coverImage }),
+      ...(payload.ageLabel && { ageLabel: payload.ageLabel }),
+      ...(payload.durationLabel && { durationLabel: payload.durationLabel }),
+      ...(payload.difficultyLabel && { difficultyLabel: payload.difficultyLabel }),
+      ...(payload.source !== undefined && { source: payload.source }),
+      ...(payload.creator !== undefined && { creator: payload.creator }),
+      ...(payload.contentStatus && { contentStatus: payload.contentStatus }),
+      ...(payload.ingredients && {
+        ingredients: {
+          create: payload.ingredients.map((ing) => ({
+            name: ing.name,
+            amount: ing.amount,
+            unit: ing.unit
+          }))
+        }
+      }),
+      ...(payload.steps && {
+        steps: {
+          create: payload.steps.map((step) => ({
+            stepNo: step.stepNo,
+            title: step.title,
+            description: step.description,
+            imageUrl: step.imageUrl
+          }))
+        }
+      }),
+      ...(payload.tags && {
+        tags: {
+          create: payload.tags.map((tag) => ({ name: tag }))
+        }
+      })
+    }
+  })
+
+  return { id: recipe.id }
+}
+
+export async function batchUpdateRecipeStatus(recipeIds: string[], contentStatus: string) {
+  await prisma.recipe.updateMany({
+    where: { id: { in: recipeIds } },
+    data: { contentStatus: contentStatus as ContentStatus }
+  })
+}
+
+export async function deleteRecipe(recipeId: string) {
+  await prisma.recipe.delete({ where: { id: recipeId } })
+}
+
+// 干货管理
+type KnowledgeArticleCreatePayload = {
+  title: string
+  subtitle: string
+  summary: string
+  coverImage?: string
+  categoryKey: string
+  categoryLabel: string
+  tags: string[]
+  contentType: 'article' | 'guide' | 'taboo'
+  content: string
+  isFeatured?: boolean
+  contentStatus?: ContentStatus
+  sections: Array<{ title?: string; content: string; images: string[]; sortOrder: number }>
+}
+
+type KnowledgeArticleUpdatePayload = Partial<KnowledgeArticleCreatePayload>
+
+export async function getAdminKnowledgeArticles(categoryKey?: string) {
+  const articles = await prisma.knowledgeArticle.findMany({
+    where: categoryKey ? { categoryKey } : undefined,
+    orderBy: { updatedAt: 'desc' }
+  })
+
+  return articles.map((article) => ({
+    id: article.id,
+    title: article.title,
+    subtitle: article.subtitle,
+    summary: article.summary,
+    coverImage: article.coverImage ?? '',
+    categoryKey: article.categoryKey,
+    categoryLabel: article.categoryLabel,
+    tags: JSON.parse(article.tagsJson) as string[],
+    contentType: article.contentType,
+    isFeatured: article.isFeatured,
+    contentStatus: article.contentStatus,
+    updatedAt: article.updatedAt.toISOString().slice(0, 16).replace('T', ' ')
+  }))
+}
+
+export async function getAdminKnowledgeDetail(articleId: string) {
+  const article = await prisma.knowledgeArticle.findUnique({
+    where: { id: articleId },
+    include: {
+      sections: {
+        orderBy: { sortOrder: 'asc' }
+      }
+    }
+  })
+
+  if (!article) {
+    throw new Error('未找到对应干货文章')
+  }
+
+  return {
+    id: article.id,
+    title: article.title,
+    subtitle: article.subtitle,
+    summary: article.summary,
+    coverImage: article.coverImage ?? '',
+    categoryKey: article.categoryKey,
+    categoryLabel: article.categoryLabel,
+    tags: JSON.parse(article.tagsJson) as string[],
+    contentType: article.contentType,
+    content: article.content,
+    isFeatured: article.isFeatured,
+    contentStatus: article.contentStatus,
+    sections: article.sections.map((section) => ({
+      id: section.id,
+      title: section.title ?? '',
+      content: section.content,
+      images: JSON.parse(section.imagesJson) as string[],
+      sortOrder: section.sortOrder
+    }))
+  }
+}
+
+export async function createKnowledgeArticle(payload: KnowledgeArticleCreatePayload) {
+  const article = await prisma.knowledgeArticle.create({
+    data: {
+      title: payload.title,
+      subtitle: payload.subtitle,
+      summary: payload.summary,
+      coverImage: payload.coverImage,
+      categoryKey: payload.categoryKey,
+      categoryLabel: payload.categoryLabel,
+      tagsJson: JSON.stringify(payload.tags),
+      contentType: payload.contentType,
+      content: payload.content,
+      isFeatured: payload.isFeatured ?? false,
+      contentStatus: payload.contentStatus ?? 'published',
+      sections: {
+        create: payload.sections.map((section) => ({
+          title: section.title,
+          content: section.content,
+          imagesJson: JSON.stringify(section.images),
+          sortOrder: section.sortOrder
+        }))
+      }
+    }
+  })
+
+  return { id: article.id }
+}
+
+export async function updateKnowledgeArticle(articleId: string, payload: KnowledgeArticleUpdatePayload) {
+  // 删除旧的段落
+  if (payload.sections) {
+    await prisma.knowledgeArticleSection.deleteMany({ where: { articleId } })
+  }
+
+  const article = await prisma.knowledgeArticle.update({
+    where: { id: articleId },
+    data: {
+      ...(payload.title && { title: payload.title }),
+      ...(payload.subtitle && { subtitle: payload.subtitle }),
+      ...(payload.summary && { summary: payload.summary }),
+      ...(payload.coverImage !== undefined && { coverImage: payload.coverImage }),
+      ...(payload.categoryKey && { categoryKey: payload.categoryKey }),
+      ...(payload.categoryLabel && { categoryLabel: payload.categoryLabel }),
+      ...(payload.tags && { tagsJson: JSON.stringify(payload.tags) }),
+      ...(payload.contentType && { contentType: payload.contentType }),
+      ...(payload.content && { content: payload.content }),
+      ...(payload.isFeatured !== undefined && { isFeatured: payload.isFeatured }),
+      ...(payload.contentStatus && { contentStatus: payload.contentStatus }),
+      ...(payload.sections && {
+        sections: {
+          create: payload.sections.map((section) => ({
+            title: section.title,
+            content: section.content,
+            imagesJson: JSON.stringify(section.images),
+            sortOrder: section.sortOrder
+          }))
+        }
+      })
+    }
+  })
+
+  return { id: article.id }
+}
+
+export async function deleteKnowledgeArticle(articleId: string) {
+  await prisma.knowledgeArticle.delete({ where: { id: articleId } })
 }
