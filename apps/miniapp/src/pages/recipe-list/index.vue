@@ -1,55 +1,34 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import type { RecipeSummary } from '@baby-food/shared-types'
+import type { AgeRangeMonths, RecipeSummary } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import { getRecipeList, openProtectedPage } from '@/services/api'
 
-const AGE_RANGES = ['全部月龄', '6-8月', '9-11月', '12-18月', '19-24月', '2岁+']
+const AGE_RANGES: Array<{ label: string; range?: AgeRangeMonths }> = [
+  { label: '全部月龄' },
+  { label: '6-8月', range: { minMonths: 6, maxMonths: 8 } },
+  { label: '9-11月', range: { minMonths: 9, maxMonths: 11 } },
+  { label: '12-18月', range: { minMonths: 12, maxMonths: 18 } },
+  { label: '19-24月', range: { minMonths: 19, maxMonths: 24 } },
+  { label: '2岁+', range: { minMonths: 24, maxMonths: null } }
+]
 const GOALS = ['补铁', '补钙', 'DHA', '通便', '开胃', '手抓食', '免疫力', '病期适用', '挑食', '补锌', '护眼']
 
 const recipes = ref<RecipeSummary[]>([])
-const allRecipes = ref<RecipeSummary[]>([]) // 存储所有加载的食谱
 const loading = ref(false)
 const hasMore = ref(false)
 const page = ref(1)
 const selectedTag = ref('')
-const selectedAgeRange = ref('全部月龄')
+const selectedAgeRange = ref<AgeRangeMonths | undefined>(undefined)
 const searchText = ref('')
 
 const totalCount = ref(0)
 
-// 计算过滤后的食谱
-const filteredRecipes = computed(() => {
-  let result = allRecipes.value
-
-  // 按年龄段过滤
-  if (selectedAgeRange.value !== '全部月龄') {
-    const ageFilter = selectedAgeRange.value
-    result = result.filter((recipe) => {
-      const ageLabel = recipe.ageLabel || ''
-      // 匹配逻辑：检查年龄标签是否包含选中的范围
-      if (ageFilter === '6-8月') {
-        return /[6-8]月/.test(ageLabel) || ageLabel.includes('6-') || ageLabel.includes('-8')
-      } else if (ageFilter === '9-11月') {
-        return /[9]月|1[01]月/.test(ageLabel) || ageLabel.includes('9-') || ageLabel.includes('-11')
-      } else if (ageFilter === '12-18月') {
-        return /1[2-8]月/.test(ageLabel) || ageLabel.includes('12-') || ageLabel.includes('-18') || (ageLabel.includes('1') && ageLabel.includes('岁'))
-      } else if (ageFilter === '19-24月') {
-        return /1[9]月|2[0-4]月/.test(ageLabel) || ageLabel.includes('19-') || ageLabel.includes('-24') || ageLabel.includes('2岁')
-      } else if (ageFilter === '2岁+') {
-        return /[2-9]岁|岁\+/.test(ageLabel)
-      }
-      return true
-    })
-  }
-
-  return result
-})
+const filteredRecipes = computed(() => recipes.value)
 
 const pageTitle = computed(() => {
-  const count = filteredRecipes.value.length
-  if (count > 0) {
-    return `全部食谱 (${count})`
+  if (totalCount.value > 0) {
+    return `全部食谱 (${totalCount.value})`
   }
   return '全部食谱'
 })
@@ -58,22 +37,24 @@ async function loadRecipes(reset = false) {
   if (loading.value) return
   if (reset) {
     page.value = 1
-    allRecipes.value = []
+    recipes.value = []
   }
   loading.value = true
   try {
     const data = await getRecipeList({
       tag: selectedTag.value || undefined,
       search: searchText.value || undefined,
+      ageMinMonths: selectedAgeRange.value?.minMonths,
+      ageMaxMonths: selectedAgeRange.value?.maxMonths ?? undefined,
       page: page.value
     })
 
     if (reset) {
-      allRecipes.value = data.recipes
-      totalCount.value = data.total
+      recipes.value = data.recipes
     } else {
-      allRecipes.value = [...allRecipes.value, ...data.recipes]
+      recipes.value = [...recipes.value, ...data.recipes]
     }
+    totalCount.value = data.total
     hasMore.value = data.hasMore
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '加载失败', icon: 'none' })
@@ -87,9 +68,9 @@ function selectTag(tag: string) {
   loadRecipes(true)
 }
 
-function selectAgeRange(range: string) {
+function selectAgeRange(range?: AgeRangeMonths) {
   selectedAgeRange.value = range
-  // 年龄段筛选是前端过滤，不需要重新加载
+  loadRecipes(true)
 }
 
 function onSearchConfirm() {
@@ -141,12 +122,12 @@ onMounted(() => loadRecipes(true))
     <scroll-view scroll-x class="tag-scroll" show-scrollbar="false">
       <view class="tag-row">
         <view
-          v-for="range in AGE_RANGES"
-          :key="range"
+          v-for="option in AGE_RANGES"
+          :key="option.label"
           class="age-chip"
-          :class="{ active: selectedAgeRange === range }"
-          @tap="selectAgeRange(range)"
-        >{{ range }}</view>
+          :class="{ active: selectedAgeRange?.minMonths === option.range?.minMonths && selectedAgeRange?.maxMonths === option.range?.maxMonths }"
+          @tap="selectAgeRange(option.range)"
+        >{{ option.label }}</view>
       </view>
     </scroll-view>
 

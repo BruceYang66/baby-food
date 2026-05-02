@@ -20,6 +20,8 @@ export interface RecipeAdminRow {
   title: string
   cover: string
   ageLabel: string
+  ageMinMonths?: number
+  ageMaxMonths?: number | null
   source: string
   creator: string
   tags: string[]

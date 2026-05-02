@@ -1,0 +1,27 @@
+
+-- PART 5 continued: 24月+ 月龄（recipe-166 ~ recipe-185）
+INSERT INTO recipes (id, title, summary, cover_image, age_label, age_min_months, age_max_months, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
+('recipe-166', '牛肉蔬菜炒面', '牛肉片与多种蔬菜搭配炒面，铁质丰富，颜色丰富，是宝宝午餐的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '25分钟', '中级', '营养师精品', '陈营养师', 195, '铁质丰富炒面', 'published', 'approved'),
+('recipe-167', '南瓜奶酪焗饭', '南瓜泥与奶酪搭配米饭焗制，颜色金黄，奶香浓郁，是宝宝接触奶酪的好方式。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '30分钟', '中级', '营养师精品', '陈营养师', 285, '奶香金黄焗饭', 'published', 'approved'),
+('recipe-168', '鸡肉蔬菜披萨', '用薄饼皮做底，铺上鸡肉和蔬菜，是宝宝接触西式美食的健康版本，营养丰富。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '35分钟', '高级', '营养师精品', '陈营养师', 215, '健康西式披萨', 'published', 'approved'),
+('recipe-169', '三文鱼蔬菜炒饭', '三文鱼碎与多种蔬菜搭配炒饭，DHA丰富，营养全面，是宝宝补脑的美味主食。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '22分钟', '中级', '营养师精品', '陈营养师', 362, 'DHA补脑炒饭', 'published', 'approved'),
+('recipe-170', '猪肉蔬菜春卷', '猪肉与蔬菜馅料的春卷，外酥内嫩，是宝宝接触传统美食的好机会，也是手指食物。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '40分钟', '高级', '营养师精品', '陈营养师', 175, '传统美食手指食物', 'published', 'approved'),
+('recipe-171', '香菇豆腐炒饭', '香菇与豆腐搭配炒饭，鲜味十足，植物蛋白丰富，是宝宝素食日的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '20分钟', '中级', '营养师精品', '陈营养师', 162, '素食日鲜味炒饭', 'published', 'approved'),
+('recipe-172', '胡萝卜牛肉炒面', '胡萝卜丁与牛肉片搭配炒面，铁质与β-胡萝卜素双补，颜色橙黄，营养均衡。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '25分钟', '中级', '营养师精品', '陈营养师', 180, '铁质护眼炒面', 'published', 'approved'),
+('recipe-173', '鳕鱼豆腐炒饭', '鳕鱼碎与豆腐搭配炒饭，DHA与植物蛋白双补，营养全面，是宝宝补脑的好选择。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '22分钟', '中级', '营养师精品', '陈营养师', 192, 'DHA双蛋白炒饭', 'published', 'approved'),
+('recipe-174', '西兰花鸡肉炒面', '西兰花与鸡肉搭配炒面，叶酸与蛋白质双补，颜色绿白相间，营养均衡。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '22分钟', '中级', '营养师精品', '陈营养师', 175, '叶酸蛋白双补面', 'published', 'approved'),
+('recipe-175', '番茄牛肉炒饭', '番茄与牛肉末搭配炒饭，酸甜开胃，铁质丰富，是宝宝午餐的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '20分钟', '中级', '营养师精品', '陈营养师', 340, '酸甜铁质炒饭', 'published', 'approved')
+ON CONFLICT DO NOTHING;
+
+INSERT INTO recipes (id, title, summary, cover_image, age_label, age_min_months, age_max_months, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
+('recipe-176', '虾仁蔬菜饺子', '虾仁与蔬菜馅料的饺子，蛋白质丰富，是宝宝学习咀嚼的好练习，也是家庭美食。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '40分钟', '高级', '营养师精品', '陈营养师', 165, '补锌咀嚼练习', 'published', 'approved'),
+('recipe-177', '南瓜牛肉炒面', '南瓜丁与牛肉片搭配炒面，颜色金黄，铁质丰富，是宝宝午餐的好选择。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '25分钟', '中级', '营养师精品', '陈营养师', 172, '金黄铁质炒面', 'published', 'approved'),
+('recipe-178', '鸡蛋蔬菜炒面', '鸡蛋与多种蔬菜搭配炒面，颜色丰富，营养全面，是宝宝最爱的炒面之一。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '18分钟', '初级', '手机快速添加', '运营-小顾', 255, '多彩蔬菜炒面', 'published', 'approved'),
+('recipe-179', '猪肉白菜炒饭', '猪肉末与白菜搭配炒饭，白菜富含维生素C，猪肉提供蛋白质，营养均衡，简单快手。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '18分钟', '初级', '手机快速添加', '运营-小顾', 185, '简单快手营养饭', 'published', 'approved'),
+('recipe-180', '香蕉燕麦松饼', '香蕉与燕麦制作的松饼，天然甜味，外酥内软，是宝宝健康早餐或零食的好选择。', 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '20分钟', '初级', '营养师精品', '陈营养师', 395, '健康早餐松饼', 'published', 'approved'),
+('recipe-181', '三文鱼蔬菜炒面', '三文鱼碎与多种蔬菜搭配炒面，DHA丰富，营养全面，是宝宝补脑的美味面食。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '22分钟', '中级', '营养师精品', '陈营养师', 215, 'DHA补脑炒面', 'published', 'approved'),
+('recipe-182', '豆腐蔬菜炒饭', '豆腐碎与多种蔬菜搭配炒饭，植物蛋白丰富，颜色多彩，是宝宝素食日的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '18分钟', '初级', '营养师精品', '陈营养师', 162, '素食日多彩炒饭', 'published', 'approved'),
+('recipe-183', '牛肉蔬菜包子', '牛肉与蔬菜馅料的包子，铁质丰富，是宝宝学习咀嚼的好练习，也是家庭早餐。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '50分钟', '高级', '营养师精品', '陈营养师', 155, '铁质丰富早餐包', 'published', 'approved'),
+('recipe-184', '西红柿鸡蛋炒饭', '经典西红柿鸡蛋炒饭，酸甜开胃，颜色鲜艳，是宝宝最爱的炒饭之一，简单快手。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '15分钟', '初级', '营养师精品', '陈营养师', 462, '经典酸甜炒饭', 'published', 'approved'),
+('recipe-185', '南瓜鸡肉炒面', '南瓜丁与鸡肉搭配炒面，颜色金黄，营养丰富，是宝宝午餐的好选择，简单快手。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '24月+', 24, NULL, '22分钟', '中级', '营养师精品', '陈营养师', 178, '金黄营养炒面', 'published', 'approved')
+ON CONFLICT DO NOTHING;

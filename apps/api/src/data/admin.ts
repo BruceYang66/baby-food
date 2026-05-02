@@ -1,6 +1,103 @@
 import { prisma } from '../db/prisma.js'
 import type { ContentStatus } from '@prisma/client'
 
+type MonthRange = { minMonths: number; maxMonths: number | null }
+
+function parseAgeLabelToMonthRange(ageLabel?: string | null): MonthRange | null {
+  if (!ageLabel) {
+    return null
+  }
+
+  const normalized = ageLabel.replace(/\s+/g, '')
+  let match = normalized.match(/^(\d+)-(\d+)月(?:龄)?$/)
+  if (match) {
+    const start = Number(match[1])
+    const end = Number(match[2])
+    return { minMonths: Math.min(start, end), maxMonths: Math.max(start, end) }
+  }
+
+  match = normalized.match(/^(\d+)-(\d+)岁$/)
+  if (match) {
+    const start = Number(match[1]) * 12
+    const end = Number(match[2]) * 12
+    return { minMonths: Math.min(start, end), maxMonths: Math.max(start, end) }
+  }
+
+  match = normalized.match(/^(\d+)个月\+$/)
+  if (match) {
+    return { minMonths: Number(match[1]), maxMonths: null }
+  }
+
+  match = normalized.match(/^(\d+)月龄\+$/)
+  if (match) {
+    return { minMonths: Number(match[1]), maxMonths: null }
+  }
+
+  match = normalized.match(/^(\d+)岁\+$/)
+  if (match) {
+    return { minMonths: Number(match[1]) * 12, maxMonths: null }
+  }
+
+  match = normalized.match(/^(\d+)个月$/)
+  if (match) {
+    const value = Number(match[1])
+    return { minMonths: value, maxMonths: value }
+  }
+
+  match = normalized.match(/^(\d+)月龄$/)
+  if (match) {
+    const value = Number(match[1])
+    return { minMonths: value, maxMonths: value }
+  }
+
+  match = normalized.match(/^(\d+)岁(\d+)个月$/)
+  if (match) {
+    const value = Number(match[1]) * 12 + Number(match[2])
+    return { minMonths: value, maxMonths: value }
+  }
+
+  match = normalized.match(/^(\d+)岁$/)
+  if (match) {
+    const minMonths = Number(match[1]) * 12
+    return { minMonths, maxMonths: minMonths + 11 }
+  }
+
+  return null
+}
+
+function formatAgeLabelFromMonthRange(minMonths: number, maxMonths: number | null): string {
+  if (maxMonths === null) {
+    return `${minMonths}个月+`
+  }
+
+  if (minMonths === maxMonths) {
+    return `${minMonths}个月`
+  }
+
+  return `${minMonths}-${maxMonths}月`
+}
+
+function resolveRecipeAgeRange(payload: { ageMinMonths?: number; ageMaxMonths?: number | null; ageLabel?: string }) {
+  if (typeof payload.ageMinMonths === 'number') {
+    return {
+      ageMinMonths: payload.ageMinMonths,
+      ageMaxMonths: payload.ageMaxMonths ?? null,
+      ageLabel: formatAgeLabelFromMonthRange(payload.ageMinMonths, payload.ageMaxMonths ?? null)
+    }
+  }
+
+  const parsed = parseAgeLabelToMonthRange(payload.ageLabel)
+  if (!parsed) {
+    throw new Error('请提供有效的月龄范围')
+  }
+
+  return {
+    ageMinMonths: parsed.minMonths,
+    ageMaxMonths: parsed.maxMonths,
+    ageLabel: formatAgeLabelFromMonthRange(parsed.minMonths, parsed.maxMonths)
+  }
+}
+
 export async function getAdminRecipes() {
   const recipes = await prisma.recipe.findMany({
     include: {
@@ -16,6 +113,8 @@ export async function getAdminRecipes() {
     title: recipe.title,
     cover: recipe.coverImage ?? '',
     ageLabel: recipe.ageLabel,
+    ageMinMonths: recipe.ageMinMonths,
+    ageMaxMonths: recipe.ageMaxMonths,
     source: recipe.source ?? '未标注',
     creator: recipe.creator ?? '系统',
     tags: recipe.tags.map((tag) => tag.name),
@@ -48,6 +147,8 @@ export async function getAdminRecipeDetail(recipeId: string) {
     id: recipe.id,
     title: recipe.title,
     ageLabel: recipe.ageLabel,
+    ageMinMonths: recipe.ageMinMonths,
+    ageMaxMonths: recipe.ageMaxMonths,
     durationLabel: recipe.durationLabel,
     difficultyLabel: recipe.difficultyLabel,
     cover: recipe.coverImage ?? '',
@@ -182,7 +283,7 @@ export async function getAdminSystemSettings() {
       title: '基础设置',
       description: '品牌名称、Logo、分享文案与默认入口。',
       items: [
-        { label: '系统名称', value: settingMap.app_name ?? '宝宝辅食智囊' },
+        { label: '系统名称', value: settingMap.app_name ?? '养娃小管家' },
         { label: '分享文案', value: settingMap.share_slogan ?? '科学辅食，悦享成长' },
         { label: '首页引导语', value: settingMap.home_hero_text ?? '根据宝宝成长阶段生成今日辅食' }
       ]
@@ -213,7 +314,9 @@ type RecipeCreatePayload = {
   title: string
   summary?: string
   coverImage?: string
-  ageLabel: string
+  ageLabel?: string
+  ageMinMonths?: number
+  ageMaxMonths?: number | null
   durationLabel: string
   difficultyLabel: string
   source?: string
@@ -227,12 +330,15 @@ type RecipeCreatePayload = {
 type RecipeUpdatePayload = Partial<RecipeCreatePayload>
 
 export async function createRecipe(payload: RecipeCreatePayload) {
+  const ageRange = resolveRecipeAgeRange(payload)
   const recipe = await prisma.recipe.create({
     data: {
       title: payload.title,
       summary: payload.summary,
       coverImage: payload.coverImage,
-      ageLabel: payload.ageLabel,
+      ageLabel: ageRange.ageLabel,
+      ageMinMonths: ageRange.ageMinMonths,
+      ageMaxMonths: ageRange.ageMaxMonths,
       durationLabel: payload.durationLabel,
       difficultyLabel: payload.difficultyLabel,
       source: payload.source,
@@ -268,6 +374,10 @@ export async function createRecipe(payload: RecipeCreatePayload) {
 }
 
 export async function updateRecipe(recipeId: string, payload: RecipeUpdatePayload) {
+  const ageRange = (typeof payload.ageMinMonths === 'number' || typeof payload.ageLabel === 'string')
+    ? resolveRecipeAgeRange(payload)
+    : null
+
   // 删除旧的关联数据
   await prisma.recipeIngredient.deleteMany({ where: { recipeId } })
   await prisma.recipeStep.deleteMany({ where: { recipeId } })
@@ -280,7 +390,11 @@ export async function updateRecipe(recipeId: string, payload: RecipeUpdatePayloa
       ...(payload.title && { title: payload.title }),
       ...(payload.summary !== undefined && { summary: payload.summary }),
       ...(payload.coverImage !== undefined && { coverImage: payload.coverImage }),
-      ...(payload.ageLabel && { ageLabel: payload.ageLabel }),
+      ...(ageRange && {
+        ageLabel: ageRange.ageLabel,
+        ageMinMonths: ageRange.ageMinMonths,
+        ageMaxMonths: ageRange.ageMaxMonths
+      }),
       ...(payload.durationLabel && { durationLabel: payload.durationLabel }),
       ...(payload.difficultyLabel && { difficultyLabel: payload.difficultyLabel }),
       ...(payload.source !== undefined && { source: payload.source }),

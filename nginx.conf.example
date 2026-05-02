@@ -1,0 +1,135 @@
+# Nginx 配置示例 - 婴儿辅食生成器
+# 适用于生产环境部署 (https://madaicode.cn)
+
+# 上游服务器配置
+upstream baby_food_api {
+    server 127.0.0.1:3000;
+    keepalive 64;
+}
+
+# HTTP 重定向到 HTTPS
+server {
+    listen 80;
+    server_name madaicode.cn www.madaicode.cn;
+
+    # 强制跳转到 HTTPS
+    return 301 https://madaicode.cn$request_uri;
+}
+
+# HTTPS 主配置
+server {
+    listen 443 ssl http2;
+    server_name madaicode.cn;
+
+    # SSL 证书配置（请替换为实际证书路径）
+    ssl_certificate /etc/nginx/ssl/madaicode.cn.crt;
+    ssl_certificate_key /etc/nginx/ssl/madaicode.cn.key;
+
+    # SSL 优化配置
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
+    ssl_session_cache shared:SSL:10m;
+    ssl_session_timeout 10m;
+
+    # 日志配置
+    access_log /var/log/nginx/baby-food-access.log;
+    error_log /var/log/nginx/baby-food-error.log;
+
+    # Gzip 压缩
+    gzip on;
+    gzip_vary on;
+    gzip_min_length 1024;
+    gzip_types text/plain text/css text/xml text/javascript application/json application/javascript application/xml+rss application/rss+xml font/truetype font/opentype application/vnd.ms-fontobject image/svg+xml;
+
+    # 客户端上传大小限制（图片上传）
+    client_max_body_size 10M;
+
+    # API 代理
+    location /api/ {
+        proxy_pass http://baby_food_api/api/;
+        proxy_http_version 1.1;
+
+        # 请求头设置
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+
+        # 超时设置
+        proxy_connect_timeout 60s;
+        proxy_send_timeout 60s;
+        proxy_read_timeout 60s;
+
+        # 缓冲设置
+        proxy_buffering off;
+        proxy_request_buffering off;
+    }
+
+    # 静态文件服务（图片上传目录）
+    location /uploads/ {
+        # 请替换为实际的 uploads 目录路径
+        alias /var/www/baby-food/apps/api/uploads/;
+
+        # 缓存设置（图片资源长期缓存）
+        expires 30d;
+        add_header Cache-Control "public, immutable";
+
+        # CORS 跨域支持（允许小程序访问）
+        add_header Access-Control-Allow-Origin *;
+        add_header Access-Control-Allow-Methods "GET, OPTIONS";
+        add_header Access-Control-Allow-Headers "Origin, X-Requested-With, Content-Type, Accept";
+
+        # 安全设置
+        add_header X-Content-Type-Options nosniff;
+
+        # 支持的图片格式
+        location ~* \.(jpg|jpeg|png|gif|webp|svg)$ {
+            try_files $uri =404;
+        }
+    }
+
+    # 管理后台（Vue SPA）
+    location / {
+        # 请替换为实际的管理后台构建目录
+        root /var/www/baby-food/apps/admin-web/dist;
+        try_files $uri $uri/ /index.html;
+
+        # 缓存设置
+        location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot)$ {
+            expires 1y;
+            add_header Cache-Control "public, immutable";
+        }
+
+        # HTML 文件不缓存
+        location ~* \.html$ {
+            expires -1;
+            add_header Cache-Control "no-cache, no-store, must-revalidate";
+        }
+    }
+
+    # 健康检查端点
+    location /health {
+        proxy_pass http://baby_food_api/api/health;
+        access_log off;
+    }
+
+    # 禁止访问隐藏文件
+    location ~ /\. {
+        deny all;
+        access_log off;
+        log_not_found off;
+    }
+}
+
+# www 子域名重定向到主域名
+server {
+    listen 443 ssl http2;
+    server_name www.madaicode.cn;
+
+    ssl_certificate /etc/nginx/ssl/madaicode.cn.crt;
+    ssl_certificate_key /etc/nginx/ssl/madaicode.cn.key;
+
+    return 301 https://madaicode.cn$request_uri;
+}

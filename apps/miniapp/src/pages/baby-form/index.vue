@@ -3,7 +3,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { BabyProfilePayload } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
-import { createBabyProfile, listBabyProfiles, takePostLoginRedirect, updateBabyProfile, updateUserProfile } from '@/services/api'
+import { createBabyProfile, listBabyProfiles, takePostLoginRedirect, updateBabyProfile, uploadAvatar } from '@/services/api'
 
 const isNewMode = ref(false)
 const editingBabyId = ref('')
@@ -12,7 +12,9 @@ const saving = ref(false)
 const nickname = ref('')
 const birthDate = ref('')
 const allergensText = ref('')
-const avatarUrl = ref('')  // 始终是 https://thirdwx.qpic.cn/... 永久链接或空
+const avatarUrl = ref('')        // 永久 URL（上传后），用于提交
+const avatarPreview = ref('')    // 临时路径，用于预览
+const avatarUploading = ref(false)
 
 const pageTitle = computed(() => isNewMode.value ? '添加宝宝' : '编辑宝宝档案')
 const pageSubtitle = computed(() => isNewMode.value ? '填写宝宝基本信息' : '更新昵称、生日与过敏原信息')
@@ -37,8 +39,10 @@ onLoad(async (options) => {
       nickname.value = baby.nickname
       birthDate.value = baby.birthDate
       allergensText.value = baby.allergens.join('、')
-      // 只回填 https 永久链接，本地临时路径不回填
-      avatarUrl.value = (baby.avatar && baby.avatar.startsWith('https://')) ? baby.avatar : ''
+      if (baby.avatar && baby.avatar.startsWith('https://')) {
+        avatarUrl.value = baby.avatar
+        avatarPreview.value = baby.avatar
+      }
     }
   } catch {
     uni.showToast({ title: '加载档案失败', icon: 'none' })
@@ -52,12 +56,19 @@ function normalizeAllergensInput(value: string) {
     .filter(Boolean)
 }
 
-// 微信 chooseAvatar 返回的是 https://thirdwx.qpic.cn/... 永久 CDN 链接
-// 预览时接受任何 URL（含本地 tmp 路径），提交时再过滤只存 https 链接
-function onChooseAvatar(event: { detail: { avatarUrl: string } }) {
-  const url = event.detail.avatarUrl ?? ''
-  if (url) {
-    avatarUrl.value = url
+// 微信 chooseAvatar 返回临时路径，立即上传到服务器换取永久 URL
+async function onChooseAvatar(event: { detail: { avatarUrl: string } }) {
+  const tempPath = event.detail.avatarUrl ?? ''
+  if (!tempPath) return
+  avatarPreview.value = tempPath   // 先显示临时图预览
+  avatarUploading.value = true
+  try {
+    avatarUrl.value = await uploadAvatar(tempPath)
+  } catch {
+    uni.showToast({ title: '头像上传失败，可稍后重试', icon: 'none' })
+    avatarUrl.value = ''
+  } finally {
+    avatarUploading.value = false
   }
 }
 
@@ -67,12 +78,6 @@ function onH5ChooseAvatar() {
   uni.showToast({ title: 'H5 环境暂不支持头像上传', icon: 'none' })
 }
 // #endif
-
-// open-type="nickname" 的输入框在真机上会弹出微信昵称选择面板
-// 使用 @blur（失焦）或 @confirm（回车）事件捕获值，@input 与该 type 存在兼容性问题
-function onNicknameInput(event: { detail: { value: string } }) {
-  nickname.value = event.detail.value
-}
 
 async function submitForm() {
   if (saving.value) return
@@ -88,15 +93,16 @@ async function submitForm() {
     return
   }
 
-  const validAvatarUrl = (avatarUrl.value && avatarUrl.value.startsWith('https://'))
-    ? avatarUrl.value
-    : undefined
+  if (avatarUploading.value) {
+    uni.showToast({ title: '头像上传中，请稍候', icon: 'none' })
+    return
+  }
 
   const payload: BabyProfilePayload = {
     nickname: trimmedNickname,
     birthDate: birthDate.value,
     allergens: normalizeAllergensInput(allergensText.value),
-    avatarUrl: validAvatarUrl
+    avatarUrl: avatarUrl.value || undefined
   }
 
   saving.value = true
@@ -108,11 +114,6 @@ async function submitForm() {
     } else {
       await createBabyProfile(payload)
       uni.showToast({ title: '档案创建成功', icon: 'success' })
-
-      // 新建宝宝时，同步将头像保存到用户账号（首页头像兜底显示用）
-      if (validAvatarUrl) {
-        updateUserProfile({ avatarUrl: validAvatarUrl }).catch(() => {/* 静默失败 */})
-      }
     }
 
     const redirectUrl = takePostLoginRedirect()
@@ -148,23 +149,26 @@ async function submitForm() {
         <!-- #ifdef MP-WEIXIN -->
         <button class="avatar-btn" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
           <image
-            v-if="avatarUrl"
+            v-if="avatarPreview"
             class="avatar-img"
-            :src="avatarUrl"
+            :src="avatarPreview"
             mode="aspectFill"
           />
           <view v-else class="avatar-placeholder">
             <text class="avatar-placeholder-icon">+</text>
             <text class="avatar-placeholder-text">上传头像</text>
+          </view>
+          <view v-if="avatarUploading" class="avatar-uploading-mask">
+            <text class="avatar-uploading-text">上传中</text>
           </view>
         </button>
         <!-- #endif -->
         <!-- #ifdef H5 -->
         <button class="avatar-btn" @tap="onH5ChooseAvatar">
           <image
-            v-if="avatarUrl"
+            v-if="avatarPreview"
             class="avatar-img"
-            :src="avatarUrl"
+            :src="avatarPreview"
             mode="aspectFill"
           />
           <view v-else class="avatar-placeholder">
@@ -173,24 +177,11 @@ async function submitForm() {
           </view>
         </button>
         <!-- #endif -->
-        <text class="avatar-hint">{{ avatarUrl ? '点击更换头像' : '点击选择宝宝头像（选填）' }}</text>
+        <text class="avatar-hint">{{ avatarUploading ? '上传中...' : avatarPreview ? '点击更换头像' : '点击选择宝宝头像（选填）' }}</text>
       </view>
 
-      <!-- 宝宝昵称：open-type="nickname" 触发微信昵称填写面板 -->
       <view class="field-block">
         <text class="field-label">宝宝昵称</text>
-        <!-- #ifdef MP-WEIXIN -->
-        <input
-          class="field-input"
-          type="nickname"
-          :value="nickname"
-          placeholder="点击选择或输入宝宝昵称"
-          maxlength="20"
-          @blur="onNicknameInput"
-          @confirm="onNicknameInput"
-        />
-        <!-- #endif -->
-        <!-- #ifdef H5 -->
         <input
           v-model="nickname"
           class="field-input"
@@ -198,7 +189,6 @@ async function submitForm() {
           placeholder="请输入宝宝昵称"
           maxlength="20"
         />
-        <!-- #endif -->
       </view>
 
       <view class="field-block">
@@ -244,7 +234,23 @@ async function submitForm() {
   margin-bottom: 36rpx;
 }
 
+.avatar-uploading-mask {
+  position: absolute;
+  inset: 0;
+  border-radius: 80rpx;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-uploading-text {
+  font-size: 22rpx;
+  color: #fff;
+}
+
 .avatar-btn {
+  position: relative;
   width: 160rpx;
   height: 160rpx;
   border-radius: 80rpx;

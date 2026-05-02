@@ -400,6 +400,8 @@ app.get('/api/debug/runtime-config', (_req, res) => {
 
 app.post('/api/app/auth/wechat-login', async (req, res) => {
   const code = typeof req.body?.code === 'string' ? req.body.code.trim() : ''
+  const nickname = typeof req.body?.nickname === 'string' ? req.body.nickname.trim() : undefined
+  const avatarUrl = typeof req.body?.avatarUrl === 'string' ? req.body.avatarUrl.trim() : undefined
 
   if (!code) {
     sendError(res, new HttpError(400, '缺少微信登录凭证'), '微信登录失败')
@@ -408,7 +410,14 @@ app.post('/api/app/auth/wechat-login', async (req, res) => {
 
   try {
     const wechatSession = await getWechatSession(code)
-    const user = await findOrCreateWechatUser(wechatSession.openid!)
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] as string || req.socket.remoteAddress
+    const userAgent = req.headers['user-agent']
+
+    const user = await findOrCreateWechatUser(
+      wechatSession.openid!,
+      { nickname, avatarUrl },
+      { ipAddress, userAgent }
+    )
     const authState = await getAppAuthState(user.id)
 
     res.json({
@@ -546,9 +555,23 @@ app.post('/api/app/meal-plans/generate-today', requireAppAuth, async (req, res) 
   const goals = Array.isArray(req.body?.goals)
     ? req.body.goals.filter((item: unknown): item is string => typeof item === 'string')
     : []
+  const legacyAgeRange = typeof req.body?.ageRange === 'string' ? req.body.ageRange : undefined
+  const numericAgeRange = req.body?.ageRange && typeof req.body.ageRange === 'object'
+    ? {
+        min: typeof req.body.ageRange.minMonths === 'number' ? req.body.ageRange.minMonths : undefined,
+        max: typeof req.body.ageRange.maxMonths === 'number' ? req.body.ageRange.maxMonths : null
+      }
+    : undefined
+  const ageRange = typeof numericAgeRange?.min === 'number'
+    ? numericAgeRange
+    : legacyAgeRange
+  const excludeTags = Array.isArray(req.body?.excludeTags)
+    ? req.body.excludeTags.filter((item: unknown): item is string => typeof item === 'string')
+    : undefined
+  const avoidRepeat = typeof req.body?.avoidRepeat === 'string' ? req.body.avoidRepeat : undefined
 
   try {
-    res.json({ ok: true, data: await getGeneratePageData(getAppUserId(req), mealCount, goals) })
+    res.json({ ok: true, data: await getGeneratePageData(getAppUserId(req), mealCount, goals, ageRange, excludeTags, avoidRepeat) })
   } catch (error) {
     sendError(res, error, '生成辅食计划失败')
   }
@@ -676,9 +699,11 @@ app.get('/api/app/recipes', async (req, res) => {
   const tag = typeof req.query.tag === 'string' ? req.query.tag : undefined
   const search = typeof req.query.search === 'string' ? req.query.search : undefined
   const page = typeof req.query.page === 'string' ? Math.max(1, parseInt(req.query.page, 10) || 1) : 1
+  const ageMinMonths = typeof req.query.ageMinMonths === 'string' ? Number.parseInt(req.query.ageMinMonths, 10) : undefined
+  const ageMaxMonths = typeof req.query.ageMaxMonths === 'string' ? Number.parseInt(req.query.ageMaxMonths, 10) : undefined
 
   try {
-    res.json({ ok: true, data: await getRecipeList({ tag, search, page }) })
+    res.json({ ok: true, data: await getRecipeList({ tag, search, page, ageMinMonths: Number.isNaN(ageMinMonths as number) ? undefined : ageMinMonths, ageMaxMonths: Number.isNaN(ageMaxMonths as number) ? undefined : ageMaxMonths }) })
   } catch (error) {
     sendError(res, error, '食谱列表读取失败')
   }
@@ -840,8 +865,15 @@ app.post('/api/admin/auth/login', (_req, res) => {
   res.json({ ok: true, data: { token: 'mock-admin-token' } })
 })
 
-// 图片上传接口
+// 图片上传接口（admin token 或 app Bearer token 均可调用）
 app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => {
+  // 简单鉴权：有 Bearer token 即可（admin mock token 或 app JWT 均接受）
+  const authHeader = req.headers['authorization'] ?? ''
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  if (!token) {
+    res.status(401).json({ ok: false, message: '未授权' })
+    return
+  }
   try {
     if (!req.file) {
       res.status(400).json({ ok: false, message: '未上传图片文件' })

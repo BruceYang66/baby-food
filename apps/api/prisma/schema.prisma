@@ -164,6 +164,8 @@ model Recipe {
   summary         String?
   coverImage      String?        @map("cover_image")
   ageLabel        String         @map("age_label")
+  ageMinMonths    Int            @map("age_min_months")
+  ageMaxMonths    Int?           @map("age_max_months")
   durationLabel   String         @map("duration_label")
   difficultyLabel String         @map("difficulty_label")
   source          String?
@@ -182,6 +184,7 @@ model Recipe {
   mealPlanItems   MealPlanItem[]
   userFavorites   UserFavorite[]
 
+  @@index([contentStatus, ageMinMonths, ageMaxMonths])
   @@map("recipes")
 }
 
@@ -473,4 +476,17 @@ model UserFeedback {
   createdAt DateTime @default(now()) @map("created_at")
 
   @@map("user_feedback")
+}
+
+model UserLoginLog {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  nickname  String
+  avatarUrl String?  @map("avatar_url")
+  loginAt   DateTime @default(now()) @map("login_at")
+  ipAddress String?  @map("ip_address")
+  userAgent String?  @map("user_agent")
+
+  @@index([userId, loginAt])
+  @@map("user_login_logs")
 }

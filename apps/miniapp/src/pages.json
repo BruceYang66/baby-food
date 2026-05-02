@@ -13,6 +13,18 @@
       }
     },
     {
+      "path": "pages/agreement-service/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/privacy-policy/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/generate/index",
       "style": {
         "navigationStyle": "custom",
@@ -90,6 +102,12 @@
         "navigationStyle": "custom",
         "enableShareAppMessage": true,
         "enableShareTimeline": true
+      }
+    },
+    {
+      "path": "pages/setup-profile/index",
+      "style": {
+        "navigationStyle": "custom"
       }
     },
     {

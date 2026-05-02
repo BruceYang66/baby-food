@@ -8,13 +8,28 @@ const props = defineProps<{
   recipe?: RecipeEditorDetail
 }>()
 
-const router = useRouter()
-const saving = ref(false)
+const AGE_RANGE_OPTIONS: Array<{ label: string; minMonths: number; maxMonths: number | null }> = [
+  { label: '6-8个月', minMonths: 6, maxMonths: 8 },
+  { label: '8-10个月', minMonths: 8, maxMonths: 10 },
+  { label: '10-12个月', minMonths: 10, maxMonths: 12 },
+  { label: '12-18个月', minMonths: 12, maxMonths: 18 },
+  { label: '18-24个月', minMonths: 18, maxMonths: 24 },
+  { label: '2岁+', minMonths: 24, maxMonths: null }
+]
+
+function getAgeLabel(minMonths: number, maxMonths: number | null) {
+  if (maxMonths === null) {
+    return `${minMonths}个月+`
+  }
+  return `${minMonths}-${maxMonths}月`
+}
 
 const formData = ref<RecipeEditorDetail>(props.recipe || {
   id: '',
   title: '',
   ageLabel: '6-8个月',
+  ageMinMonths: 6,
+  ageMaxMonths: 8,
   durationLabel: '20分钟',
   difficultyLabel: '简单',
   cover: '',
@@ -32,11 +47,26 @@ const formData = ref<RecipeEditorDetail>(props.recipe || {
 // 监听props变化，更新formData
 watch(() => props.recipe, (newRecipe) => {
   if (newRecipe) {
-    formData.value = { ...newRecipe }
+    formData.value = {
+      ...newRecipe,
+      ageMinMonths: typeof newRecipe.ageMinMonths === 'number' ? newRecipe.ageMinMonths : 6,
+      ageMaxMonths: newRecipe.ageMaxMonths ?? 8
+    }
   }
 }, { immediate: true })
 
-const isEditMode = computed(() => !!props.recipe?.id)
+const selectedAgeRangeKey = computed({
+  get: () => `${formData.value.ageMinMonths ?? 6}-${formData.value.ageMaxMonths === null ? 'null' : (formData.value.ageMaxMonths ?? 8)}`,
+  set: (value: string) => {
+    const [minText, maxText] = value.split('-')
+    const minMonths = Number(minText)
+    const maxMonths = maxText === 'null' ? null : Number(maxText)
+    formData.value.ageMinMonths = Number.isFinite(minMonths) ? minMonths : 6
+    formData.value.ageMaxMonths = maxMonths === null || Number.isFinite(maxMonths) ? maxMonths : 8
+    formData.value.ageLabel = getAgeLabel(formData.value.ageMinMonths, formData.value.ageMaxMonths ?? null)
+  }
+})
+
 
 // 标签字符串转数组
 const tagsString = computed({
@@ -112,7 +142,9 @@ async function handleSave(status: 'draft' | 'published') {
     // 构建提交数据，映射字段名
     const payload = {
       title: formData.value.title,
-      ageLabel: formData.value.ageLabel,
+      ageLabel: getAgeLabel(formData.value.ageMinMonths ?? 6, formData.value.ageMaxMonths ?? null),
+      ageMinMonths: formData.value.ageMinMonths ?? 6,
+      ageMaxMonths: formData.value.ageMaxMonths ?? null,
       durationLabel: formData.value.durationLabel,
       difficultyLabel: formData.value.difficultyLabel,
       coverImage: formData.value.cover, // cover -> coverImage
@@ -174,13 +206,12 @@ function handleCancel() {
           <div class="panel-title" style="font-size:20px; margin-bottom:16px;">基础信息</div>
           <div class="grid-gap-16" style="grid-template-columns: repeat(2, minmax(0, 1fr)); display:grid;">
             <input v-model="formData.title" class="ghost-input" placeholder="食谱名称" />
-            <select v-model="formData.ageLabel" class="ghost-select">
-              <option>6-8个月</option>
-              <option>8-10个月</option>
-              <option>10-12个月</option>
-              <option>12-18个月</option>
-              <option>18-24个月</option>
-              <option>2-3岁</option>
+            <select v-model="selectedAgeRangeKey" class="ghost-select">
+              <option
+                v-for="option in AGE_RANGE_OPTIONS"
+                :key="`${option.minMonths}-${option.maxMonths === null ? 'null' : option.maxMonths}`"
+                :value="`${option.minMonths}-${option.maxMonths === null ? 'null' : option.maxMonths}`"
+              >{{ option.label }}</option>
             </select>
             <input v-model="formData.durationLabel" class="ghost-input" placeholder="时长，如 20 分钟" />
             <select v-model="formData.difficultyLabel" class="ghost-select">

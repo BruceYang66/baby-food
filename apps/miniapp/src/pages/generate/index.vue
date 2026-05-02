@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
-import type { BabyProfile, DailyMealPlan, MealCount, MealPlanEntry, NutritionGoal, SaveMealPlanPayload } from '@baby-food/shared-types'
+import type { AgeRangeMonths, BabyProfile, DailyMealPlan, MealCount, MealPlanEntry, NutritionGoal, SaveMealPlanPayload } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import NutritionScoreCard from '@/components/meal/NutritionScoreCard.vue'
 import MealTimeline from '@/components/meal/MealTimeline.vue'
@@ -12,7 +12,13 @@ const SAVED_PLAN_KEY = 'savedGeneratePlan'
 const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
 const PREFERRED_INGREDIENT_KEY = 'preferredIngredient'
 const DEFAULT_GOALS: NutritionGoal[] = ['补铁', '补钙', 'DHA', '通便', '开胃', '挑食', '免疫力', '手抓食', '病期适用']
-const AGE_RANGES = ['6-8月', '9-11月', '12-18月', '19-24月', '2岁+']
+const AGE_RANGES: Array<{ label: string; range: AgeRangeMonths }> = [
+  { label: '6-8月', range: { minMonths: 6, maxMonths: 8 } },
+  { label: '9-11月', range: { minMonths: 9, maxMonths: 11 } },
+  { label: '12-18月', range: { minMonths: 12, maxMonths: 18 } },
+  { label: '19-24月', range: { minMonths: 19, maxMonths: 24 } },
+  { label: '2岁+', range: { minMonths: 24, maxMonths: null } }
+]
 const EXCLUDE_TAGS = ['鱼虾', '蛋类', '奶制品', '坚果', '豆类', '肉类', '海鲜', '辛辣']
 const AVOID_REPEAT_OPTIONS = ['不限制', '近一周', '近一个月']
 
@@ -20,7 +26,7 @@ const baby = ref<BabyProfile>()
 const plan = ref<DailyMealPlan>()
 const selectedCount = ref<MealCount>('3餐')
 const selectedGoals = ref<NutritionGoal[]>(['补钙'])
-const selectedAgeRange = ref('')
+const selectedAgeRange = ref<AgeRangeMonths | null>(null)
 const excludeTags = ref<string[]>([])
 const avoidRepeat = ref('不限制')
 const goals = ref<NutritionGoal[]>(DEFAULT_GOALS)
@@ -136,6 +142,26 @@ function applySavedPlan() {
   return true
 }
 
+function resolveAgeRange(monthAgeLabel: string): AgeRangeMonths {
+  let months = 0
+  const yearsMatch = monthAgeLabel.match(/(\d+)岁/)
+  const monthsMatch = monthAgeLabel.match(/(\d+)个月/)
+  if (yearsMatch) {
+    months += parseInt(yearsMatch[1]) * 12
+  }
+  if (monthsMatch) {
+    months += parseInt(monthsMatch[1])
+  }
+  if (!yearsMatch && !monthsMatch) {
+    return AGE_RANGES[0].range
+  }
+  if (months >= 9 && months <= 11) return AGE_RANGES[1].range
+  if (months >= 12 && months <= 18) return AGE_RANGES[2].range
+  if (months >= 19 && months <= 24) return AGE_RANGES[3].range
+  if (months > 24) return AGE_RANGES[4].range
+  return AGE_RANGES[0].range
+}
+
 async function loadPlan() {
   if (!ensureProtectedPageAccess()) {
     return
@@ -150,7 +176,10 @@ async function loadPlan() {
   try {
     const data = await getGeneratePageData({
       mealCount: selectedCount.value,
-      goals: selectedGoals.value
+      goals: selectedGoals.value,
+      ageRange: selectedAgeRange.value ?? undefined,
+      excludeTags: excludeTags.value.length > 0 ? excludeTags.value : undefined,
+      avoidRepeat: avoidRepeat.value !== '不限制' ? avoidRepeat.value : undefined
     })
 
     baby.value = data.babyProfile
@@ -169,36 +198,38 @@ async function loadPlan() {
   }
 }
 
-// 初始化时设置默认年龄段
+// 初始化：先获取宝宝信息设置默认月龄段，再用完整参数生成计划
 async function initializeAgeRange() {
   if (!ensureProtectedPageAccess()) {
     return
   }
 
+  if (applySavedPlan()) {
+    return
+  }
+
+  loading.value = true
+
   try {
+    // 第一步：仅获取宝宝信息，推导默认月龄段
+    const profileData = await getGeneratePageData({})
+    baby.value = profileData.babyProfile
+    goals.value = profileData.nutritionGoals
+
+    if (baby.value) {
+      selectedAgeRange.value = resolveAgeRange(baby.value.monthAgeLabel)
+    }
+
+    // 第二步：用正确的月龄段重新生成计划
     const data = await getGeneratePageData({
       mealCount: selectedCount.value,
-      goals: selectedGoals.value
+      goals: selectedGoals.value,
+      ageRange: selectedAgeRange.value ?? undefined,
+      excludeTags: excludeTags.value.length > 0 ? excludeTags.value : undefined,
+      avoidRepeat: avoidRepeat.value !== '不限制' ? avoidRepeat.value : undefined
     })
 
     baby.value = data.babyProfile
-
-    // 根据宝宝月龄自动设置年龄段
-    if (baby.value) {
-      const monthAge = baby.value.monthAgeLabel
-      if (monthAge.includes('6') || monthAge.includes('7') || monthAge.includes('8')) {
-        selectedAgeRange.value = '6-8月'
-      } else if (monthAge.includes('9') || monthAge.includes('10') || monthAge.includes('11')) {
-        selectedAgeRange.value = '9-11月'
-      } else if (monthAge.includes('12') || monthAge.includes('13') || monthAge.includes('14') || monthAge.includes('15') || monthAge.includes('16') || monthAge.includes('17') || monthAge.includes('18')) {
-        selectedAgeRange.value = '12-18月'
-      } else if (monthAge.includes('19') || monthAge.includes('20') || monthAge.includes('21') || monthAge.includes('22') || monthAge.includes('23') || monthAge.includes('24')) {
-        selectedAgeRange.value = '19-24月'
-      } else {
-        selectedAgeRange.value = '2岁+'
-      }
-    }
-
     plan.value = data.todayMealPlan
     goals.value = data.nutritionGoals
 
@@ -209,6 +240,8 @@ async function initializeAgeRange() {
       title: error instanceof Error ? error.message : '初始化失败',
       icon: 'none'
     })
+  } finally {
+    loading.value = false
   }
 }
 
@@ -354,12 +387,12 @@ onShareTimeline(() => ({
       <text class="setting-label">月龄段选择</text>
       <view class="count-row">
         <view
-          v-for="range in AGE_RANGES"
-          :key="range"
+          v-for="option in AGE_RANGES"
+          :key="option.label"
           class="count-chip"
-          :class="{ active: selectedAgeRange === range }"
-          @tap="selectedAgeRange = range"
-        >{{ range }}</view>
+          :class="{ active: selectedAgeRange?.minMonths === option.range.minMonths && selectedAgeRange?.maxMonths === option.range.maxMonths }"
+          @tap="selectedAgeRange = option.range"
+        >{{ option.label }}</view>
       </view>
 
       <text class="setting-label">每日餐数</text>

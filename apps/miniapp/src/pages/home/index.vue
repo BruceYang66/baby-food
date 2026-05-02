@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { BabyProfile, HomeFeature, HomeShortcut, IngredientHighlight } from '@baby-food/shared-types'
 import AppTabBar from '@/components/common/AppTabBar.vue'
 import { readAuthSession, getHomeData, openProtectedPage } from '@/services/api'
@@ -145,6 +146,22 @@ function goShortcut(shortcut: HomeShortcut) {
   }
 }
 
+function shareApp() {
+  uni.showShareMenu({
+    menus: ['shareAppMessage', 'shareTimeline']
+  })
+  uni.showToast({ title: '点击右上角 ··· 分享', icon: 'none', duration: 1500 })
+}
+
+onShareAppMessage(() => ({
+  title: baby.value ? `${baby.value.nickname}的育儿助手` : '养娃小管家 - 科学喂养，健康成长',
+  path: '/pages/home/index'
+}))
+
+onShareTimeline(() => ({
+  title: '养娃小管家 - 科学喂养，健康成长'
+}))
+
 </script>
 
 <template>
@@ -153,7 +170,7 @@ function goShortcut(shortcut: HomeShortcut) {
     <view v-if="!isLoggedIn" class="guest-view">
       <view class="topbar">
         <view class="app-title">
-          <text class="app-name">宝宝辅食智囊</text>
+          <text class="app-name">养娃小管家</text>
           <text class="app-slogan">科学喂养，健康成长</text>
         </view>
         <view class="login-btn" @tap="goLogin">登录</view>
@@ -161,7 +178,7 @@ function goShortcut(shortcut: HomeShortcut) {
 
       <view class="welcome-card">
         <text class="welcome-emoji">👶</text>
-        <text class="welcome-title">欢迎使用宝宝辅食智囊</text>
+        <text class="welcome-title">欢迎使用养娃小管家</text>
         <text class="welcome-desc">为宝宝提供科学的辅食计划和喂养指导</text>
         <view class="welcome-action" @tap="goLogin">
           <text class="welcome-btn">登录体验完整功能 →</text>
@@ -212,7 +229,10 @@ function goShortcut(shortcut: HomeShortcut) {
             <text class="baby-meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
           </view>
         </view>
-        <view class="notify" @tap="goMessage">🔔</view>
+        <view class="topbar-actions">
+          <view class="notify" @tap="goMessage">🔔</view>
+          <view class="share-btn" @tap="shareApp">📤</view>
+        </view>
       </view>
 
       <!-- 首次用户引导卡（无任何历史计划时显示） -->
@@ -473,6 +493,22 @@ function goShortcut(shortcut: HomeShortcut) {
 }
 
 .notify {
+  width: 76rpx;
+  height: 76rpx;
+  border-radius: 999rpx;
+  background: rgba(255,255,255,0.7);
+  text-align: center;
+  line-height: 76rpx;
+  font-size: 30rpx;
+}
+
+.topbar-actions {
+  display: flex;
+  gap: 16rpx;
+  align-items: center;
+}
+
+.share-btn {
   width: 76rpx;
   height: 76rpx;
   border-radius: 999rpx;

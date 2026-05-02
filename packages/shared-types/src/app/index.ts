@@ -74,6 +74,8 @@ export interface RecipeSummary {
   title: string
   image: string
   ageLabel: string
+  ageMinMonths?: number
+  ageMaxMonths?: number | null
   durationLabel: string
   difficultyLabel: string
   tags: string[]
@@ -157,6 +159,11 @@ export interface GeneratePageData {
   babyProfile: BabyProfile
   todayMealPlan: DailyMealPlan
   nutritionGoals: NutritionGoal[]
+}
+
+export interface AgeRangeMonths {
+  minMonths: number
+  maxMonths: number | null
 }
 
 export interface PlanPageData {

@@ -54,9 +54,38 @@ async function initVaccines() {
   console.log('疫苗数据初始化完成。')
 }
 
+async function backfillRecipeAgeMonths() {
+  await executeSqlFile('backfill_recipe_age_months.sql')
+  console.log('recipes 月龄字段回填完成。')
+}
+
 async function seedPopularRecipes() {
-  await executeSqlFile('seed_popular_all.sql')
-  console.log('大众化辅食食谱数据写入完成。')
+  await executeSqlFile('seed_popular.sql')
+  console.log('热门食谱种子数据写入完成。')
+}
+
+async function seedRecipesV2() {
+  // Recipe rows: 6-8月(036-065), 9-11月(066-095)
+  await executeSqlFile('seed_recipes_v2.sql')
+  // Recipe rows: 12-18月(096-125), 19-24月(126-155), 24月+(156-185)
+  await executeSqlFile('seed_recipes_v2_part3.sql')
+  await executeSqlFile('seed_recipes_v2_part4.sql')
+  // Tags
+  await executeSqlFile('seed_recipes_v2_tags1.sql')
+  await executeSqlFile('seed_recipes_v2_tags2.sql')
+  // Ingredients
+  await executeSqlFile('seed_recipes_v2_ing1.sql')
+  await executeSqlFile('seed_recipes_v2_ing2.sql')
+  await executeSqlFile('seed_recipes_v2_ing3.sql')
+  // Steps
+  await executeSqlFile('seed_recipes_v2_steps1.sql')
+  await executeSqlFile('seed_recipes_v2_steps2.sql')
+  console.log('食谱扩展数据 v2 写入完成（150条，覆盖5个月龄段）。')
+}
+
+async function onlineSafeInitDatabase() {
+  await executeSqlFile('online_safe_init.sql')
+  console.log('线上安全初始化完成。')
 }
 
 async function resetDatabase() {
@@ -113,12 +142,27 @@ async function main() {
     return
   }
 
+  if (command === 'seed:recipes-v2') {
+    await seedRecipesV2()
+    return
+  }
+
+  if (command === 'online:init') {
+    await onlineSafeInitDatabase()
+    return
+  }
+
+  if (command === 'backfill:recipe-age-months') {
+    await backfillRecipeAgeMonths()
+    return
+  }
+
   if (command === 'reset') {
     await resetDatabase()
     return
   }
 
-  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | comment | vaccine:init | seed:popular | reset`)
+  throw new Error(`不支持的命令：${command ?? '未提供'}。可用命令：init | seed | seed:extend | seed:recipes-v2 | comment | vaccine:init | seed:popular | online:init | backfill:recipe-age-months | reset`)
 }
 
 main()

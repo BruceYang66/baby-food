@@ -84,25 +84,33 @@ async function toggleVaccineCheck(item: VaccineRecordItem) {
     return
   }
 
-  const newStatus = item.status === 'completed' ? 'pending' : 'completed'
-
-  // 如果是取消勾选，需要确认
-  if (newStatus === 'pending') {
-    uni.showModal({
-      title: '确认取消',
-      content: `确定要取消「${item.name}」的接种记录吗？`,
-      confirmText: '确认取消',
-      cancelText: '保留',
+  if (item.status === 'completed') {
+    // 已接种：弹出操作选择（编辑日期 or 取消接种）
+    uni.showActionSheet({
+      itemList: ['修改接种日期', '取消接种记录'],
       success: async (res) => {
-        if (res.confirm) {
-          await performVaccineUpdate(item.id, newStatus, undefined)
+        if (res.tapIndex === 0) {
+          currentVaccineItem.value = item
+          showDatePicker.value = true
+        } else if (res.tapIndex === 1) {
+          uni.showModal({
+            title: '确认取消',
+            content: `确定要取消「${item.name}」的接种记录吗？`,
+            confirmText: '确认取消',
+            cancelText: '保留',
+            success: async (modalRes) => {
+              if (modalRes.confirm) {
+                await performVaccineUpdate(item.id, 'pending', undefined)
+              }
+            }
+          })
         }
       }
     })
     return
   }
 
-  // 如果是勾选，打开日期选择弹窗
+  // 未接种：打开日期选择弹窗
   currentVaccineItem.value = item
   showDatePicker.value = true
 }
@@ -326,9 +334,11 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
             >
               <view class="item-header">
                 <text class="item-name" :class="{ 'name-optional': item.category === 'optional' }">{{ item.name }}</text>
-                <view v-if="item.status === 'completed'" class="item-check">✓</view>
-                <view v-else class="item-checkbox" @tap.stop="toggleVaccineCheck(item)">
-                  <view v-if="item.status === 'pending'" class="checkbox-inner"></view>
+                <view class="item-check-area" @tap.stop="toggleVaccineCheck(item)">
+                  <view v-if="item.status === 'completed'" class="item-check">✓</view>
+                  <view v-else class="item-checkbox">
+                    <view class="checkbox-inner"></view>
+                  </view>
                 </view>
               </view>
               <text class="item-dose">{{ item.stageLabel }}</text>
@@ -792,24 +802,34 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
   color: #9c4dcc;
 }
 
+.item-check-area {
+  width: 72rpx;
+  height: 72rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin: -12rpx -8rpx -12rpx 0;
+}
+
 .item-check {
-  width: 26rpx;
-  height: 26rpx;
-  border-radius: 5rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
   background: #2ecc71;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16rpx;
+  font-size: 22rpx;
   font-weight: 700;
   flex-shrink: 0;
 }
 
 .item-checkbox {
-  width: 26rpx;
-  height: 26rpx;
-  border-radius: 5rpx;
+  width: 40rpx;
+  height: 40rpx;
+  border-radius: 8rpx;
   border: 3rpx solid #68abff;
   display: flex;
   align-items: center;
@@ -822,9 +842,9 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
 }
 
 .checkbox-inner {
-  width: 12rpx;
-  height: 12rpx;
-  border-radius: 2rpx;
+  width: 18rpx;
+  height: 18rpx;
+  border-radius: 4rpx;
   background: #68abff;
 }
 

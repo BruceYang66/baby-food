@@ -368,7 +368,7 @@ export function getAdminSystemSettings() {
       title: '基础设置',
       description: '品牌名称、Logo、分享文案与默认入口。',
       items: [
-        { label: '系统名称', value: '宝宝辅食智囊' },
+        { label: '系统名称', value: '养娃小管家' },
         { label: '分享文案', value: '科学辅食，悦享成长' },
         { label: '首页引导语', value: '根据宝宝成长阶段生成今日辅食' }
       ]

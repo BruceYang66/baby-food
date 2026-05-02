@@ -4,17 +4,35 @@ import { useRouter } from 'vue-router'
 import ImageUploader from '@/components/common/ImageUploader.vue'
 import { createRecipe } from '@/services/api'
 
+const AGE_RANGE_OPTIONS: Array<{ label: string; minMonths: number; maxMonths: number | null }> = [
+  { label: '6-8个月', minMonths: 6, maxMonths: 8 },
+  { label: '8-10个月', minMonths: 8, maxMonths: 10 },
+  { label: '10-12个月', minMonths: 10, maxMonths: 12 },
+  { label: '12-18个月', minMonths: 12, maxMonths: 18 },
+  { label: '18-24个月', minMonths: 18, maxMonths: 24 },
+  { label: '2岁+', minMonths: 24, maxMonths: null }
+]
+
+function getAgeLabel(minMonths: number, maxMonths: number | null) {
+  if (maxMonths === null) {
+    return `${minMonths}个月+`
+  }
+  return `${minMonths}-${maxMonths}月`
+}
+
 const router = useRouter()
 const saving = ref(false)
 
-const formData = ref({
-  title: '',
-  ageLabel: '6-8个月',
-  cover: '',
-  ingredients: '',
-  steps: '',
-  tags: ''
-})
+const selectedAgeRangeKey = ref('6-8')
+
+function onAgeRangeChange() {
+  const [minText, maxText] = selectedAgeRangeKey.value.split('-')
+  const minMonths = Number(minText)
+  const maxMonths = maxText === 'null' ? null : Number(maxText)
+  formData.value.ageMinMonths = Number.isFinite(minMonths) ? minMonths : 6
+  formData.value.ageMaxMonths = maxMonths === null || Number.isFinite(maxMonths) ? maxMonths : 8
+  formData.value.ageLabel = getAgeLabel(formData.value.ageMinMonths, formData.value.ageMaxMonths)
+}
 
 async function handleSaveDraft() {
   if (!formData.value.title.trim()) {
@@ -50,7 +68,9 @@ async function handleSaveDraft() {
 
     const payload = {
       title: formData.value.title,
-      ageLabel: formData.value.ageLabel,
+      ageLabel: getAgeLabel(formData.value.ageMinMonths, formData.value.ageMaxMonths),
+      ageMinMonths: formData.value.ageMinMonths,
+      ageMaxMonths: formData.value.ageMaxMonths,
       durationLabel: '待补充',
       difficultyLabel: '简单',
       coverImage: formData.value.cover,
@@ -115,7 +135,9 @@ async function handleSubmitReview() {
 
     const payload = {
       title: formData.value.title,
-      ageLabel: formData.value.ageLabel,
+      ageLabel: getAgeLabel(formData.value.ageMinMonths, formData.value.ageMaxMonths),
+      ageMinMonths: formData.value.ageMinMonths,
+      ageMaxMonths: formData.value.ageMaxMonths,
       durationLabel: '待补充',
       difficultyLabel: '简单',
       coverImage: formData.value.cover,
@@ -137,14 +159,8 @@ async function handleSubmitReview() {
 }
 
 function resetForm() {
-  formData.value = {
-    title: '',
-    ageLabel: '6-8个月',
-    cover: '',
-    ingredients: '',
-    steps: '',
-    tags: ''
-  }
+  selectedAgeRangeKey.value = '6-8'
+  onAgeRangeChange()
 }
 </script>
 
@@ -163,13 +179,12 @@ function resetForm() {
             </div>
             <div>
               <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">月龄</label>
-              <select v-model="formData.ageLabel" class="ghost-select" style="margin: 0;">
-                <option>6-8个月</option>
-                <option>8-10个月</option>
-                <option>10-12个月</option>
-                <option>12-18个月</option>
-                <option>18-24个月</option>
-                <option>2-3岁</option>
+              <select v-model="selectedAgeRangeKey" class="ghost-select" style="margin: 0;" @change="onAgeRangeChange">
+                <option
+                  v-for="option in AGE_RANGE_OPTIONS"
+                  :key="`${option.minMonths}-${option.maxMonths === null ? 'null' : option.maxMonths}`"
+                  :value="`${option.minMonths}-${option.maxMonths === null ? 'null' : option.maxMonths}`"
+                >{{ option.label }}</option>
               </select>
             </div>
           </div>

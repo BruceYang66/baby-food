@@ -222,6 +222,8 @@ function buildRecipeSummary(recipe: {
   title: string
   coverImage: string | null
   ageLabel: string
+  ageMinMonths?: number | null
+  ageMaxMonths?: number | null
   durationLabel: string
   difficultyLabel: string
   summary: string | null
@@ -231,7 +233,9 @@ function buildRecipeSummary(recipe: {
     id: recipe.id,
     title: recipe.title,
     image: recipe.coverImage ?? '',
-    ageLabel: recipe.ageLabel,
+    ageLabel: getRecipeAgeLabel(recipe),
+    ageMinMonths: typeof recipe.ageMinMonths === 'number' ? recipe.ageMinMonths : undefined,
+    ageMaxMonths: typeof recipe.ageMaxMonths === 'number' ? recipe.ageMaxMonths : null,
     durationLabel: recipe.durationLabel,
     difficultyLabel: recipe.difficultyLabel,
     tags: recipe.tags.map((tag) => tag.name),
@@ -785,6 +789,155 @@ function getWaterSuggestion(monthAge: number) {
   return '500ml'
 }
 
+type MonthRange = {
+  min: number
+  max: number | null
+}
+
+function parseAgeLabelToMonthRange(label: string): MonthRange | null {
+  const normalized = label.trim().replace(/\s+/g, '')
+
+  if (!normalized) {
+    return null
+  }
+
+  let match = normalized.match(/^(\d+)-(\d+)月(?:龄)?$/)
+  if (match) {
+    const min = Number(match[1])
+    const max = Number(match[2])
+    return { min: Math.min(min, max), max: Math.max(min, max) }
+  }
+
+  match = normalized.match(/^(\d+)-(\d+)岁$/)
+  if (match) {
+    const min = Number(match[1]) * 12
+    const max = Number(match[2]) * 12
+    return { min: Math.min(min, max), max: Math.max(min, max) }
+  }
+
+  match = normalized.match(/^(\d+)个月\+$/)
+  if (match) {
+    return { min: Number(match[1]), max: null }
+  }
+
+  match = normalized.match(/^(\d+)月龄\+$/)
+  if (match) {
+    return { min: Number(match[1]), max: null }
+  }
+
+  match = normalized.match(/^(\d+)岁\+$/)
+  if (match) {
+    return { min: Number(match[1]) * 12, max: null }
+  }
+
+  match = normalized.match(/^(\d+)个月$/)
+  if (match) {
+    const month = Number(match[1])
+    return { min: month, max: month }
+  }
+
+  match = normalized.match(/^(\d+)月龄$/)
+  if (match) {
+    const month = Number(match[1])
+    return { min: month, max: month }
+  }
+
+  match = normalized.match(/^(\d+)岁(\d+)个月$/)
+  if (match) {
+    const month = Number(match[1]) * 12 + Number(match[2])
+    return { min: month, max: month }
+  }
+
+  match = normalized.match(/^(\d+)岁$/)
+  if (match) {
+    const year = Number(match[1])
+    return { min: year * 12, max: year * 12 + 11 }
+  }
+
+  return null
+}
+
+function formatMonthsAsChinese(totalMonths: number) {
+  if (totalMonths < 12) {
+    return `${totalMonths}个月`
+  }
+
+  const years = Math.floor(totalMonths / 12)
+  const months = totalMonths % 12
+
+  if (months === 0) {
+    return `${years}岁`
+  }
+
+  return `${years}岁${months}个月`
+}
+
+function formatAgeLabelFromMonthRange(range: MonthRange) {
+  if (range.max === null) {
+    return `${formatMonthsAsChinese(range.min)}+`
+  }
+
+  if (range.min === range.max) {
+    return formatMonthsAsChinese(range.min)
+  }
+
+  return `${formatMonthsAsChinese(range.min)}-${formatMonthsAsChinese(range.max)}`
+}
+
+function fisherYatesShuffle<T>(arr: T[], seed: number): T[] {
+  const result = [...arr]
+  // Use a seeded LCG (linear congruential generator) for deterministic but high-entropy shuffle
+  let s = (seed >>> 0) || 1
+  const next = () => {
+    s = Math.imul(1664525, s) + 1013904223
+    return (s >>> 0) / 0x100000000
+  }
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(next() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]]
+  }
+  return result
+}
+
+function isMonthRangeOverlap(left: MonthRange, right: MonthRange) {
+  const leftMax = left.max ?? Number.POSITIVE_INFINITY
+  const rightMax = right.max ?? Number.POSITIVE_INFINITY
+
+  return left.min <= rightMax && right.min <= leftMax
+}
+
+function buildRecipeMonthRange(recipe: { ageMinMonths?: number | null; ageMaxMonths?: number | null; ageLabel: string }): MonthRange | null {
+  if (typeof recipe.ageMinMonths === 'number') {
+    return {
+      min: recipe.ageMinMonths,
+      max: typeof recipe.ageMaxMonths === 'number' ? recipe.ageMaxMonths : null
+    }
+  }
+
+  return parseAgeLabelToMonthRange(recipe.ageLabel)
+}
+
+function getRecipeAgeLabel(recipe: { ageLabel: string; ageMinMonths?: number | null; ageMaxMonths?: number | null }) {
+  const range = buildRecipeMonthRange(recipe)
+  return range ? formatAgeLabelFromMonthRange(range) : recipe.ageLabel
+}
+
+function matchRecipeAgeRange(recipeAgeLabel: string, selectedAgeRange: MonthRange | null, recipeAgeMinMonths?: number | null, recipeAgeMaxMonths?: number | null) {
+  if (!selectedAgeRange) {
+    return true
+  }
+
+  const recipeAgeRange = typeof recipeAgeMinMonths === 'number'
+    ? { min: recipeAgeMinMonths, max: typeof recipeAgeMaxMonths === 'number' ? recipeAgeMaxMonths : null }
+    : parseAgeLabelToMonthRange(recipeAgeLabel)
+
+  if (!recipeAgeRange) {
+    return false
+  }
+
+  return isMonthRangeOverlap(recipeAgeRange, selectedAgeRange)
+}
+
 async function getBabyAccessRecords(userId: string) {
   const [ownedBabies, memberships] = await Promise.all([
     prisma.baby.findMany({
@@ -948,10 +1101,26 @@ async function ensureCurrentUser(userId: string) {
   return user
 }
 
-async function getMealPlanRecipes(limit = 3, goals: string[] = [], excludeIds: string[] = [], randomSeed = 0) {
+async function getMealPlanRecipes(
+  limit = 3,
+  goals: string[] = [],
+  excludeIds: string[] = [],
+  randomSeed = 0,
+  options: {
+    ageRange?: MonthRange
+    excludeTags?: string[]
+  } = {}
+) {
   // Build tag-based filter when goals are specified
   const tagFilter = goals.length
     ? { tags: { some: { name: { in: goals } } } }
+    : {}
+
+  const selectedAgeRange = options.ageRange ?? null
+
+  // Build exclude tags filter (NOT condition)
+  const excludeTagsFilter = options.excludeTags?.length
+    ? { tags: { none: { name: { in: options.excludeTags } } } }
     : {}
 
   // 添加随机排序以避免每次返回相同的食谱
@@ -959,44 +1128,63 @@ async function getMealPlanRecipes(limit = 3, goals: string[] = [], excludeIds: s
     where: {
       contentStatus: 'published',
       id: { notIn: excludeIds },
-      ...tagFilter
+      ...tagFilter,
+      ...excludeTagsFilter,
+      ...(selectedAgeRange
+        ? {
+            ageMinMonths: { lte: selectedAgeRange.max ?? 9999 },
+            OR: [
+              { ageMaxMonths: null },
+              { ageMaxMonths: { gte: selectedAgeRange.min } }
+            ]
+          }
+        : {})
     },
     include: { tags: true },
     orderBy: [
       { favorites: 'desc' }
     ],
-    take: limit * 5 // 取更多候选，然后随机选择
+    take: selectedAgeRange ? limit * 20 : limit * 5
   })
 
-  // 使用随机种子进行打乱，确保每次调用返回不同结果
-  const shuffled = publishedRecipes
-    .map((recipe, index) => ({ recipe, sort: Math.sin(randomSeed + index) }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ recipe }) => recipe)
-    .slice(0, limit)
+  const ageMatchedRecipes = selectedAgeRange
+    ? publishedRecipes.filter((recipe) => matchRecipeAgeRange(recipe.ageLabel, selectedAgeRange, (recipe as any).ageMinMonths, (recipe as any).ageMaxMonths))
+    : publishedRecipes
+
+  const shuffled = fisherYatesShuffle(ageMatchedRecipes, randomSeed).slice(0, limit)
 
   if (shuffled.length >= limit) {
     return shuffled
   }
 
-  // Fallback: relax tag filter, just exclude already-used recipes
+  // Fallback: relax tag filter, only use age-matched recipes when ageRange is set
   const fallbackRecipes = await prisma.recipe.findMany({
     where: {
       contentStatus: 'published',
-      id: { notIn: [...excludeIds, ...shuffled.map((r) => r.id)] }
+      id: { notIn: [...excludeIds, ...shuffled.map((r) => r.id)] },
+      ...excludeTagsFilter,
+      ...(selectedAgeRange
+        ? {
+            ageMinMonths: { lte: selectedAgeRange.max ?? 9999 },
+            OR: [
+              { ageMaxMonths: null },
+              { ageMaxMonths: { gte: selectedAgeRange.min } }
+            ]
+          }
+        : {})
     },
     include: { tags: true },
     orderBy: { favorites: 'desc' },
-    take: (limit - shuffled.length) * 3
+    take: (limit - shuffled.length) * 8
   })
 
-  const shuffledFallback = fallbackRecipes
-    .map((recipe, index) => ({ recipe, sort: Math.sin(randomSeed + index + 1000) }))
-    .sort((a, b) => a.sort - b.sort)
-    .map(({ recipe }) => recipe)
-    .slice(0, limit - shuffled.length)
+  const fallbackAgeMatched = selectedAgeRange
+    ? fallbackRecipes.filter((recipe) => matchRecipeAgeRange(recipe.ageLabel, selectedAgeRange, (recipe as any).ageMinMonths, (recipe as any).ageMaxMonths))
+    : fallbackRecipes
 
-  return [...shuffled, ...shuffledFallback]
+  const shuffledFallback = fisherYatesShuffle(fallbackAgeMatched, randomSeed + 1000)
+
+  return [...shuffled, ...shuffledFallback.slice(0, limit - shuffled.length)]
 }
 
 function isSameDate(left: Date, right: Date) {
@@ -1014,8 +1202,15 @@ function getPlanDateLabel(planDate: Date, rawLabel?: string) {
 }
 
 async function buildPreviewMealPlan(
-  baby: { birthDate: Date; allergens: Array<{ name: string }> },
-  options: { mealCount?: string; goals?: string[]; planDate?: Date } = {}
+  baby: { id: string; birthDate: Date; allergens: Array<{ name: string }> },
+  options: {
+    mealCount?: string
+    goals?: string[]
+    planDate?: Date
+    ageRange?: MonthRange
+    excludeTags?: string[]
+    avoidRepeat?: string
+  } = {}
 ) {
   const mealCount = options.mealCount ?? '3餐'
   const selectedGoals = options.goals?.length ? options.goals : ['补钙']
@@ -1024,9 +1219,35 @@ async function buildPreviewMealPlan(
   const allergenNames = baby.allergens.map((item) => item.name)
   const slotCount = mealCount === '2餐' ? 2 : 3
 
+  // 获取历史记录中的食谱ID，用于避免重复
+  let historyExcludeIds: string[] = []
+  if (options.avoidRepeat && options.avoidRepeat !== '不限制') {
+    const daysToCheck = options.avoidRepeat === '近一周' ? 7 : 30
+    const startDate = addDays(getToday(), -daysToCheck)
+
+    const historyPlans = await prisma.mealPlan.findMany({
+      where: {
+        babyId: baby.id,
+        planDate: { gte: startDate }
+      },
+      include: {
+        items: {
+          select: { recipeId: true }
+        }
+      }
+    })
+
+    historyExcludeIds = historyPlans
+      .flatMap(plan => plan.items.map(item => item.recipeId))
+      .filter((id): id is string => Boolean(id))
+  }
+
   // 添加时间戳作为随机种子，确保每次调用返回不同结果
   const randomSeed = Date.now()
-  const recipes = await getMealPlanRecipes(slotCount, selectedGoals, [], randomSeed)
+  const recipes = await getMealPlanRecipes(slotCount, selectedGoals, historyExcludeIds, randomSeed, {
+    ageRange: options.ageRange,
+    excludeTags: options.excludeTags
+  })
 
   const safeRecipes = recipes.filter((recipe) =>
     !allergenNames.some((allergen) => recipe.title.includes(allergen) || recipe.tags.some((tag) => tag.name.includes(allergen)))
@@ -1055,7 +1276,10 @@ async function buildPreviewMealPlan(
   }))
 
   if (mealCount === '3餐+点心') {
-    const snackCandidates = await getMealPlanRecipes(1, ['能量加餐', '手抓点心', '加餐'], finalRecipes.map((recipe) => recipe.id), randomSeed + 1)
+    const snackCandidates = await getMealPlanRecipes(1, ['能量加餐', '手抓点心', '加餐'], [...historyExcludeIds, ...finalRecipes.map((recipe) => recipe.id)], randomSeed + 1, {
+      ageRange: options.ageRange,
+      excludeTags: options.excludeTags
+    })
     const snackRecipe = snackCandidates[0]
 
     if (snackRecipe) {
@@ -1329,18 +1553,57 @@ async function resolveMealPlanEntryCreates(
   }))
 }
 
-export async function findOrCreateWechatUser(wechatOpenId: string) {
-  return prisma.user.upsert({
+function isWechatPlaceholderNickname(nickname: string) {
+  return nickname.startsWith('微信用户') || /^wechat\s*user/i.test(nickname)
+}
+
+export async function findOrCreateWechatUser(
+  wechatOpenId: string,
+  userInfo?: {
+    nickname?: string
+    avatarUrl?: string
+  },
+  loginMeta?: {
+    ipAddress?: string
+    userAgent?: string
+  }
+) {
+  const nicknameInput = userInfo?.nickname?.trim()
+  const nickname = nicknameInput && !isWechatPlaceholderNickname(nicknameInput)
+    ? nicknameInput
+    : undefined
+  const avatarUrl = userInfo?.avatarUrl?.trim()
+
+  const user = await prisma.user.upsert({
     where: { wechatOpenId },
-    update: {},
+    update: {
+      ...(nickname ? { nickname } : {}),
+      ...(avatarUrl ? { avatarUrl } : {})
+    },
     create: {
-      nickname: `微信用户${wechatOpenId.slice(-4)}`,
-      avatarUrl: '',
+      nickname: nickname || `微信用户${wechatOpenId.slice(-4)}`,
+      avatarUrl: avatarUrl || '',
       wechatOpenId,
       activityLabel: '新用户',
       statusLabel: '正常'
     }
   })
+
+  // 记录登录日志
+  await prisma.$executeRaw`
+    INSERT INTO user_login_logs (id, user_id, nickname, avatar_url, login_at, ip_address, user_agent)
+    VALUES (
+      ${randomBytes(16).toString('hex')},
+      ${user.id},
+      ${user.nickname},
+      ${user.avatarUrl},
+      NOW(),
+      ${loginMeta?.ipAddress || null},
+      ${loginMeta?.userAgent || null}
+    )
+  `
+
+  return user
 }
 
 export async function getAppAuthState(userId: string) {
@@ -1534,9 +1797,43 @@ export async function getHomePageData(userId: string) {
   }
 }
 
-export async function getGeneratePageData(userId: string, mealCount = '3餐', goals: string[] = []) {
+async function normalizeAgeRange(input?: MonthRange | string): Promise<MonthRange | undefined> {
+  if (!input) {
+    return undefined
+  }
+
+  if (typeof input === 'string') {
+    return parseAgeLabelToMonthRange(input) ?? undefined
+  }
+
+  if (typeof input.min === 'number') {
+    return {
+      min: input.min,
+      max: typeof input.max === 'number' ? input.max : null
+    }
+  }
+
+  return undefined
+}
+
+export async function getGeneratePageData(
+  userId: string,
+  mealCount = '3餐',
+  goals: string[] = [],
+  ageRange?: MonthRange | string,
+  excludeTags?: string[],
+  avoidRepeat?: string
+) {
   const baby = await ensureCurrentBaby(userId)
-  const previewPlan = await buildPreviewMealPlan(baby, { mealCount, goals, planDate: getToday() })
+  const normalizedAgeRange = await normalizeAgeRange(ageRange)
+  const previewPlan = await buildPreviewMealPlan(baby, {
+    mealCount,
+    goals,
+    planDate: getToday(),
+    ageRange: normalizedAgeRange,
+    excludeTags,
+    avoidRepeat
+  })
 
   return {
     babyProfile: formatBabyProfile(baby),
@@ -1952,7 +2249,9 @@ export async function getBatchRecipeSummaries(recipeIds: string[]) {
       id: recipe.id,
       title: recipe.title,
       image: recipe.coverImage ?? '',
-      ageLabel: recipe.ageLabel,
+      ageLabel: getRecipeAgeLabel(recipe),
+      ageMinMonths: typeof (recipe as any).ageMinMonths === 'number' ? (recipe as any).ageMinMonths : undefined,
+      ageMaxMonths: typeof (recipe as any).ageMaxMonths === 'number' ? (recipe as any).ageMaxMonths : null,
       durationLabel: recipe.durationLabel,
       difficultyLabel: recipe.difficultyLabel,
       tags: recipe.tags.map((tag) => tag.name),
@@ -2744,7 +3043,9 @@ export async function getTabooGuideData(symptom: string) {
       id: recipe.id,
       title: recipe.title,
       image: recipe.coverImage ?? '',
-      ageLabel: recipe.ageLabel,
+      ageLabel: getRecipeAgeLabel(recipe),
+      ageMinMonths: typeof (recipe as any).ageMinMonths === 'number' ? (recipe as any).ageMinMonths : undefined,
+      ageMaxMonths: typeof (recipe as any).ageMaxMonths === 'number' ? (recipe as any).ageMaxMonths : null,
       durationLabel: recipe.durationLabel,
       difficultyLabel: recipe.difficultyLabel,
       tags: recipe.tags.map((tag) => tag.name),
@@ -2776,7 +3077,11 @@ export async function getRecipeDetailData(recipeId: string) {
   const relatedRecipes = await prisma.recipe.findMany({
     where: {
       id: { not: recipe.id },
-      ageLabel: recipe.ageLabel
+      ageMinMonths: { lte: (recipe as any).ageMaxMonths ?? 9999 },
+      OR: [
+        { ageMaxMonths: null },
+        { ageMaxMonths: { gte: (recipe as any).ageMinMonths } }
+      ]
     },
     include: { tags: true },
     take: 2,
@@ -2788,7 +3093,9 @@ export async function getRecipeDetailData(recipeId: string) {
     title: recipe.title,
     image: recipe.coverImage ?? '',
     heroImage: recipe.coverImage ?? '',
-    ageLabel: recipe.ageLabel,
+    ageLabel: getRecipeAgeLabel(recipe),
+    ageMinMonths: typeof (recipe as any).ageMinMonths === 'number' ? (recipe as any).ageMinMonths : undefined,
+    ageMaxMonths: typeof (recipe as any).ageMaxMonths === 'number' ? (recipe as any).ageMaxMonths : null,
     durationLabel: recipe.durationLabel,
     difficultyLabel: recipe.difficultyLabel,
     tags: recipe.tags.map((tag) => tag.name),
@@ -2813,7 +3120,9 @@ export async function getRecipeDetailData(recipeId: string) {
       id: item.id,
       title: item.title,
       image: item.coverImage ?? '',
-      ageLabel: item.ageLabel,
+      ageLabel: getRecipeAgeLabel(item),
+      ageMinMonths: typeof (item as any).ageMinMonths === 'number' ? (item as any).ageMinMonths : undefined,
+      ageMaxMonths: typeof (item as any).ageMaxMonths === 'number' ? (item as any).ageMaxMonths : null,
       durationLabel: item.durationLabel,
       difficultyLabel: item.difficultyLabel,
       tags: item.tags.map((tag) => tag.name),
@@ -2848,8 +3157,8 @@ export async function getProfilePageData(userId: string) {
   }
 }
 
-export async function getRecipeList(options: { tag?: string; search?: string; page?: number } = {}) {
-  const { tag, search, page = 1 } = options
+export async function getRecipeList(options: { tag?: string; search?: string; page?: number; ageMinMonths?: number; ageMaxMonths?: number | null } = {}) {
+  const { tag, search, page = 1, ageMinMonths, ageMaxMonths } = options
   const pageSize = 20
   const skip = (page - 1) * pageSize
 
@@ -2861,6 +3170,15 @@ export async function getRecipeList(options: { tag?: string; search?: string; pa
     where.OR = [
       { title: { contains: search } },
       { summary: { contains: search } }
+    ]
+  }
+
+  if (typeof ageMinMonths === 'number') {
+    const upperBound = typeof ageMaxMonths === 'number' ? ageMaxMonths : 9999
+    where.ageMinMonths = { lte: upperBound }
+    where.OR = [
+      { ageMaxMonths: null },
+      { ageMaxMonths: { gte: ageMinMonths } }
     ]
   }
 
@@ -2880,7 +3198,9 @@ export async function getRecipeList(options: { tag?: string; search?: string; pa
       id: recipe.id,
       title: recipe.title,
       image: recipe.coverImage ?? '',
-      ageLabel: recipe.ageLabel,
+      ageLabel: getRecipeAgeLabel(recipe),
+      ageMinMonths: typeof (recipe as any).ageMinMonths === 'number' ? (recipe as any).ageMinMonths : undefined,
+      ageMaxMonths: typeof (recipe as any).ageMaxMonths === 'number' ? (recipe as any).ageMaxMonths : null,
       durationLabel: recipe.durationLabel,
       difficultyLabel: recipe.difficultyLabel,
       tags: recipe.tags.map((t) => t.name),

@@ -1,4 +1,4 @@
-INSERT INTO users (id, nickname, avatar_url, wechat_open_id, activity_label, status_label, active_baby_id) VALUES
+NSERT INTO users (id, nickname, avatar_url, wechat_open_id, activity_label, status_label, active_baby_id) VALUES
 ('user-001', '糯米妈妈', 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=160&q=80', 'openid-demo-001', '高活跃', '正常', 'baby-001'),
 ('user-002', '暖暖爸比', 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=160&q=80', 'openid-demo-002', '中活跃', '正常', 'baby-002'),
 ('user-003', '星星妈', 'https://images.unsplash.com/photo-1488426862026-3ee34a7d66df?auto=format&fit=crop&w=160&q=80', 'openid-demo-003', '低活跃', '待回访', 'baby-003'),
@@ -28,17 +28,17 @@ INSERT INTO baby_invites (id, baby_id, inviter_user_id, invitee_user_id, invitee
 ('invite-001', 'baby-001', 'user-001', 'user-004', '乐乐外婆', 'wechat:lele-waipo', 'caregiver', 'accepted', 'invite-baby001-caregiver', '2026-04-20 23:59:59', '2026-04-03 09:20:00', '2026-04-02 18:00:00'),
 ('invite-002', 'baby-002', 'user-002', NULL, '暖暖妈妈', 'wechat:nuannuan-mom', 'collaborator', 'pending', 'invite-baby002-collab', '2026-04-20 23:59:59', NULL, '2026-04-10 20:00:00');
 
-INSERT INTO recipes (id, title, summary, cover_image, age_label, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
-('recipe-001', '红薯山药小米粥', '适合 8 个月宝宝的温和早餐，帮助晨起胃口打开。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '8个月+', '20分钟', '初级', '营养师精品', '陈营养师', 928, '健脾唤醒肠胃', 'published', 'approved'),
-('recipe-002', '鳕鱼西兰花软饭', '高蛋白午餐主食，适合提升优质蛋白摄入。', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80', '8-10月', '25分钟', '中级', '批量导入', '运营-小顾', 314, '补充优质蛋白', 'pending_review', 'pending'),
-('recipe-003', '贝贝南瓜猪肝泥', '晚间高铁修复搭配，口感细腻更易接受。', 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80', '8个月+', '18分钟', '中级', '手机快速添加', '外采营养师', 122, '高铁修复', 'draft', 'none'),
-('recipe-004', '鸡肉胡萝卜烂面', '适合作为午餐主食，软烂顺滑，训练吞咽。', 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80', '7-9月', '22分钟', '初级', '营养师精品', '陈营养师', 688, '细颗粒接受度高', 'published', 'approved'),
-('recipe-005', '牛油果香蕉酸奶碗', '午后加餐，帮助补充能量和顺滑口感。', 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80', '1-2岁', '10分钟', '初级', '手机快速添加', '外采营养师', 122, '加餐接受度高', 'draft', 'none'),
-('recipe-006', '菠菜猪肝软饭', '高铁主食组合，适合近期补铁强化。', 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80', '10-12月', '28分钟', '中级', '运营补齐', '王营养师', 503, '高铁热门需求', 'pending_review', 'pending'),
-('recipe-007', '三文鱼山药泥', 'DHA 和温和淀粉搭配，适合晚餐修复。', 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80', '6-8月', '18分钟', '初级', '历史版本', '陈营养师', 503, '腥味处理需明确', 'offline', 'approved'),
-('recipe-008', '苹果小米蒸糕', '手抓点心，适合上午加餐与病期恢复。', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80', '10个月+', '26分钟', '中级', '手动创建', '陈营养师', 406, '病期点心补齐', 'pending_review', 'pending'),
-('recipe-009', '山药鳕鱼小方', '适合练习抓握的软方块辅食。', 'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=800&q=80', '11个月+', '24分钟', '中级', '营养师精品', '刘营养师', 571, '手抓食覆盖提升', 'published', 'approved'),
-('recipe-010', '番茄牛肉软烩饭', '酸甜更开胃，适合午餐主食变化。', 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80', '12个月+', '30分钟', '中级', '批量导入', '运营-阿辰', 362, '饭粒软度说明需加强', 'published', 'approved');
+INSERT INTO recipes (id, title, summary, cover_image, age_label, age_min_months, age_max_months, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
+('recipe-001', '红薯山药小米粥', '适合 8 个月宝宝的温和早餐，帮助晨起胃口打开。', 'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80', '8个月+', 8, NULL, '20分钟', '初级', '营养师精品', '陈营养师', 928, '健脾唤醒肠胃', 'published', 'approved'),
+('recipe-002', '鳕鱼西兰花软饭', '高蛋白午餐主食，适合提升优质蛋白摄入。', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80', '8-10月', 8, 10, '25分钟', '中级', '批量导入', '运营-小顾', 314, '补充优质蛋白', 'pending_review', 'pending'),
+('recipe-003', '贝贝南瓜猪肝泥', '晚间高铁修复搭配，口感细腻更易接受。', 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80', '8个月+', 8, NULL, '18分钟', '中级', '手机快速添加', '外采营养师', 122, '高铁修复', 'draft', 'none'),
+('recipe-004', '鸡肉胡萝卜烂面', '适合作为午餐主食，软烂顺滑，训练吞咽。', 'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=800&q=80', '7-9月', 7, 9, '22分钟', '初级', '营养师精品', '陈营养师', 688, '细颗粒接受度高', 'published', 'approved'),
+('recipe-005', '牛油果香蕉酸奶碗', '午后加餐，帮助补充能量和顺滑口感。', 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=800&q=80', '1-2岁', 12, 24, '10分钟', '初级', '手机快速添加', '外采营养师', 122, '加餐接受度高', 'draft', 'none'),
+('recipe-006', '菠菜猪肝软饭', '高铁主食组合，适合近期补铁强化。', 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80', '10-12月', 10, 12, '28分钟', '中级', '运营补齐', '王营养师', 503, '高铁热门需求', 'pending_review', 'pending'),
+('recipe-007', '三文鱼山药泥', 'DHA 和温和淀粉搭配，适合晚餐修复。', 'https://images.unsplash.com/photo-1515003197210-e0cd71810b5f?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '18分钟', '初级', '历史版本', '陈营养师', 503, '腥味处理需明确', 'offline', 'approved'),
+('recipe-008', '苹果小米蒸糕', '手抓点心，适合上午加餐与病期恢复。', 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=800&q=80', '10个月+', 10, NULL, '26分钟', '中级', '手动创建', '陈营养师', 406, '病期点心补齐', 'pending_review', 'pending'),
+('recipe-009', '山药鳕鱼小方', '适合练习抓握的软方块辅食。', 'https://images.unsplash.com/photo-1543353071-873f17a7a088?auto=format&fit=crop&w=800&q=80', '11个月+', 11, NULL, '24分钟', '中级', '营养师精品', '刘营养师', 571, '手抓食覆盖提升', 'published', 'approved'),
+('recipe-010', '番茄牛肉软烩饭', '酸甜更开胃，适合午餐主食变化。', 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80', '12个月+', 12, NULL, '30分钟', '中级', '批量导入', '运营-阿辰', 362, '饭粒软度说明需加强', 'published', 'approved');
 
 INSERT INTO recipe_tags (id, recipe_id, name) VALUES
 ('tag-001', 'recipe-001', '高纤维'),
@@ -92,10 +92,10 @@ INSERT INTO recipe_ingredients (id, recipe_id, name, amount, unit) VALUES
 ('ingredient-027', 'recipe-010', '软饭', '70', '克');
 
 INSERT INTO recipe_steps (id, recipe_id, step_no, title, description, image_url) VALUES
-('step-001', 'recipe-001', 1, '浸泡小米', '小米提前浸泡 15 分钟，红薯和山药去皮切小块。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'),
-('step-002', 'recipe-001', 2, '煮至软烂', '所有食材加水煮 18 分钟，至可轻松压碎。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'),
-('step-003', 'recipe-001', 3, '打成细粥', '根据月龄调整浓稠度，搅打或压成细腻粥。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'),
-('step-004', 'recipe-002', 1, '处理食材', '鸡肉焯水后剁碎，南瓜蒸软备用。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80'),
+('step-001', 'recipe-001', 1, '浸泡小米', '小米提前浸泡 15 分钟，红薯和山药去皮切小块。', 'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80'),
+('step-002', 'recipe-001', 2, '煮至软烂', '所有食材加水煮 18 分钟，至可轻松压碎。', 'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80'),
+('step-003', 'recipe-001', 3, '打成细粥', '根据月龄调整浓稠度，搅打或压成细腻粥。', 'https://images.unsplash.com/photo-1574484284002-952d92456975?auto=format&fit=crop&w=800&q=80'),
+('step-004', 'recipe-002', 1, '处理食材', '鸡肉焯水后剁碎，南瓜蒸软备用。', 'https://images.unsplash.com/photo-1590165482129-1b8b27698780?auto=format&fit=crop&w=800&q=80'),
 ('step-005', 'recipe-002', 2, '混合煮制', '宝宝面煮软后切短，与鸡肉、南瓜一起翻拌。', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'),
 ('step-006', 'recipe-002', 3, '调整颗粒度', '根据月龄调整颗粒度，出锅前确认温度适宜。', 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80'),
 ('step-007', 'recipe-003', 1, '焯水去腥', '猪肝切片后焯水，南瓜蒸熟备用。', 'https://images.unsplash.com/photo-1512058564366-18510be2db19?auto=format&fit=crop&w=800&q=80'),
@@ -215,7 +215,7 @@ INSERT INTO recipe_versions (id, recipe_id, version_no, snapshot, created_at) VA
 ('version-002', 'recipe-006', 2, '{"title":"菠菜猪肝软饭","summary":"高铁主食组合"}', '2026-04-09 08:40:00');
 
 INSERT INTO system_settings (id, setting_key, setting_val) VALUES
-('setting-001', 'app_name', '宝宝辅食智囊'),
+('setting-001', 'app_name', '养娃小管家'),
 ('setting-002', 'share_slogan', '科学辅食，悦享成长'),
 ('setting-003', 'home_hero_text', '根据宝宝成长阶段生成今日辅食'),
 ('setting-004', 'daily_reminder', '08:00 自动推送'),
@@ -287,7 +287,7 @@ INSERT INTO knowledge_articles (id, title, subtitle, summary, cover_image, categ
 ('knowledge-001', '6个月开始加辅食的3个关键信号', '先看准备度，再看月龄', '帮助家长判断宝宝是否具备开始添加辅食的基础条件，避免只按月龄机械执行。', 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=800&q=80', 'feeding-basics', '辅食基础', '["加辅食","6个月","准备信号"]', 'guide', '## 观察准备度\n宝宝能较稳地扶坐、挺舌反射减弱、对大人食物表现兴趣，通常说明已具备开始尝试辅食的基础。\n\n## 第一次怎么安排\n建议从高铁米粉或单一食材泥开始，每次少量，连续观察3天。\n\n## 需要避免什么\n不要同时引入多种新食材，也不要急于追求吃得多。', true, 'published', 1, '2026-04-05 09:00:00', '2026-04-08 12:00:00'),
 ('knowledge-002', '宝宝补铁怎么吃更高效', '从食材组合提升铁吸收率', '围绕高铁食材、搭配方式和常见误区，给家长一份可执行的补铁饮食清单。', 'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80', 'nutrition', '营养重点', '["补铁","猪肝","高铁食谱"]', 'article', '## 优先考虑血红素铁\n红肉、猪肝等动物性食材中的铁更容易吸收。\n\n## 搭配维C食材\n番茄、西兰花、彩椒等富含维生素C的食材有助于提升吸收。\n\n## 常见误区\n补铁不等于顿顿吃猪肝，频率和总量都要适度。', false, 'published', 2, '2026-04-03 10:00:00', '2026-04-07 18:20:00'),
 ('knowledge-003', '腹泻期宝宝怎么吃更稳妥', '病期饮食先保水分和耐受', '从进食节奏、推荐食材和需要暂避的食物三方面，给出腹泻期饮食建议。', 'https://images.unsplash.com/photo-1498837167922-ddd27525d352?auto=format&fit=crop&w=800&q=80', 'illness', '病期护理', '["腹泻","病期适用","补水"]', 'taboo', '## 先观察精神状态\n如果宝宝精神差、尿量明显减少，应及时就医。\n\n## 饮食上怎么做\n可优先选择温热软烂、低油低糖的食物，少量多次。\n\n## 暂时避免\n高糖点心、油炸食物和生冷刺激食材要暂避。', false, 'published', 3, '2026-04-04 11:30:00', '2026-04-06 16:40:00'),
-('knowledge-004', '过敏原引入的安全节奏', '一次一种，连续观察', '整理鸡蛋、花生、奶制品等高风险食材的引入原则，帮助家长减少焦虑。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', 'allergy', '过敏与禁忌', '["过敏原","鸡蛋","观察期"]', 'guide', '## 一次只引入一种\n每种新食材建议连续观察2-3天，再决定是否增加量或加入下一种。\n\n## 从少量开始\n首日仅尝试少量，观察皮疹、呕吐、腹泻等反应。\n\n## 有家族过敏史怎么办\n可提前与儿科医生沟通，再制定更稳妥的尝试计划。', false, 'published', 4, '2026-04-02 14:00:00', '2026-04-09 20:00:00'),
+('knowledge-004', '过敏原引入的安全节奏', '一次一种，连续观察', '整理鸡蛋、花生、奶制品等高风险食材的引入原则，帮助家长减少焦虑。', 'https://images.unsplash.com/photo-1584820927498-cfe5211fd8bf?auto=format&fit=crop&w=800&q=80', 'allergy', '过敏与禁忌', '["过敏原","鸡蛋","观察期"]', 'guide', '## 一次只引入一种\n每种新食材建议连续观察2-3天，再决定是否增加量或加入下一种。\n\n## 从少量开始\n首日仅尝试少量，观察皮疹、呕吐、腹泻等反应。\n\n## 有家族过敏史怎么办\n可提前与儿科医生沟通，再制定更稳妥的尝试计划。', false, 'published', 4, '2026-04-02 14:00:00', '2026-04-09 20:00:00'),
 -- 办证指南相关文章
 ('knowledge-005', '广州居住证办理全攻略', '材料、流程、时间一次说清', '详细介绍广州居住证办理所需材料、办理流程、办理时间及注意事项。', 'https://images.unsplash.com/photo-1450101499163-c8848c66ca85?auto=format&fit=crop&w=800&q=80', 'certificate', '办证指南', '["居住证","广州","办理流程"]', 'guide', '## 办理条件\n在广州市居住半年以上，符合有合法稳定就业、合法稳定住所、连续就读条件之一的，可以申领居住证。\n\n## 所需材料\n1. 本人居民身份证或其他有效身份证明原件\n2. 本人相片（居住证相片回执）\n3. 居住地住址证明（房产证、购房合同、租赁合同等）\n4. 就业证明（劳动合同、工商营业执照等）或就读证明\n\n## 办理流程\n1. 先到居住地所在街道（镇）流动人口服务管理中心办理居住登记\n2. 居住登记满半年后，携带材料到受理点申办\n3. 受理后15个工作日内制作完成\n4. 可选择邮寄或到受理点领取\n\n## 办理地点\n各区街道（镇）流动人口服务管理中心、部分派出所、"穗好办"APP线上办理\n\n## 注意事项\n- 首次办理需先登记满半年\n- 居住证有效期1年，到期前1个月可办理签注\n- 办理免费，邮寄需支付快递费', true, 'published', 5, '2026-04-01 10:00:00', '2026-04-10 15:00:00'),
 ('knowledge-006', '新生儿户口办理指南', '出生后一个月内办理最佳', '新生儿户口登记所需材料、办理流程及常见问题解答。', 'https://images.unsplash.com/photo-1554224311-beee460c201f?auto=format&fit=crop&w=800&q=80', 'certificate', '办证指南', '["户口","新生儿","出生登记"]', 'guide', '## 办理时限\n建议在婴儿出生后一个月内办理，最迟不超过一年。\n\n## 所需材料\n1. 父母双方身份证、户口簿原件\n2. 结婚证原件\n3. 《出生医学证明》原件\n4. 计划生育服务证（部分地区需要）\n\n## 办理流程\n1. 到父母任意一方户口所在地派出所户籍窗口\n2. 填写《新生儿入户申请表》\n3. 提交材料审核\n4. 审核通过后当场办理或3-5个工作日办结\n\n## 随父或随母落户\n父母可自主选择新生儿随父或随母落户，不受户口性质限制。\n\n## 注意事项\n- 先办理《出生医学证明》再办户口\n- 姓名一经登记不宜随意更改\n- 超过一年未办理需提供延迟原因说明', false, 'published', 6, '2026-04-02 09:00:00', '2026-04-09 14:00:00'),

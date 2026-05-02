@@ -55,6 +55,8 @@ export interface RecipeEditorDetail {
   id: string
   title: string
   ageLabel: string
+  ageMinMonths?: number
+  ageMaxMonths?: number | null
   durationLabel: string
   difficultyLabel: string
   cover: string

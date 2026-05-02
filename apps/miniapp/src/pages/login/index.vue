@@ -4,54 +4,52 @@ import { getGuideData, readAuthSession, wechatLogin } from '@/services/api'
 
 const heroTitle = ref('科学辅食，悦享成长')
 const heroDesc = ref('为宝宝量身定制每一餐，开启健康饮食第一步。')
-const agreed = ref(true)
+const agreed = ref(false)
 const loggingIn = ref(false)
 
 onMounted(async () => {
   try {
-    const stage = await getGuideData('6-7')
-    // heroTitle.value = stage.title
-    // heroDesc.value = stage.description
+    await getGuideData('6-7')
   } catch {
     const session = readAuthSession()
-
     if (session?.hasBaby) {
       heroDesc.value = `${session.babyProfile?.monthAgeLabel ?? ''} 宝宝专属辅食建议已准备好。`.trim()
     }
   }
 })
 
-async function enterApp() {
+function openServiceAgreement() {
+  uni.navigateTo({ url: '/pages/agreement-service/index' })
+}
+
+function openPrivacyPolicy() {
+  uni.navigateTo({ url: '/pages/privacy-policy/index' })
+}
+
+function navigateAfterLogin(session: import('@baby-food/shared-types').AuthSession) {
+  if (!session.hasBaby) {
+    uni.reLaunch({ url: '/pages/baby-form/index' })
+  } else {
+    uni.reLaunch({ url: '/pages/home/index' })
+  }
+}
+
+async function doWechatLogin() {
   if (!agreed.value) {
-    uni.showToast({ title: '请先勾选协议', icon: 'none' })
+    uni.showToast({ title: '请先阅读并勾选协议', icon: 'none' })
     return
   }
-
-  if (loggingIn.value) {
-    return
-  }
-
-  // #ifdef H5
-  uni.showToast({
-    title: 'H5 环境暂不支持微信登录，请使用游客模式',
-    icon: 'none',
-    duration: 2000
-  })
-  return
-  // #endif
+  if (loggingIn.value) return
 
   loggingIn.value = true
-
   try {
     // #ifdef MP-WEIXIN
     const loginResult = await uni.login({ provider: 'weixin' })
     const code = loginResult.code
+    if (!code) throw new Error('未获取到微信登录凭证')
 
-    if (!code) {
-      throw new Error('未获取到微信登录凭证')
-    }
-
-    await wechatLogin(code)
+    const session = await wechatLogin(code)
+    navigateAfterLogin(session)
     // #endif
   } catch (error) {
     uni.showToast({
@@ -63,6 +61,16 @@ async function enterApp() {
   }
 }
 
+async function enterApp() {
+  if (!agreed.value) {
+    uni.showToast({ title: '请先阅读并勾选协议', icon: 'none' })
+    return
+  }
+  // #ifdef H5
+  uni.showToast({ title: 'H5 环境暂不支持微信登录，请使用游客模式', icon: 'none', duration: 2000 })
+  // #endif
+}
+
 function guestEnter() {
   uni.reLaunch({ url: '/pages/home/index' })
 }
@@ -72,7 +80,7 @@ function guestEnter() {
   <view class="page-shell login-page">
     <view class="rice-paper"></view>
     <view class="brand-block">
-      <text class="brand-title">宝宝辅食智囊</text>
+      <text class="brand-title">养娃小管家</text>
       <text class="brand-subtitle">Pure Nourishment for Growth</text>
     </view>
 
@@ -93,17 +101,36 @@ function guestEnter() {
     </view>
 
     <view class="action-panel card">
-      <button class="wechat-btn" @tap="enterApp">
+      <!-- #ifdef MP-WEIXIN -->
+      <button
+        class="wechat-btn"
+        :class="{ 'is-unchecked': !agreed, 'is-loading': loggingIn }"
+        :disabled="loggingIn"
+        @tap="doWechatLogin"
+      >
         <text class="wechat-icon">微</text>
-        <text>{{ loggingIn ? '登录中...' : '微信一键登录' }}</text>
+        <text>{{ loggingIn ? '登录中...' : '微信授权登录' }}</text>
       </button>
+      <!-- #endif -->
+      <!-- #ifdef H5 -->
+      <button class="wechat-btn" :class="{ 'is-unchecked': !agreed }" @tap="enterApp">
+        <text class="wechat-icon">微</text>
+        <text>微信授权登录</text>
+      </button>
+      <!-- #endif -->
       <view class="guest-link" @tap="guestEnter">暂不登录先逛逛 →</view>
-      <view class="agreement-row" @tap="agreed = !agreed">
-        <view class="checkbox" :class="{ checked: agreed }">{{ agreed ? '✓' : '' }}</view>
-        <text class="agreement-text">登录即代表已阅读并同意《用户服务协议》《隐私政策》</text>
+      <view class="agreement-row">
+        <view class="checkbox" :class="{ checked: agreed }" @tap="agreed = !agreed">{{ agreed ? '✓' : '' }}</view>
+        <view class="agreement-content">
+          <text class="agreement-text">我已阅读并同意</text>
+          <text class="agreement-link" @tap.stop="openServiceAgreement">《用户服务协议》</text>
+          <text class="agreement-text">与</text>
+          <text class="agreement-link" @tap.stop="openPrivacyPolicy">《隐私政策》</text>
+        </view>
       </view>
-      <view class="onboarding-tip">首次登录将引导创建宝宝档案，游客模式仅支持浏览公开内容。</view>
+      <view class="onboarding-tip">请先阅读并勾选协议，再进行微信授权登录。</view>
     </view>
+
   </view>
 </template>
 
@@ -134,9 +161,7 @@ function guestEnter() {
   z-index: 1;
 }
 
-.brand-block {
-  text-align: center;
-}
+.brand-block { text-align: center; }
 
 .brand-title {
   display: block;
@@ -224,9 +249,7 @@ function guestEnter() {
   color: var(--mini-text-muted);
 }
 
-.action-panel {
-  padding: 30rpx;
-}
+.action-panel { padding: 30rpx; }
 
 .wechat-btn {
   display: flex;
@@ -240,6 +263,22 @@ function guestEnter() {
   color: #fff;
   font-size: 30rpx;
   font-weight: 700;
+  box-shadow: 0 12rpx 30rpx rgba(7, 193, 96, 0.28);
+}
+
+.wechat-btn::after { border: none; }
+
+.wechat-btn.is-unchecked {
+  background: linear-gradient(180deg, #d9d9d9 0%, #c7c7c7 100%);
+  color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10rpx 24rpx rgba(110, 110, 110, 0.2);
+}
+
+.wechat-btn.is-loading { opacity: 0.82; }
+
+.wechat-btn:not(.is-unchecked):active {
+  transform: translateY(2rpx);
+  box-shadow: 0 8rpx 18rpx rgba(7, 193, 96, 0.22);
 }
 
 .wechat-icon {
@@ -267,6 +306,13 @@ function guestEnter() {
   margin-top: 30rpx;
 }
 
+.agreement-content {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4rpx;
+}
+
 .checkbox {
   width: 34rpx;
   height: 34rpx;
@@ -291,8 +337,16 @@ function guestEnter() {
   color: var(--mini-text-muted);
 }
 
+.agreement-link {
+  font-size: 22rpx;
+  line-height: 1.8;
+  color: var(--mini-primary-deep);
+  font-weight: 700;
+}
+
 .onboarding-tip {
   display: block;
   margin-top: 18rpx;
 }
+
 </style>

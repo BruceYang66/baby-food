@@ -1,4 +1,5 @@
 import type {
+  AgeRangeMonths,
   AuthSession,
   AuthState,
   BabyProfile,
@@ -357,12 +358,6 @@ export async function wechatLogin(code: string) {
   })
 
   saveAuthSession(session)
-
-  const redirectUrl = getPostAuthRedirectUrl(session)
-  if (getRouteBase(redirectUrl) !== getRouteBase(LOGIN_PAGE)) {
-    uni.reLaunch({ url: redirectUrl })
-  }
-
   return session
 }
 
@@ -434,7 +429,13 @@ export function getHomeData() {
   return request<HomePageData>('/app/home')
 }
 
-export function getGeneratePageData(payload?: { mealCount?: MealCount; goals?: NutritionGoal[] }) {
+export function getGeneratePageData(payload?: {
+  mealCount?: MealCount
+  goals?: NutritionGoal[]
+  ageRange?: AgeRangeMonths | string
+  excludeTags?: string[]
+  avoidRepeat?: string
+}) {
   return request<GeneratePageData>('/app/meal-plans/generate-today', {
     method: 'POST',
     data: payload
@@ -484,10 +485,18 @@ export function getBatchRecipeSummaries(recipeIds: string[]) {
   })
 }
 
-export function getRecipeList(params?: { tag?: string; search?: string; page?: number }) {
+export function getRecipeList(params?: {
+  tag?: string
+  search?: string
+  page?: number
+  ageMinMonths?: number
+  ageMaxMonths?: number | null
+}) {
   const parts: string[] = []
   if (params?.tag) parts.push(`tag=${encodeURIComponent(params.tag)}`)
   if (params?.search) parts.push(`search=${encodeURIComponent(params.search)}`)
+  if (typeof params?.ageMinMonths === 'number') parts.push(`ageMinMonths=${params.ageMinMonths}`)
+  if (params?.ageMaxMonths !== undefined && params.ageMaxMonths !== null) parts.push(`ageMaxMonths=${params.ageMaxMonths}`)
   if (params?.page) parts.push(`page=${params.page}`)
   const qs = parts.join('&')
   return request<{
@@ -585,6 +594,34 @@ export function acceptFamilyInvite(inviteCode: string) {
     }
 
     return data
+  })
+}
+
+// 将本地临时路径上传到服务器，返回永久 URL
+export function uploadAvatar(tempFilePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const token = readAuthSession()?.token ?? ''
+    uni.uploadFile({
+      url: `${appConfig.apiBaseUrl}/admin/upload/image`,
+      filePath: tempFilePath,
+      name: 'image',
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success(res) {
+        try {
+          const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+          if (body?.ok && body?.data?.url) {
+            resolve(body.data.url as string)
+          } else {
+            reject(new Error(body?.message || '头像上传失败'))
+          }
+        } catch {
+          reject(new Error('头像上传响应解析失败'))
+        }
+      },
+      fail(err) {
+        reject(new Error(err?.errMsg || '头像上传失败'))
+      }
+    })
   })
 }
 

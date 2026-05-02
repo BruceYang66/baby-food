@@ -68,6 +68,8 @@ CREATE TABLE recipes (
   summary TEXT,
   cover_image TEXT,
   age_label TEXT NOT NULL,
+  age_min_months INTEGER NOT NULL,
+  age_max_months INTEGER,
   duration_label TEXT NOT NULL,
   difficulty_label TEXT NOT NULL,
   source TEXT,
@@ -77,8 +79,11 @@ CREATE TABLE recipes (
   content_status content_status NOT NULL DEFAULT 'draft',
   review_status review_status NOT NULL DEFAULT 'none',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_recipes_age_month_range CHECK (age_max_months IS NULL OR age_max_months >= age_min_months)
 );
+
+CREATE INDEX idx_recipes_content_status_age_months ON recipes(content_status, age_min_months, age_max_months);
 
 CREATE TABLE recipe_ingredients (
   id TEXT PRIMARY KEY,
@@ -297,3 +302,15 @@ CREATE TABLE user_feedback (
   content TEXT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
+
+CREATE TABLE user_login_logs (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  nickname TEXT NOT NULL,
+  avatar_url TEXT,
+  login_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  ip_address TEXT,
+  user_agent TEXT
+);
+
+CREATE INDEX idx_user_login_logs_user_id_login_at ON user_login_logs(user_id, login_at);

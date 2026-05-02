@@ -1,15 +1,24 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { RecipeAdminRow } from '@baby-food/shared-types'
+import type { AgeRangeMonths, RecipeAdminRow } from '@baby-food/shared-types'
 import RecipeFilterBar from '@/components/recipes/RecipeFilterBar.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
 import { getRecipeList } from '@/services/api'
 
-const router = useRouter()
+const AGE_RANGE_OPTIONS: Array<{ label: string; range?: AgeRangeMonths }> = [
+  { label: '全部' },
+  { label: '6-8个月', range: { minMonths: 6, maxMonths: 8 } },
+  { label: '8-10个月', range: { minMonths: 8, maxMonths: 10 } },
+  { label: '10-12个月', range: { minMonths: 10, maxMonths: 12 } },
+  { label: '12-18个月', range: { minMonths: 12, maxMonths: 18 } },
+  { label: '18-24个月', range: { minMonths: 18, maxMonths: 24 } },
+  { label: '2岁+', range: { minMonths: 24, maxMonths: null } }
+]
+
 const recipeRows = ref<RecipeAdminRow[]>([])
 const searchKeyword = ref('')
-const filterAgeLabel = ref<string>('')
+const filterAgeRange = ref<AgeRangeMonths | undefined>(undefined)
 const filterContentStatus = ref<string>('')
 const filterReviewStatus = ref<string>('')
 const sortBy = ref<'updatedAt' | 'favorites'>('updatedAt')
@@ -21,6 +30,17 @@ async function loadRecipes() {
 
 function createRecipe() {
   router.push('/recipes/editor')
+}
+
+function isMonthRangeOverlap(
+  minA: number,
+  maxA: number | null,
+  minB: number,
+  maxB: number | null
+) {
+  const safeMaxA = maxA ?? Number.MAX_SAFE_INTEGER
+  const safeMaxB = maxB ?? Number.MAX_SAFE_INTEGER
+  return minA <= safeMaxB && minB <= safeMaxA
 }
 
 // 筛选和排序后的食谱列表
@@ -37,8 +57,18 @@ const filteredRecipes = computed(() => {
   }
 
   // 月龄筛选
-  if (filterAgeLabel.value) {
-    result = result.filter(recipe => recipe.ageLabel === filterAgeLabel.value)
+  if (filterAgeRange.value) {
+    result = result.filter((recipe) => {
+      if (typeof recipe.ageMinMonths !== 'number') {
+        return false
+      }
+      return isMonthRangeOverlap(
+        recipe.ageMinMonths,
+        recipe.ageMaxMonths ?? null,
+        filterAgeRange.value!.minMonths,
+        filterAgeRange.value!.maxMonths ?? null
+      )
+    })
   }
 
   // 内容状态筛选
@@ -94,14 +124,29 @@ onMounted(loadRecipes)
         </div>
         <div>
           <label style="display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600;">月龄</label>
-          <select v-model="filterAgeLabel" class="ghost-select" style="margin: 0;">
+          <select
+            class="ghost-select"
+            style="margin: 0;"
+            :value="filterAgeRange ? `${filterAgeRange.minMonths}-${filterAgeRange.maxMonths === null ? 'null' : filterAgeRange.maxMonths}` : ''"
+            @change="(event) => {
+              const value = (event.target as HTMLSelectElement).value
+              if (!value) {
+                filterAgeRange = undefined
+                return
+              }
+              const [minText, maxText] = value.split('-')
+              filterAgeRange = {
+                minMonths: Number(minText),
+                maxMonths: maxText === 'null' ? null : Number(maxText)
+              }
+            }"
+          >
             <option value="">全部</option>
-            <option>6-8个月</option>
-            <option>8-10个月</option>
-            <option>10-12个月</option>
-            <option>12-18个月</option>
-            <option>18-24个月</option>
-            <option>2-3岁</option>
+            <option
+              v-for="option in AGE_RANGE_OPTIONS.filter((item) => item.range)"
+              :key="option.label"
+              :value="`${option.range!.minMonths}-${option.range!.maxMonths === null ? 'null' : option.range!.maxMonths}`"
+            >{{ option.label }}</option>
           </select>
         </div>
         <div>

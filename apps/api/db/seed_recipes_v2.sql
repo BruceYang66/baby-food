@@ -1,0 +1,79 @@
+-- ============================================================
+-- 辅食食谱扩展数据 v2（seed_recipes_v2.sql）
+-- 每个年龄段 30 条，共 150 条
+-- 年龄段：6-8月 / 9-11月 / 12-18月 / 19-24月 / 24月+
+-- ============================================================
+
+-- ============================================================
+-- PART 1：6-8 月龄（recipe-036 ~ recipe-065）
+-- ============================================================
+
+INSERT INTO recipes (id, title, summary, cover_image, age_label, age_min_months, age_max_months, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
+('recipe-036', '南瓜米糊', '南瓜甜糯，富含β-胡萝卜素，与米粉搭配是宝宝第一口辅食的绝佳选择。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '营养师精品', '陈营养师', 380, '第一口辅食首选', 'published', 'approved'),
+('recipe-037', '红薯泥', '红薯天然甜味浓郁，富含膳食纤维和维生素A，蒸熟后质地绵软，预防便秘好选择。', 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 290, '天然甜味易接受', 'published', 'approved'),
+('recipe-038', '苹果泥', '苹果富含果胶和维生素C，蒸熟后研磨成泥，口感细腻，帮助宝宝建立对水果的认知。', 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '13分钟', '初级', '营养师精品', '陈营养师', 210, '水果初体验', 'published', 'approved'),
+('recipe-039', '胡萝卜泥', '胡萝卜富含β-胡萝卜素，蒸熟后甜味更浓，搭配少量母乳调稀，营养更易吸收。', 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '17分钟', '初级', '营养师精品', '陈营养师', 180, '护眼补充β-胡萝卜素', 'published', 'approved'),
+('recipe-040', '香蕉泥', '香蕉无需加热，直接研磨即可，富含钾和维生素B6，天然甜味让宝宝爱不释口。', 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '3分钟', '初级', '手机快速添加', '运营-小顾', 340, '快手零失败', 'published', 'approved'),
+('recipe-041', '土豆泥', '土豆富含碳水化合物和维生素C，蒸熟后质地绵软，加入母乳调制成适合宝宝的浓稠度。', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 150, '绵软易消化', 'published', 'approved'),
+('recipe-042', '豌豆泥', '豌豆富含植物蛋白和叶酸，鲜绿色泥糊颜色鲜艳，帮助宝宝接受绿色蔬菜。', 'https://images.unsplash.com/photo-1587735243615-c03f25aaff15?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '13分钟', '初级', '营养师精品', '陈营养师', 130, '绿色蔬菜初体验', 'published', 'approved'),
+('recipe-043', '梨子泥', '梨子水分充足，富含维生素C，蒸熟后口感更柔和，有助于润肺止咳，适合秋冬季节。', 'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '营养师精品', '陈营养师', 110, '润肺止咳秋冬佳品', 'published', 'approved'),
+('recipe-044', '西兰花泥', '西兰花富含维生素C和叶酸，蒸熟后研磨成泥，帮助宝宝从小建立对绿色蔬菜的接受度。', 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '营养师精品', '陈营养师', 100, '叶酸补充好来源', 'published', 'approved'),
+('recipe-045', '蛋黄泥', '蛋黄富含铁、锌和卵磷脂，是宝宝6月龄后重要的营养补充，从1/4个开始逐步增加。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '11分钟', '初级', '营养师精品', '陈营养师', 420, '补铁补锌高营养', 'published', 'approved'),
+('recipe-046', '高铁米粉糊', '专为6月龄宝宝设计的高铁米粉，用温水或母乳冲调，是引入辅食的首选食物。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '3分钟', '初级', '营养师精品', '陈营养师', 480, '辅食引入第一步', 'published', 'approved'),
+('recipe-047', '南瓜蛋黄泥', '南瓜的甜味与蛋黄的醇香完美融合，双重营养补充，颜色金黄诱人，宝宝接受度高。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 190, '双重营养金黄泥', 'published', 'approved'),
+('recipe-048', '苹果胡萝卜泥', '苹果的甜味中和胡萝卜的土腥味，两种食材搭配营养更全面，颜色橙黄鲜艳。', 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '17分钟', '初级', '营养师精品', '陈营养师', 140, '甜味中和土腥味', 'published', 'approved'),
+('recipe-049', '红薯米糊', '红薯与米粉的经典搭配，天然甜味无需添加糖，富含膳食纤维，帮助宝宝肠道健康。', 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 170, '肠道健康好帮手', 'published', 'approved'),
+('recipe-050', '香蕉苹果泥', '两种水果的甜味叠加，口感丰富，富含多种维生素，是宝宝最爱的水果泥组合之一。', 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '10分钟', '初级', '手机快速添加', '运营-小顾', 200, '双果维生素组合', 'published', 'approved'),
+('recipe-051', '土豆胡萝卜泥', '土豆的绵软与胡萝卜的甜味结合，颜色橙黄，营养均衡，适合作为宝宝的午餐辅食。', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 120, '午餐营养均衡搭配', 'published', 'approved'),
+('recipe-052', '西兰花土豆泥', '西兰花的清香与土豆的绵软完美结合，绿白相间颜色好看，营养丰富易消化。', 'https://images.unsplash.com/photo-1459411621453-7b03977f4bfc?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 95, '绿白双色营养泥', 'published', 'approved'),
+('recipe-053', '豌豆南瓜泥', '豌豆的清甜与南瓜的浓郁甜味融合，绿橙双色营养丰富，植物蛋白与维生素A双补。', 'https://images.unsplash.com/photo-1587735243615-c03f25aaff15?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '17分钟', '初级', '营养师精品', '陈营养师', 88, '双色双营养', 'published', 'approved'),
+('recipe-054', '梨子米糊', '梨子的清甜与米粉的细腻结合，口感顺滑，富含水分和维生素C，适合天气干燥时食用。', 'https://images.unsplash.com/photo-1514756331096-242fdeb70d4a?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '营养师精品', '陈营养师', 80, '润燥补水好选择', 'published', 'approved'),
+('recipe-055', '蛋黄南瓜米糊', '三种食材的营养组合，铁质+β-胡萝卜素+碳水化合物，颜色金黄，是宝宝营养早餐首选。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 260, '三合一营养早餐', 'published', 'approved'),
+('recipe-056', '紫薯泥', '紫薯富含花青素和维生素C，天然紫色让宝宝对食物产生好奇，甜味浓郁易接受。', 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 155, '花青素抗氧化', 'published', 'approved'),
+('recipe-057', '菠菜泥', '菠菜富含铁和叶酸，焯水后研磨成泥，搭配少量米粉调稠，帮助预防缺铁性贫血。', 'https://images.unsplash.com/photo-1576045057995-568f588f82fb?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '13分钟', '初级', '营养师精品', '陈营养师', 110, '补铁预防贫血', 'published', 'approved'),
+('recipe-058', '山药泥', '山药富含黏液蛋白和淀粉酶，质地绵软，有助于消化，是宝宝肠胃调理的好食材。', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 98, '健脾助消化', 'published', 'approved'),
+('recipe-059', '冬瓜泥', '冬瓜水分充足，热量低，富含维生素C，蒸熟后质地细腻，适合夏季给宝宝补水。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '营养师精品', '陈营养师', 72, '夏季补水清热', 'published', 'approved'),
+('recipe-060', '芋头泥', '芋头富含膳食纤维和钾，质地绵软，天然淡甜味，是土豆泥的好替代选择。', 'https://images.unsplash.com/photo-1518977676601-b53f82aba655?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '25分钟', '初级', '营养师精品', '陈营养师', 82, '膳食纤维好来源', 'published', 'approved'),
+('recipe-061', '苹果梨子泥', '两种梨果类水果搭配，口感清甜多汁，富含果胶，有助于宝宝肠道蠕动。', 'https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '15分钟', '初级', '手机快速添加', '运营-小顾', 90, '双果促肠道蠕动', 'published', 'approved'),
+('recipe-062', '胡萝卜土豆泥', '经典蔬菜组合，胡萝卜的甜味与土豆的绵软相得益彰，颜色橙黄，营养均衡。', 'https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 105, '经典蔬菜双拼', 'published', 'approved'),
+('recipe-063', '南瓜豌豆米糊', '南瓜的甜味与豌豆的清香融合，加入米粉增加饱腹感，颜色橙绿相间，营养丰富。', 'https://images.unsplash.com/photo-1506084868230-bb9d95c24759?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 95, '三合一饱腹营养糊', 'published', 'approved'),
+('recipe-064', '香蕉蛋黄泥', '香蕉的天然甜味与蛋黄的醇香结合，无需加热，快速制作，铁质与钾双重补充。', 'https://images.unsplash.com/photo-1571771894821-ce9b6c11b08e?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '11分钟', '初级', '手机快速添加', '运营-小顾', 160, '快手补铁补钾', 'published', 'approved'),
+('recipe-065', '红薯蛋黄泥', '红薯的甜糯与蛋黄的营养完美结合，颜色金黄，富含铁、维生素A和碳水化合物。', 'https://images.unsplash.com/photo-1596097635121-14b63b7a0c19?auto=format&fit=crop&w=800&q=80', '6-8月', 6, 8, '20分钟', '初级', '营养师精品', '陈营养师', 135, '金黄双营养泥', 'published', 'approved')
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
+-- PART 2：9-11 月龄（recipe-066 ~ recipe-095）
+-- ============================================================
+
+INSERT INTO recipes (id, title, summary, cover_image, age_label, age_min_months, age_max_months, duration_label, difficulty_label, source, creator, favorites, review_focus, content_status, review_status) VALUES
+('recipe-066', '鸡肉蔬菜粥', '鸡肉细腻易消化，搭配胡萝卜和西兰花，营养全面，是宝宝9月龄后引入肉类的理想选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '中级', '营养师精品', '陈营养师', 460, '引入肉类首选', 'published', 'approved'),
+('recipe-067', '猪肝泥粥', '猪肝是补铁神器，每周1-2次，搭配大米粥，帮助预防缺铁性贫血，促进宝宝大脑发育。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '45分钟', '中级', '营养师精品', '陈营养师', 380, '高效补铁预防贫血', 'published', 'approved'),
+('recipe-068', '三文鱼土豆泥', '三文鱼富含DHA，促进大脑和视力发育，与土豆泥搭配，口感细腻，宝宝接受度高。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '25分钟', '中级', '营养师精品', '陈营养师', 530, 'DHA补脑促发育', 'published', 'approved'),
+('recipe-069', '南瓜鸡蛋羹', '南瓜泥与鸡蛋液混合蒸制，口感嫩滑如豆腐，颜色金黄，营养丰富，宝宝超爱。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '17分钟', '初级', '营养师精品', '陈营养师', 415, '嫩滑金黄蒸蛋', 'published', 'approved'),
+('recipe-070', '豆腐蔬菜粥', '嫩豆腐富含植物蛋白和钙，搭配时蔬熬粥，口感软嫩，是素食宝宝的蛋白质好来源。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '30分钟', '初级', '营养师精品', '陈营养师', 220, '植物蛋白好来源', 'published', 'approved'),
+('recipe-071', '虾泥蒸蛋', '虾肉富含优质蛋白和锌，与鸡蛋同蒸，口感嫩滑，是宝宝引入海鲜的好方式。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '22分钟', '中级', '营养师精品', '陈营养师', 285, '海鲜引入补锌', 'published', 'approved'),
+('recipe-072', '胡萝卜牛肉粥', '牛肉富含铁和锌，胡萝卜提供β-胡萝卜素，搭配软烂大米粥，营养均衡，促进生长发育。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '50分钟', '中级', '营养师精品', '陈营养师', 265, '铁锌双补促发育', 'published', 'approved'),
+('recipe-073', '西兰花鸡蛋羹', '西兰花碎末与鸡蛋液混合蒸制，绿白相间颜色好看，叶酸与蛋白质双补。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '17分钟', '初级', '营养师精品', '陈营养师', 195, '叶酸蛋白双补', 'published', 'approved'),
+('recipe-074', '香菇鸡肉粥', '香菇富含多糖和B族维生素，与鸡肉搭配熬粥，鲜味十足，提升宝宝食欲。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '40分钟', '中级', '营养师精品', '陈营养师', 215, '鲜味开胃好粥', 'published', 'approved'),
+('recipe-075', '番茄蛋花粥', '番茄富含番茄红素和维生素C，与鸡蛋搭配熬粥，酸甜开胃，颜色鲜艳，宝宝爱吃。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '28分钟', '初级', '营养师精品', '陈营养师', 345, '酸甜开胃番茄粥', 'published', 'approved'),
+('recipe-076', '菠菜猪肉粥', '菠菜与猪肉的铁质双补，搭配软烂大米，营养丰富，帮助预防缺铁性贫血。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '40分钟', '中级', '营养师精品', '陈营养师', 175, '铁质双补防贫血', 'published', 'approved'),
+('recipe-077', '南瓜小米粥', '小米富含B族维生素，南瓜提供β-胡萝卜素，两者搭配熬粥，颜色金黄，养胃健脾。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '30分钟', '初级', '营养师精品', '陈营养师', 160, '养胃健脾金黄粥', 'published', 'approved'),
+('recipe-078', '鳕鱼蔬菜粥', '鳕鱼肉质细嫩，刺少，富含DHA和优质蛋白，是宝宝引入鱼类的首选，搭配蔬菜营养全面。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '中级', '营养师精品', '陈营养师', 435, '引入鱼类DHA首选', 'published', 'approved'),
+('recipe-079', '豆腐蒸蛋', '嫩豆腐与鸡蛋同蒸，口感双重嫩滑，蛋白质丰富，是宝宝最爱的蒸蛋升级版。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '17分钟', '初级', '营养师精品', '陈营养师', 250, '双重嫩滑蛋白质', 'published', 'approved'),
+('recipe-080', '红薯鸡肉粥', '红薯的甜味与鸡肉的鲜味完美融合，软烂易消化，是宝宝秋冬季节的暖胃好粥。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '40分钟', '中级', '营养师精品', '陈营养师', 190, '秋冬暖胃好粥', 'published', 'approved'),
+('recipe-081', '山药排骨粥', '山药健脾益胃，排骨提供钙和蛋白质，长时间熬制后骨髓融入粥中，营养极为丰富。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '60分钟', '高级', '营养师精品', '陈营养师', 150, '补钙健脾营养粥', 'published', 'approved'),
+('recipe-082', '玉米鸡蛋羹', '玉米研磨成末，与鸡蛋液混合蒸制，甜香嫩滑，富含玉米黄素，有益眼睛健康。', 'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '20分钟', '初级', '营养师精品', '陈营养师', 135, '护眼玉米黄素', 'published', 'approved'),
+('recipe-083', '猪肉蔬菜软饭', '9月龄后可引入软饭，猪肉末与蔬菜搭配，比粥更有饱腹感，锻炼宝宝咀嚼能力。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '中级', '营养师精品', '陈营养师', 205, '锻炼咀嚼软饭', 'published', 'approved'),
+('recipe-084', '鸡蛋蔬菜软面条', '细软面条搭配鸡蛋和蔬菜，是宝宝9月龄后引入面食的好选择，锻炼咀嚼和吞咽能力。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '23分钟', '初级', '营养师精品', '陈营养师', 330, '面食引入好选择', 'published', 'approved'),
+('recipe-085', '三文鱼蒸蛋', '三文鱼泥与鸡蛋液混合蒸制，DHA含量丰富，口感嫩滑，是促进大脑发育的营养美食。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '20分钟', '中级', '营养师精品', '陈营养师', 395, 'DHA嫩滑蒸蛋', 'published', 'approved'),
+('recipe-086', '南瓜牛肉粥', '南瓜的甜味与牛肉的鲜味结合，铁质丰富，颜色金黄，是宝宝补铁的美味选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '50分钟', '中级', '营养师精品', '陈营养师', 178, '金黄补铁好粥', 'published', 'approved'),
+('recipe-087', '西红柿豆腐羹', '西红柿的酸甜与豆腐的嫩滑结合，维生素C促进铁吸收，植物蛋白丰富，开胃又营养。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '23分钟', '初级', '营养师精品', '陈营养师', 162, '酸甜开胃豆腐羹', 'published', 'approved'),
+('recipe-088', '鸡肉南瓜软饭', '鸡肉末与南瓜泥拌入软饭，颜色金黄，营养均衡，是宝宝从粥过渡到软饭的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '中级', '营养师精品', '陈营养师', 185, '粥到软饭过渡期', 'published', 'approved'),
+('recipe-089', '猪肝蔬菜粥', '猪肝每周1-2次，搭配绿叶蔬菜，铁质与叶酸双补，是预防贫血的营养粥品。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '45分钟', '中级', '营养师精品', '陈营养师', 165, '铁叶酸双补防贫血', 'published', 'approved'),
+('recipe-090', '香蕉燕麦粥', '燕麦富含β-葡聚糖，香蕉提供天然甜味，搭配熬制，营养丰富，有助于肠道健康。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '20分钟', '初级', '手机快速添加', '运营-小顾', 205, '肠道健康燕麦粥', 'published', 'approved'),
+('recipe-091', '鳕鱼蒸蛋', '鳕鱼泥与鸡蛋液同蒸，DHA与蛋白质双补，口感嫩滑，是宝宝补脑的营养美食。', 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '20分钟', '中级', '营养师精品', '陈营养师', 235, 'DHA蛋白双补', 'published', 'approved'),
+('recipe-092', '胡萝卜鸡蛋软面', '胡萝卜末与鸡蛋搭配细软面条，颜色橙黄，营养丰富，是宝宝面食入门的好选择。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '23分钟', '初级', '营养师精品', '陈营养师', 180, '面食入门橙黄面', 'published', 'approved'),
+('recipe-093', '豆腐鸡肉粥', '豆腐与鸡肉双蛋白搭配，搭配软烂大米粥，营养全面，口感细腻，宝宝易消化。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '中级', '营养师精品', '陈营养师', 158, '双蛋白营养粥', 'published', 'approved'),
+('recipe-094', '紫薯山药粥', '紫薯的花青素与山药的黏液蛋白结合，颜色紫白相间，健脾养胃，营养丰富。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '35分钟', '初级', '营养师精品', '陈营养师', 132, '健脾养胃紫白粥', 'published', 'approved'),
+('recipe-095', '菠菜鸡蛋软面', '菠菜汁染绿的面条搭配鸡蛋，颜色翠绿，铁质与蛋白质丰富，是宝宝补铁的创意面食。', 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80', '9-11月', 9, 11, '25分钟', '中级', '营养师精品', '陈营养师', 152, '翠绿补铁创意面', 'published', 'approved')
+ON CONFLICT DO NOTHING;
