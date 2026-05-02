@@ -1,3 +1,13 @@
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
+
+function openImports() {
+  router.push('/imports')
+}
+</script>
+
 <template>
   <header class="topbar">
     <div>
@@ -5,8 +15,8 @@
       <div class="panel-title" style="font-size: 32px; margin-top: 6px;">食谱全生命周期管理</div>
     </div>
     <div style="display:flex; align-items:center; gap:12px;">
-      <button class="ghost-btn">导出报表</button>
-      <button class="primary-btn">批量导入</button>
+      <button class="ghost-btn" @click="openImports">导出报表</button>
+      <button class="primary-btn" @click="openImports">批量导入</button>
     </div>
   </header>
 </template>

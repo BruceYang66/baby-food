@@ -15,6 +15,10 @@ import {
   getAdminReviewQueue,
   getAdminSystemSettings,
   getAdminUsers,
+  setUserAppAdminPermission,
+  getAdminFeedbackList,
+  getAdminFeedbackDetail,
+  getAdminFeedbackTrend,
   createRecipe,
   updateRecipe,
   batchUpdateRecipeStatus,
@@ -25,6 +29,14 @@ import {
   updateKnowledgeArticle,
   deleteKnowledgeArticle
 } from './data/admin.js'
+import {
+  commitKnowledgeImport,
+  commitRecipeImport,
+  exportKnowledgeArticles,
+  exportRecipes,
+  previewKnowledgeImport,
+  previewRecipeImport
+} from './data/imports.js'
 import {
   acceptFamilyInvite,
   createBabyProfile,
@@ -48,6 +60,7 @@ import {
   getRecipeList,
   getTabooGuideData,
   getUserFavoriteIds,
+  getUserFeedbackHistory,
   getVaccinePageData,
   addUserFavorite,
   removeUserFavorite,
@@ -113,7 +126,7 @@ app.use((req, res, next) => {
     res.header('Vary', 'Origin')
   }
 
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS')
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
   res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
 
   if (req.method === 'OPTIONS') {
@@ -124,7 +137,7 @@ app.use((req, res, next) => {
   next()
 })
 
-app.use(express.json())
+app.use(express.json({ limit: '5mb' }))
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
@@ -226,6 +239,49 @@ function sendError(res: Response, error: unknown, fallback: string) {
   })
 }
 
+function resolveUploadedImageUrl(rawUrl: string, baseUrl?: string) {
+  if (!rawUrl) {
+    return rawUrl
+  }
+
+  if (rawUrl.startsWith('http://') || rawUrl.startsWith('https://')) {
+    return rawUrl
+  }
+
+  const normalizedBase = (baseUrl || '').trim().replace(/\/$/, '')
+  if (!normalizedBase) {
+    return rawUrl
+  }
+
+  if (rawUrl.startsWith('/')) {
+    return `${normalizedBase}${rawUrl}`
+  }
+
+  return `${normalizedBase}/${rawUrl}`
+}
+
+function getRemoteUploadBaseUrl() {
+  try {
+    return new URL(env.remoteUploadUrl).origin
+  } catch {
+    return ''
+  }
+}
+
+function shouldUseRemoteUpload(req: Request) {
+  if (env.uploadMode !== 'remote' || !env.remoteUploadUrl) {
+    return false
+  }
+
+  try {
+    const remoteHost = new URL(env.remoteUploadUrl).host
+    const currentHost = String(req.headers.host || '')
+    return remoteHost !== currentHost
+  } catch {
+    return true
+  }
+}
+
 function isPlaceholderSecret(value: string) {
   return (
     !value
@@ -303,6 +359,46 @@ function requireAppAuth(req: Request, res: Response, next: NextFunction) {
     next()
   } catch (error) {
     sendError(res, error, '登录校验失败')
+  }
+}
+
+async function ensureUserCanManageAppContent(userId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const user = await (prisma as any).user.findUnique({
+      where: { id: userId },
+      select: { canAppAdmin: true }
+    }) as { canAppAdmin?: boolean } | null
+
+    if (!user?.canAppAdmin) {
+      throw new HttpError(403, '当前账号无内容管理权限')
+    }
+
+    return
+  } catch (error) {
+    if (error instanceof HttpError) {
+      throw error
+    }
+
+    const rows = await prisma.$queryRaw<Array<{ canAppAdmin: boolean }>>`
+      SELECT can_app_admin AS "canAppAdmin"
+      FROM users
+      WHERE id = ${userId}
+      LIMIT 1
+    `
+
+    if (!rows[0]?.canAppAdmin) {
+      throw new HttpError(403, '当前账号无内容管理权限')
+    }
+  }
+}
+
+async function requireAppAdminPermission(req: Request, res: Response, next: NextFunction) {
+  try {
+    await ensureUserCanManageAppContent(getAppUserId(req))
+    next()
+  } catch (error) {
+    sendError(res, error, '权限校验失败')
   }
 }
 
@@ -393,7 +489,10 @@ app.get('/api/debug/runtime-config', (_req, res) => {
       wechatSecretMasked: maskSecret(env.wechatSecret),
       wechatSecretLooksPlaceholder: isPlaceholderSecret(env.wechatSecret),
       jwtSecretMasked: maskSecret(env.jwtSecret),
-      jwtSecretLooksPlaceholder: isPlaceholderSecret(env.jwtSecret)
+      jwtSecretLooksPlaceholder: isPlaceholderSecret(env.jwtSecret),
+      uploadMode: env.uploadMode,
+      remoteUploadConfigured: Boolean(env.remoteUploadUrl),
+      remoteUploadHost: env.remoteUploadUrl ? getRemoteUploadBaseUrl() : ''
     }
   })
 })
@@ -851,6 +950,14 @@ app.get('/api/app/messages', requireAppAuth, async (req, res) => {
   }
 })
 
+app.get('/api/app/feedback', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getUserFeedbackHistory(getAppUserId(req)) })
+  } catch (error) {
+    sendError(res, error, '反馈历史读取失败')
+  }
+})
+
 app.post('/api/app/feedback', requireAppAuth, async (req, res) => {
   const content = typeof req.body?.content === 'string' ? req.body.content : ''
   try {
@@ -861,19 +968,76 @@ app.post('/api/app/feedback', requireAppAuth, async (req, res) => {
   }
 })
 
-app.post('/api/admin/auth/login', (_req, res) => {
-  res.json({ ok: true, data: { token: 'mock-admin-token' } })
+app.get('/api/app/admin/recipes', requireAppAuth, requireAppAdminPermission, async (_req, res) => {
+  try {
+    res.json({ ok: true, data: await getAdminRecipes() })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱列表读取失败' })
+  }
 })
 
-// 图片上传接口（admin token 或 app Bearer token 均可调用）
-app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => {
-  // 简单鉴权：有 Bearer token 即可（admin mock token 或 app JWT 均接受）
-  const authHeader = req.headers['authorization'] ?? ''
-  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
-  if (!token) {
-    res.status(401).json({ ok: false, message: '未授权' })
-    return
+app.get('/api/app/admin/recipes/:id', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getAdminRecipeDetail(getRouteParam(req.params.id)) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱详情读取失败' })
   }
+})
+
+app.post('/api/app/admin/recipes', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    const data = await createRecipe(req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱创建失败' })
+  }
+})
+
+app.put('/api/app/admin/recipes/:id', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    const data = await updateRecipe(getRouteParam(req.params.id), req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱更新失败' })
+  }
+})
+
+app.get('/api/app/admin/knowledge', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    const categoryKey = typeof req.query.categoryKey === 'string' ? req.query.categoryKey : undefined
+    res.json({ ok: true, data: await getAdminKnowledgeArticles(categoryKey) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货列表读取失败' })
+  }
+})
+
+app.get('/api/app/admin/knowledge/:id', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getAdminKnowledgeDetail(getRouteParam(req.params.id)) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货详情读取失败' })
+  }
+})
+
+app.post('/api/app/admin/knowledge', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    const data = await createKnowledgeArticle(req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货创建失败' })
+  }
+})
+
+app.put('/api/app/admin/knowledge/:id', requireAppAuth, requireAppAdminPermission, async (req, res) => {
+  try {
+    const data = await updateKnowledgeArticle(getRouteParam(req.params.id), req.body)
+    res.json({ ok: true, data })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货更新失败' })
+  }
+})
+
+app.post('/api/app/admin/upload/image', requireAppAuth, requireAppAdminPermission, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       res.status(400).json({ ok: false, message: '未上传图片文件' })
@@ -882,19 +1046,18 @@ app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => 
 
     let imageUrl: string
 
-    if (env.uploadMode === 'remote') {
-      // 远程上传模式
+    if (shouldUseRemoteUpload(req)) {
       if (!env.remoteUploadUrl) {
         res.status(500).json({ ok: false, message: '未配置远程上传地址' })
         return
       }
 
-      const FormData = (await import('form-data')).default
       const formData = new FormData()
-      formData.append('image', req.file.buffer, {
-        filename: req.file.originalname,
-        contentType: req.file.mimetype
-      })
+      formData.append(
+        'image',
+        new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype }),
+        req.file.originalname
+      )
 
       const headers: Record<string, string> = {}
       if (env.remoteUploadToken) {
@@ -903,13 +1066,19 @@ app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => 
 
       const response = await fetch(env.remoteUploadUrl, {
         method: 'POST',
-        body: formData as any,
+        body: formData,
         headers
       })
 
       if (!response.ok) {
         const errorText = await response.text()
-        res.status(500).json({ ok: false, message: `远程上传失败: ${response.status} ${errorText}` })
+        let errorMessage = errorText
+        try {
+          const errorPayload = JSON.parse(errorText) as { message?: string }
+          errorMessage = errorPayload.message ?? errorText
+        } catch {
+        }
+        res.status(500).json({ ok: false, message: `远程上传失败: ${response.status} ${errorMessage}` })
         return
       }
 
@@ -920,10 +1089,9 @@ app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => 
         return
       }
 
-      imageUrl = result.data.url
+      imageUrl = resolveUploadedImageUrl(result.data.url, getRemoteUploadBaseUrl())
     } else {
-      // 本地上传模式
-      imageUrl = `/uploads/images/${req.file.filename}`
+      imageUrl = resolveUploadedImageUrl(`/uploads/images/${req.file.filename}`, env.uploadBaseUrl)
     }
 
     res.json({ ok: true, data: { url: imageUrl } })
@@ -932,11 +1100,102 @@ app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => 
   }
 })
 
-app.get('/api/admin/dashboard/overview', async (_req, res) => {
+app.post('/api/admin/auth/login', (_req, res) => {
+  res.json({ ok: true, data: { token: 'mock-admin-token' } })
+})
+
+// 图片上传接口（admin token 或 app Bearer token 均可调用）
+app.post('/api/admin/upload/image', upload.single('image'), async (req, res) => {
+  // 简单鉴权：有 Bearer token 即可（admin mock token 或 app JWT 均接受）
+  // const authHeader = req.headers['authorization'] ?? ''
+  // const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : ''
+  // if (!token) {
+  //   res.status(401).json({ ok: false, message: '未授权' })
+  //   return
+  // }
   try {
-    res.json({ ok: true, data: await getAdminDashboardOverview() })
+    if (!req.file) {
+      res.status(400).json({ ok: false, message: '未上传图片文件' })
+      return
+    }
+
+    let imageUrl: string
+
+    if (shouldUseRemoteUpload(req)) {
+      // 远程上传模式
+      if (!env.remoteUploadUrl) {
+        res.status(500).json({ ok: false, message: '未配置远程上传地址' })
+        return
+      }
+
+      const formData = new FormData()
+      formData.append(
+        'image',
+        new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype }),
+        req.file.originalname
+      )
+
+      const headers: Record<string, string> = {}
+      if (env.remoteUploadToken) {
+        headers['Authorization'] = `Bearer ${env.remoteUploadToken}`
+      }
+
+      const response = await fetch(env.remoteUploadUrl, {
+        method: 'POST',
+        body: formData,
+        headers
+      })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorMessage = errorText
+        try {
+          const errorPayload = JSON.parse(errorText) as { message?: string }
+          errorMessage = errorPayload.message ?? errorText
+        } catch {
+        }
+        res.status(500).json({ ok: false, message: `远程上传失败: ${response.status} ${errorMessage}` })
+        return
+      }
+
+      const result = await response.json() as { ok: boolean; data?: { url: string }; message?: string }
+
+      if (!result.ok || !result.data?.url) {
+        res.status(500).json({ ok: false, message: result.message || '远程上传失败' })
+        return
+      }
+
+      imageUrl = resolveUploadedImageUrl(result.data.url, getRemoteUploadBaseUrl())
+    } else {
+      // 本地上传模式
+      imageUrl = resolveUploadedImageUrl(`/uploads/images/${req.file.filename}`, env.uploadBaseUrl)
+    }
+
+    res.json({ ok: true, data: { url: imageUrl } })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '图片上传失败' })
+  }
+})
+
+app.get('/api/admin/dashboard/overview', async (req, res) => {
+  try {
+    const range = typeof req.query.range === 'string' && ['week', 'month', 'year', 'all'].includes(req.query.range)
+      ? req.query.range as 'week' | 'month' | 'year' | 'all'
+      : 'week'
+    res.json({ ok: true, data: await getAdminDashboardOverview(range) })
   } catch (error) {
     res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '看板数据读取失败' })
+  }
+})
+
+app.get('/api/admin/dashboard/feedback-trend', async (req, res) => {
+  try {
+    const range = typeof req.query.range === 'string' && ['week', 'month', 'year', 'all'].includes(req.query.range)
+      ? req.query.range as 'week' | 'month' | 'year' | 'all'
+      : 'week'
+    res.json({ ok: true, data: await getAdminFeedbackTrend(range) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '反馈趋势读取失败' })
   }
 })
 
@@ -1048,8 +1307,72 @@ app.post('/api/admin/recipes/:id/restore', async (req, res) => {
   }
 })
 
-app.post('/api/admin/imports/recipes', (_req, res) => {
-  res.json({ ok: true, message: 'import recipes mock' })
+app.post('/api/admin/imports/recipes/preview', async (req, res) => {
+  try {
+    const fileName = typeof req.body?.fileName === 'string' ? req.body.fileName : 'recipes-import'
+    const format = req.body?.format === 'csv' ? 'csv' : 'json'
+    const content = typeof req.body?.content === 'string' ? req.body.content : ''
+    res.json({ ok: true, data: await previewRecipeImport({ fileName, format, content }) })
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error instanceof Error ? error.message : '食谱导入预检失败' })
+  }
+})
+
+app.post('/api/admin/imports/recipes/commit', async (req, res) => {
+  try {
+    const fileName = typeof req.body?.fileName === 'string' ? req.body.fileName : 'recipes-import'
+    const format = req.body?.format === 'csv' ? 'csv' : 'json'
+    const content = typeof req.body?.content === 'string' ? req.body.content : ''
+    res.json({ ok: true, data: await commitRecipeImport({ fileName, format, content }) })
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error instanceof Error ? error.message : '食谱导入提交失败' })
+  }
+})
+
+app.post('/api/admin/imports/knowledge/preview', async (req, res) => {
+  try {
+    const fileName = typeof req.body?.fileName === 'string' ? req.body.fileName : 'knowledge-import'
+    const format = req.body?.format === 'csv' ? 'csv' : 'json'
+    const content = typeof req.body?.content === 'string' ? req.body.content : ''
+    res.json({ ok: true, data: await previewKnowledgeImport({ fileName, format, content }) })
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error instanceof Error ? error.message : '干货导入预检失败' })
+  }
+})
+
+app.post('/api/admin/imports/knowledge/commit', async (req, res) => {
+  try {
+    const fileName = typeof req.body?.fileName === 'string' ? req.body.fileName : 'knowledge-import'
+    const format = req.body?.format === 'csv' ? 'csv' : 'json'
+    const content = typeof req.body?.content === 'string' ? req.body.content : ''
+    res.json({ ok: true, data: await commitKnowledgeImport({ fileName, format, content }) })
+  } catch (error) {
+    res.status(400).json({ ok: false, message: error instanceof Error ? error.message : '干货导入提交失败' })
+  }
+})
+
+app.get('/api/admin/exports/recipes', async (req, res) => {
+  try {
+    const format = req.query.format === 'csv' ? 'csv' : 'json'
+    const content = await exportRecipes(format)
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv; charset=utf-8' : 'application/json; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="recipes-export.${format}"`)
+    res.send(content)
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '食谱导出失败' })
+  }
+})
+
+app.get('/api/admin/exports/knowledge', async (req, res) => {
+  try {
+    const format = req.query.format === 'csv' ? 'csv' : 'json'
+    const content = await exportKnowledgeArticles(format)
+    res.setHeader('Content-Type', format === 'csv' ? 'text/csv; charset=utf-8' : 'application/json; charset=utf-8')
+    res.setHeader('Content-Disposition', `attachment; filename="knowledge-export.${format}"`)
+    res.send(content)
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '干货导出失败' })
+  }
 })
 
 app.get('/api/admin/imports', async (_req, res) => {
@@ -1057,6 +1380,29 @@ app.get('/api/admin/imports', async (_req, res) => {
     res.json({ ok: true, data: await getAdminImportJobs() })
   } catch (error) {
     res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '导入记录读取失败' })
+  }
+})
+
+app.get('/api/admin/feedback', async (req, res) => {
+  try {
+    const keyword = typeof req.query.keyword === 'string' ? req.query.keyword : undefined
+    res.json({ ok: true, data: await getAdminFeedbackList(keyword) })
+  } catch (error) {
+    res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '反馈列表读取失败' })
+  }
+})
+
+app.get('/api/admin/feedback/:id', async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getAdminFeedbackDetail(getRouteParam(req.params.id)) })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '反馈详情读取失败'
+    if (message === '未找到对应反馈') {
+      res.status(404).json({ ok: false, message })
+      return
+    }
+
+    res.status(500).json({ ok: false, message })
   }
 })
 
@@ -1134,6 +1480,17 @@ app.get('/api/admin/users', async (_req, res) => {
     res.json({ ok: true, data: await getAdminUsers() })
   } catch (error) {
     res.status(500).json({ ok: false, message: error instanceof Error ? error.message : '用户列表读取失败' })
+  }
+})
+
+app.patch('/api/admin/users/:id/permissions', async (req, res) => {
+  try {
+    const canAppAdmin = Boolean(req.body?.canAppAdmin)
+    await setUserAppAdminPermission(getRouteParam(req.params.id), canAppAdmin)
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '用户权限更新失败'
+    res.status(message === '未找到对应用户' ? 404 : 500).json({ ok: false, message })
   }
 })
 

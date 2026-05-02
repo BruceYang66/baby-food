@@ -11,6 +11,7 @@ import QuickAddPage from '@/pages/quick-add/index.vue'
 import ReviewsPage from '@/pages/reviews/index.vue'
 import MaintenancePage from '@/pages/maintenance/index.vue'
 import UsersPage from '@/pages/users/index.vue'
+import FeedbackPage from '@/pages/feedback/index.vue'
 import SettingsPage from '@/pages/settings/index.vue'
 
 const router = createRouter({
@@ -34,6 +35,7 @@ const router = createRouter({
         { path: 'reviews', component: ReviewsPage },
         { path: 'maintenance', component: MaintenancePage },
         { path: 'users', component: UsersPage },
+        { path: 'feedback', component: FeedbackPage },
         { path: 'settings', component: SettingsPage }
       ]
     }

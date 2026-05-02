@@ -1,21 +1,33 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { ref } from 'vue'
+import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { RecipeDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import RecipeMetaGrid from '@/components/recipe/RecipeMetaGrid.vue'
 import RecipeSteps from '@/components/recipe/RecipeSteps.vue'
 import TagChip from '@/components/common/TagChip.vue'
-import { getRecipeDetailData, openProtectedPage, readFavoriteRecipeIds, addFavorite, removeFavorite } from '@/services/api'
+import { getRecipeDetailData, normalizeAppImageUrl, openProtectedPage, readFavoriteRecipeIds, addFavorite, removeFavorite } from '@/services/api'
+
+const PENDING_RECIPE_KEY = 'pendingPlanRecipe'
+const PREVIEW_STORAGE_KEY = 'adminRecipePreview'
 
 const recipe = ref<RecipeDetail>()
 const loading = ref(false)
 const favoriteIds = ref<string[]>([])
-
-const PENDING_RECIPE_KEY = 'pendingPlanRecipe'
+const isPreview = ref(false)
 
 function goRecipe(id: string) {
   uni.navigateTo({ url: `/pages/recipe-detail/index?id=${id}` })
+}
+
+function readPreviewRecipe() {
+  const preview = uni.getStorageSync(PREVIEW_STORAGE_KEY) as RecipeDetail | undefined
+  if (preview && typeof preview === 'object' && typeof preview.title === 'string') {
+    recipe.value = preview
+    isPreview.value = true
+    return true
+  }
+  return false
 }
 
 function loadRecipe(recipeId: string) {
@@ -36,13 +48,15 @@ function loadRecipe(recipeId: string) {
     })
 }
 
-onMounted(() => {
+onLoad((options) => {
   favoriteIds.value = readFavoriteRecipeIds()
-  const pages = getCurrentPages()
-  const currentPage = pages[pages.length - 1]
-  const recipeId = currentPage?.options?.id
 
-  if (typeof recipeId === 'string' && recipeId) {
+  if (options?.preview === 'admin' && readPreviewRecipe()) {
+    return
+  }
+
+  const recipeId = typeof options?.id === 'string' ? options.id : ''
+  if (recipeId) {
     loadRecipe(recipeId)
     return
   }
@@ -51,13 +65,12 @@ onMounted(() => {
 })
 
 async function toggleFavorite() {
-  if (!recipe.value) {
+  if (!recipe.value || isPreview.value) {
     return
   }
 
   const id = recipe.value.id
   const exists = favoriteIds.value.includes(id)
-  // 乐观更新 UI
   favoriteIds.value = exists
     ? favoriteIds.value.filter((item) => item !== id)
     : [...favoriteIds.value, id]
@@ -70,7 +83,6 @@ async function toggleFavorite() {
     }
     uni.showToast({ title: exists ? '已取消收藏' : '已收藏', icon: 'success' })
   } catch {
-    // 回滚
     favoriteIds.value = exists
       ? [...favoriteIds.value, id]
       : favoriteIds.value.filter((item) => item !== id)
@@ -79,6 +91,10 @@ async function toggleFavorite() {
 }
 
 function shareRecipe() {
+  if (isPreview.value) {
+    return
+  }
+
   uni.showShareMenu({
     menus: ['shareAppMessage', 'shareTimeline']
   })
@@ -87,7 +103,7 @@ function shareRecipe() {
 
 onShareAppMessage(() => ({
   title: recipe.value?.title ?? '宝宝辅食食谱',
-  path: recipe.value ? `/pages/recipe-detail/index?id=${recipe.value.id}` : '/pages/guide/index'
+  path: isPreview.value ? '/pages/home/index' : (recipe.value ? `/pages/recipe-detail/index?id=${recipe.value.id}` : '/pages/guide/index')
 }))
 
 onShareTimeline(() => ({
@@ -95,7 +111,7 @@ onShareTimeline(() => ({
 }))
 
 function addToPlan() {
-  if (!recipe.value) {
+  if (!recipe.value || isPreview.value) {
     return
   }
 
@@ -114,11 +130,16 @@ function addToPlan() {
 
 <template>
   <view class="recipe-page" v-if="recipe">
-    <AppNavBar title="食谱详情" :show-back="true" :right-text="favoriteIds.includes(recipe.id) ? '♥' : '♡'" @right="toggleFavorite" />
+    <AppNavBar :title="isPreview ? '食谱预览' : '食谱详情'" :show-back="true" :right-text="isPreview ? '' : (favoriteIds.includes(recipe.id) ? '♥' : '♡')" @right="toggleFavorite" />
 
-    <image class="hero-image" :src="recipe.heroImage" mode="aspectFill" />
+    <image class="hero-image" :src="normalizeAppImageUrl(recipe.heroImage)" mode="aspectFill" />
 
     <view class="content-shell">
+      <view v-if="isPreview" class="preview-banner soft-card">
+        <text class="preview-title">当前是预览效果</text>
+        <text class="preview-desc">返回编辑页后可继续修改，再次查看会覆盖这份预览内容。</text>
+      </view>
+
       <view class="title-block">
         <view class="tag-row">
           <TagChip :text="recipe.ageLabel" accent="secondary" />
@@ -152,11 +173,11 @@ function addToPlan() {
         </view>
       </view>
 
-      <view class="section">
+      <view v-if="recipe.relatedRecipes.length" class="section">
         <text class="section-title">关联推荐</text>
         <view class="related-list">
           <view v-for="item in recipe.relatedRecipes" :key="item.id" class="related-card card" @tap="goRecipe(item.id)">
-            <image class="related-image" :src="item.image" mode="aspectFill" />
+            <image class="related-image" :src="normalizeAppImageUrl(item.image)" mode="aspectFill" />
             <view class="related-main">
               <text class="related-title">{{ item.title }}</text>
               <text class="related-meta">{{ item.tags.join(' · ') }}</text>
@@ -166,7 +187,7 @@ function addToPlan() {
       </view>
     </view>
 
-    <view class="fixed-bottom-actions">
+    <view v-if="!isPreview" class="fixed-bottom-actions">
       <view class="bottom-mini-btn" @tap="toggleFavorite">{{ favoriteIds.includes(recipe.id) ? '已收藏' : '收藏' }}</view>
       <view class="bottom-mini-btn" @tap="shareRecipe">分享</view>
       <view class="bottom-mini-btn primary" @tap="addToPlan">加入计划</view>
@@ -190,6 +211,26 @@ function addToPlan() {
 .content-shell {
   padding: 0 32rpx 200rpx;
   margin-top: -36rpx;
+}
+
+.preview-banner {
+  padding: 24rpx 26rpx;
+  margin-bottom: 18rpx;
+}
+
+.preview-title {
+  display: block;
+  font-size: 26rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.preview-desc {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: var(--mini-text-muted);
 }
 
 .title-block {

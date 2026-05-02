@@ -1,5 +1,11 @@
 import type {
+  AdminKnowledgeArticleDetail,
+  AdminKnowledgeArticleRow,
+  AdminKnowledgeArticleUpsertPayload,
+  AdminRecipeDetail,
+  AdminRecipeUpsertPayload,
   AgeRangeMonths,
+  AppFeedbackHistoryResponse,
   AuthSession,
   AuthState,
   BabyProfile,
@@ -31,6 +37,30 @@ import type {
   VaccinePageData
 } from '@baby-food/shared-types'
 import { appConfig } from '@/config/app'
+
+const UPLOAD_BASE_URL = appConfig.apiBaseUrl.replace(/\/api\/?$/, '')
+
+export function normalizeAppImageUrl(url: string) {
+  if (!url) {
+    return ''
+  }
+
+  if (
+    url.startsWith('http://')
+    || url.startsWith('https://')
+    || url.startsWith('wxfile://')
+    || url.startsWith('data:')
+    || url.startsWith('blob:')
+  ) {
+    return url
+  }
+
+  if (url.startsWith('/')) {
+    return `${UPLOAD_BASE_URL}${url}`
+  }
+
+  return `${UPLOAD_BASE_URL}/${url}`
+}
 
 interface ApiResponse<T> {
   ok: boolean
@@ -115,7 +145,7 @@ function saveAuthSession(session: AuthSession) {
   uni.setStorageSync(AUTH_SESSION_KEY, session)
 }
 
-function updateStoredAuthState(state: AuthState) {
+function updateStoredAuthState(state: Partial<AuthState>) {
   const currentSession = getStoredAuthSession()
 
   if (!currentSession) {
@@ -124,7 +154,13 @@ function updateStoredAuthState(state: AuthState) {
 
   saveAuthSession({
     token: currentSession.token,
-    ...state
+    user: state.user ?? currentSession.user,
+    hasBaby: state.hasBaby ?? currentSession.hasBaby,
+    canAppAdmin: state.canAppAdmin ?? currentSession.canAppAdmin ?? false,
+    babyProfile: Object.prototype.hasOwnProperty.call(state, 'babyProfile')
+      ? state.babyProfile ?? null
+      : currentSession.babyProfile,
+    accessibleBabies: state.accessibleBabies ?? currentSession.accessibleBabies
   })
 }
 
@@ -375,10 +411,17 @@ export function createBabyProfile(payload: BabyProfilePayload) {
   return request<{ babyProfile: BabyProfile }>('/app/babies', {
     method: 'POST',
     data: payload
-  }).then((data) => {
+  }).then(async (data) => {
     const session = getStoredAuthSession()
 
-    if (session) {
+    if (!session) {
+      return data
+    }
+
+    try {
+      const authState = await getAuthMe()
+      updateStoredAuthState(authState)
+    } catch {
       updateStoredAuthState({
         user: session.user,
         hasBaby: true,
@@ -610,7 +653,7 @@ export function uploadAvatar(tempFilePath: string): Promise<string> {
         try {
           const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
           if (body?.ok && body?.data?.url) {
-            resolve(body.data.url as string)
+            resolve(normalizeAppImageUrl(body.data.url as string))
           } else {
             reject(new Error(body?.message || '头像上传失败'))
           }
@@ -683,7 +726,85 @@ export function getMessages() {
   })
 }
 
+// ---- 小程序内容管理（管理员） ----
+
+export function getAppAdminRecipes() {
+  return request<import('@baby-food/shared-types').RecipeAdminRow[]>('/app/admin/recipes')
+}
+
+export function getAppAdminRecipeDetail(recipeId: string) {
+  return request<AdminRecipeDetail>(`/app/admin/recipes/${recipeId}`)
+}
+
+export function createAppAdminRecipe(payload: AdminRecipeUpsertPayload) {
+  return request<{ id: string }>('/app/admin/recipes', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function updateAppAdminRecipe(recipeId: string, payload: Partial<AdminRecipeUpsertPayload>) {
+  return request<{ id: string }>(`/app/admin/recipes/${recipeId}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+export function getAppAdminKnowledgeList(categoryKey?: string) {
+  const query = categoryKey ? `?categoryKey=${encodeURIComponent(categoryKey)}` : ''
+  return request<AdminKnowledgeArticleRow[]>(`/app/admin/knowledge${query}`)
+}
+
+export function getAppAdminKnowledgeDetail(articleId: string) {
+  return request<AdminKnowledgeArticleDetail>(`/app/admin/knowledge/${articleId}`)
+}
+
+export function createAppAdminKnowledge(payload: AdminKnowledgeArticleUpsertPayload) {
+  return request<{ id: string }>('/app/admin/knowledge', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function updateAppAdminKnowledge(articleId: string, payload: Partial<AdminKnowledgeArticleUpsertPayload>) {
+  return request<{ id: string }>(`/app/admin/knowledge/${articleId}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+export function uploadAdminImage(tempFilePath: string): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const token = readAuthSession()?.token ?? ''
+    uni.uploadFile({
+      url: `${appConfig.apiBaseUrl}/app/admin/upload/image`,
+      filePath: tempFilePath,
+      name: 'image',
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success(res) {
+        try {
+          const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+          if (body?.ok && body?.data?.url) {
+            resolve(normalizeAppImageUrl(body.data.url as string))
+          } else {
+            reject(new Error(body?.message || '图片上传失败'))
+          }
+        } catch {
+          reject(new Error('图片上传响应解析失败'))
+        }
+      },
+      fail(err) {
+        reject(new Error(err?.errMsg || '图片上传失败'))
+      }
+    })
+  })
+}
+
 // ---- 反馈 ----
+
+export function getFeedbackHistory() {
+  return request<AppFeedbackHistoryResponse>('/app/feedback')
+}
 
 export function submitFeedback(content: string) {
   return request<null>('/app/feedback', { method: 'POST', data: { content } })

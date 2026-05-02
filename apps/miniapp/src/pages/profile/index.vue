@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
-import type { BabyProfile, ProfileMenuItem, WechatEntry } from '@baby-food/shared-types'
+import type { AppUser, BabyProfile, ProfileMenuItem, WechatEntry } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AppTabBar from '@/components/common/AppTabBar.vue'
 import { clearAuthSession, readAuthSession, getProfileData, listBabyProfiles, logout, openProtectedPage } from '@/services/api'
 
+const DEFAULT_USER_AVATAR = 'https://mmbiz.qpic.cn/mmbiz/icTdbqWNOwNRna42FI242Lcia07jQodd2FJGIYQfG0LAJGFxM4FbgIUEab7BuoSHZ3pgRyDMaiaSSD1ZklDkD4siaA/0'
+
 const isLoggedIn = ref(false)
+const currentUser = ref<AppUser | null>(null)
 const activeBaby = ref<BabyProfile | null>(null)
 const menus = ref<ProfileMenuItem[]>([])
 const wechatEntries = ref<WechatEntry[]>([])
@@ -34,6 +37,8 @@ const publicMenus = [
 ]
 
 const canEditActiveBaby = computed(() => activeBaby.value?.role !== 'viewer')
+const displayUserAvatar = computed(() => currentUser.value?.avatarUrl || DEFAULT_USER_AVATAR)
+const displayUserNickname = computed(() => currentUser.value?.nickname || '新朋友')
 const activeBabyRoleLabel = computed(() => {
   if (!activeBaby.value?.role) {
     return ''
@@ -53,8 +58,12 @@ const activeBabyRoleLabel = computed(() => {
 async function loadProfile() {
   const session = readAuthSession()
   isLoggedIn.value = !!session?.token
+  currentUser.value = session?.user ?? null
 
   if (!isLoggedIn.value) {
+    activeBaby.value = null
+    menus.value = []
+    wechatEntries.value = []
     return
   }
 
@@ -101,6 +110,10 @@ function openShareGuide() {
   uni.showToast({ title: '请点击右上角转发给家人朋友', icon: 'none' })
 }
 
+function openUserProfileEditor() {
+  uni.navigateTo({ url: '/pages/setup-profile/index?mode=edit' })
+}
+
 function openActiveBabyEditor() {
   if (!activeBaby.value) {
     return
@@ -141,6 +154,10 @@ function openMenu(menu: ProfileMenuItem) {
   }
   if (menu.key === 'help') {
     uni.navigateTo({ url: '/pages/help/index' })
+    return
+  }
+  if (menu.key === 'admin') {
+    uni.navigateTo({ url: '/pages/admin/index' })
     return
   }
   if (menu.key === 'share') {
@@ -192,7 +209,15 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
 
 <template>
   <view class="page-shell profile-page">
-    <AppNavBar title="我的" subtitle="宝宝档案与常用设置" />
+    <AppNavBar :title="isLoggedIn ? '' : '我的'" :subtitle="isLoggedIn ? '' : '宝宝档案与常用设置'" :reserve-left-space="!isLoggedIn">
+      <template v-if="isLoggedIn" #center>
+        <view class="profile-nav-entry" @tap="openUserProfileEditor">
+          <image class="profile-nav-avatar" :src="displayUserAvatar" mode="aspectFill" />
+          <text class="profile-nav-name">{{ displayUserNickname }}</text>
+          <text class="profile-nav-arrow">›</text>
+        </view>
+      </template>
+    </AppNavBar>
 
     <!-- 未登录状态 -->
     <view v-if="!isLoggedIn" class="guest-view">
@@ -358,6 +383,36 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
   font-size: 32rpx;
   font-weight: 700;
   color: var(--mini-text);
+}
+
+.profile-nav-entry {
+  display: inline-flex;
+  align-items: center;
+  gap: 12rpx;
+  min-height: 72rpx;
+  padding: 4rpx 0;
+}
+
+.profile-nav-avatar {
+  width: 60rpx;
+  height: 60rpx;
+  border-radius: 999rpx;
+  display: block;
+  background: rgba(255,255,255,0.92);
+  box-shadow: 0 4rpx 12rpx rgba(89, 63, 39, 0.08);
+}
+
+.profile-nav-name {
+  font-size: 38rpx;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--mini-primary-deep);
+}
+
+.profile-nav-arrow {
+  font-size: 34rpx;
+  line-height: 1;
+  color: var(--mini-text-muted);
 }
 
 .feature-tips {

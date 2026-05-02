@@ -12,6 +12,7 @@ const menus = [
   { label: '内容审核', path: '/reviews' },
   { label: '食谱维护', path: '/maintenance' },
   { label: '用户管理', path: '/users' },
+  { label: '用户反馈', path: '/feedback' },
   { label: '系统设置', path: '/settings' }
 ]
 </script>

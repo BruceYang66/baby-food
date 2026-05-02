@@ -7,6 +7,11 @@ const envFilePath = path.resolve(path.dirname(currentFilePath), '../../.env')
 
 config({ path: envFilePath })
 
+const configuredUploadMode = (process.env.UPLOAD_MODE || '').trim().toLowerCase()
+const resolvedUploadMode = configuredUploadMode === 'local' || configuredUploadMode === 'remote'
+  ? configuredUploadMode
+  : (process.env.REMOTE_UPLOAD_URL ? 'remote' : 'local')
+
 export const env = {
   port: Number(process.env.PORT || 3000),
   nodeEnv: process.env.NODE_ENV || 'development',
@@ -15,7 +20,7 @@ export const env = {
   wechatAppId: process.env.WECHAT_APP_ID || '',
   wechatSecret: process.env.WECHAT_SECRET || '',
   uploadBaseUrl: process.env.UPLOAD_BASE_URL || '',
-  uploadMode: process.env.UPLOAD_MODE || 'local',
+  uploadMode: resolvedUploadMode,
   remoteUploadUrl: process.env.REMOTE_UPLOAD_URL || '',
   remoteUploadToken: process.env.REMOTE_UPLOAD_TOKEN || ''
 }

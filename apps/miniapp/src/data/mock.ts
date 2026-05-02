@@ -344,7 +344,7 @@ export const recipeDetail: RecipeDetail = {
 export const profileMenus: ProfileMenuItem[] = [
   { key: 'baby', title: '宝宝档案', subtitle: '生日、月龄、阶段与身高体重', icon: '👶' },
   { key: 'favorite', title: '我的收藏', subtitle: '保存喜欢的辅食与饮食指南', icon: '❤️' },
-  { key: 'history', title: '历史记录', subtitle: '查看过往生成计划与查询记录', icon: '🕘' },
+  { key: 'history', title: '辅食计划', subtitle: '查看过往生成计划与查询记录', icon: '🕘' },
   { key: 'allergy', title: '过敏管理', subtitle: '统一维护过敏原与提醒', icon: '⚠️' },
   { key: 'message', title: '消息通知', subtitle: '每日提醒与系统通知', icon: '🔔' },
   { key: 'help', title: '帮助中心', subtitle: '常见问题、意见反馈、使用说明', icon: '💬' },

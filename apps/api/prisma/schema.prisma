@@ -82,6 +82,7 @@ model User {
   wechatOpenId      String?                 @unique @map("wechat_open_id")
   activityLabel     String?                 @map("activity_label")
   statusLabel       String?                 @map("status_label")
+  canAppAdmin       Boolean                 @default(false) @map("can_app_admin")
   activeBabyId      String?                 @map("active_baby_id")
   createdAt         DateTime                @default(now()) @map("created_at")
   babies            Baby[]

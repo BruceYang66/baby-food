@@ -1,10 +1,11 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { KnowledgeArticleRow } from '@/services/api'
 import { getKnowledgeList } from '@/services/api'
 import KnowledgeTable from '@/components/knowledge/KnowledgeTable.vue'
 
+const route = useRoute()
 const router = useRouter()
 const articles = ref<KnowledgeArticleRow[]>([])
 const activeCategory = ref<string>()
@@ -17,6 +18,11 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 
 async function loadArticles() {
   articles.value = await getKnowledgeList(activeCategory.value)
+}
+
+function applyDashboardFilters() {
+  const contentStatus = typeof route.query.contentStatus === 'string' ? route.query.contentStatus : ''
+  filterContentStatus.value = ['draft', 'published', 'offline'].includes(contentStatus) ? contentStatus : ''
 }
 
 function createArticle() {
@@ -68,6 +74,7 @@ const filteredArticles = computed(() => {
   return result
 })
 
+watch(() => route.query.contentStatus, applyDashboardFilters, { immediate: true })
 onMounted(loadArticles)
 </script>
 

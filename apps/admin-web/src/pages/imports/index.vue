@@ -6,14 +6,16 @@ import { getImportJobs } from '@/services/api'
 
 const importJobs = ref<ImportJob[]>([])
 
-onMounted(async () => {
+async function loadImportJobs() {
   importJobs.value = await getImportJobs()
-})
+}
+
+onMounted(loadImportJobs)
 </script>
 
 <template>
   <div class="grid-gap-20">
-    <ImportUploadPanel />
+    <ImportUploadPanel @imported="loadImportJobs" />
     <section class="panel">
       <div class="panel-title" style="font-size:24px;">导入历史</div>
       <div class="table-shell" style="margin-top:18px;">

@@ -7,6 +7,7 @@ const props = defineProps<{
   centerTitle?: boolean
   rightText?: string
   showBack?: boolean
+  reserveLeftSpace?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -24,6 +25,7 @@ function getStatusBarHeight() {
 
 const statusBarHeight = Math.max(getStatusBarHeight(), 20)
 const resolvedShowBack = computed(() => props.showBack ?? getCurrentPages().length > 1)
+const shouldReserveLeftSpace = computed(() => props.reserveLeftSpace !== false)
 const navStyle = computed(() => ({
   paddingTop: `${statusBarHeight}px`,
   minHeight: `${statusBarHeight + 56}px`
@@ -75,14 +77,16 @@ function handleRight() {
 
 <template>
   <view class="app-nav" :style="navStyle">
-    <view class="nav-side" :class="{ placeholder: !resolvedShowBack }" @tap="handleBack">
+    <view class="nav-side" :class="{ placeholder: !resolvedShowBack, collapsed: !resolvedShowBack && !shouldReserveLeftSpace }" @tap="handleBack">
       <view v-if="resolvedShowBack" class="back-btn">
         <text class="back-icon">‹</text>
       </view>
     </view>
     <view class="nav-center" :class="{ centered: centerTitle }">
-      <text class="nav-title">{{ title }}</text>
-      <text v-if="subtitle" class="nav-subtitle">{{ subtitle }}</text>
+      <slot name="center">
+        <text class="nav-title">{{ title }}</text>
+        <text v-if="subtitle" class="nav-subtitle">{{ subtitle }}</text>
+      </slot>
     </view>
     <view class="nav-side right" @tap="handleRight">
       <text>{{ rightText || '' }}</text>
@@ -111,6 +115,12 @@ function handleRight() {
 
 .nav-side.placeholder {
   color: transparent;
+}
+
+.nav-side.collapsed {
+  width: 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 .back-btn {

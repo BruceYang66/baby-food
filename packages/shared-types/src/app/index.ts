@@ -36,6 +36,7 @@ export interface AppUser {
 export interface AuthState {
   user: AppUser
   hasBaby: boolean
+  canAppAdmin: boolean
   babyProfile: BabyProfile | null
   accessibleBabies?: BabyProfile[]
 }
@@ -281,6 +282,17 @@ export interface ProfilePageData {
   wechatEntries: WechatEntry[]
 }
 
+export interface AppFeedbackHistoryItem {
+  id: string
+  content: string
+  createdAt: string
+}
+
+export interface AppFeedbackHistoryResponse {
+  items: AppFeedbackHistoryItem[]
+  total: number
+}
+
 export interface FamilyMember {
   id: string
   userId: string
@@ -438,11 +450,28 @@ export interface KnowledgeArticleSummary {
   route: string
 }
 
+export type KnowledgeSectionLayoutType = 'stack' | 'grid' | 'carousel'
+export type KnowledgeSectionImageStyle = 'rounded' | 'square'
+export type KnowledgeSectionImageAspectRatio = 'wide' | 'square' | 'portrait'
+
+export interface KnowledgeSectionLayout {
+  type: KnowledgeSectionLayoutType
+  columns?: 1 | 2 | 3
+}
+
+export interface KnowledgeSectionImageItem {
+  url: string
+  style?: KnowledgeSectionImageStyle
+  aspectRatio?: KnowledgeSectionImageAspectRatio
+}
+
 export interface KnowledgeArticleSection {
   id: string
   title?: string
   content: string
   images: string[]
+  imageItems?: KnowledgeSectionImageItem[]
+  layout?: KnowledgeSectionLayout
   sortOrder: number
 }
 

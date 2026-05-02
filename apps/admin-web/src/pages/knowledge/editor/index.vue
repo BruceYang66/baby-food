@@ -53,6 +53,8 @@ function addSection() {
     title: '',
     content: '',
     images: [],
+    imageItems: [],
+    layout: { type: 'stack', columns: 1 },
     sortOrder: formData.value.sections.length
   })
 }

@@ -14,6 +14,7 @@ CREATE TABLE users (
   wechat_open_id TEXT UNIQUE,
   activity_label TEXT,
   status_label TEXT,
+  can_app_admin BOOLEAN NOT NULL DEFAULT FALSE,
   active_baby_id TEXT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

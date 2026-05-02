@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { RecipeStep } from '@baby-food/shared-types'
+import { normalizeAppImageUrl } from '@/services/api'
 
 defineProps<{
   steps: RecipeStep[]
@@ -10,7 +11,7 @@ defineProps<{
   <view class="steps-wrap">
     <view v-for="step in steps" :key="step.stepNo" class="step-card card">
       <view class="step-index">{{ step.stepNo }}</view>
-      <image v-if="step.image" class="step-image" :src="step.image" mode="aspectFill" />
+      <image v-if="step.image" class="step-image" :src="normalizeAppImageUrl(step.image)" mode="aspectFill" />
       <text class="step-title">{{ step.title }}</text>
       <text class="step-desc">{{ step.description }}</text>
     </view>

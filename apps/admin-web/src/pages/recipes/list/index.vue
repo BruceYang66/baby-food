@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, ref, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import type { AgeRangeMonths, RecipeAdminRow } from '@baby-food/shared-types'
 import RecipeFilterBar from '@/components/recipes/RecipeFilterBar.vue'
 import RecipeTable from '@/components/recipes/RecipeTable.vue'
@@ -16,6 +16,8 @@ const AGE_RANGE_OPTIONS: Array<{ label: string; range?: AgeRangeMonths }> = [
   { label: '2岁+', range: { minMonths: 24, maxMonths: null } }
 ]
 
+const route = useRoute()
+const router = useRouter()
 const recipeRows = ref<RecipeAdminRow[]>([])
 const searchKeyword = ref('')
 const filterAgeRange = ref<AgeRangeMonths | undefined>(undefined)
@@ -26,6 +28,11 @@ const sortOrder = ref<'asc' | 'desc'>('desc')
 
 async function loadRecipes() {
   recipeRows.value = await getRecipeList()
+}
+
+function applyDashboardFilters() {
+  const contentStatus = typeof route.query.contentStatus === 'string' ? route.query.contentStatus : ''
+  filterContentStatus.value = ['draft', 'pending_review', 'published', 'offline'].includes(contentStatus) ? contentStatus : ''
 }
 
 function createRecipe() {
@@ -95,6 +102,7 @@ const filteredRecipes = computed(() => {
   return result
 })
 
+watch(() => route.query.contentStatus, applyDashboardFilters, { immediate: true })
 onMounted(loadRecipes)
 </script>
 

@@ -91,6 +91,36 @@
       }
     },
     {
+      "path": "pages/admin/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/recipes/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/recipes/editor",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/knowledge/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/admin/knowledge/editor",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/babies/index",
       "style": {
         "navigationStyle": "custom"

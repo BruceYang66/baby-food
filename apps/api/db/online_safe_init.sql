@@ -15,7 +15,20 @@ CREATE TABLE IF NOT EXISTS user_login_logs (
 CREATE INDEX IF NOT EXISTS idx_user_login_logs_user_id_login_at
   ON user_login_logs(user_id, login_at);
 
--- 2) recipes age month range columns + backfill + constraint + index
+-- 2) users app admin permission column
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'users'
+  ) THEN
+    ALTER TABLE users
+      ADD COLUMN IF NOT EXISTS can_app_admin BOOLEAN NOT NULL DEFAULT FALSE;
+  END IF;
+END $$;
+
+-- 3) recipes age month range columns + backfill + constraint + index
 DO $$
 BEGIN
   IF EXISTS (

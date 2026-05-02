@@ -139,29 +139,10 @@ async function handleSave(status: 'draft' | 'published') {
   saving.value = true
 
   try {
-    // 构建提交数据，映射字段名
     const payload = {
-      title: formData.value.title,
-      ageLabel: getAgeLabel(formData.value.ageMinMonths ?? 6, formData.value.ageMaxMonths ?? null),
-      ageMinMonths: formData.value.ageMinMonths ?? 6,
-      ageMaxMonths: formData.value.ageMaxMonths ?? null,
-      durationLabel: formData.value.durationLabel,
-      difficultyLabel: formData.value.difficultyLabel,
-      coverImage: formData.value.cover, // cover -> coverImage
-      summary: formData.value.description, // description -> summary
-      tags: formData.value.tags,
+      ...formData.value,
       contentStatus: status,
-      ingredients: formData.value.ingredients.map(ing => ({
-        name: ing.name,
-        amount: ing.amount,
-        unit: ing.unit || ''
-      })),
-      steps: formData.value.steps.map((step, index) => ({
-        stepNo: index + 1, // 添加 stepNo
-        title: `步骤${index + 1}`, // 添加 title
-        description: step.description,
-        imageUrl: step.image || '' // image -> imageUrl
-      }))
+      ageLabel: getAgeLabel(formData.value.ageMinMonths ?? 6, formData.value.ageMaxMonths ?? null)
     }
 
     if (isEditMode.value) {
