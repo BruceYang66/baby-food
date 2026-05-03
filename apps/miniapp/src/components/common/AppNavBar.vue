@@ -9,6 +9,7 @@ const props = defineProps<{
   showBack?: boolean
   reserveLeftSpace?: boolean
   silentBackFallback?: boolean
+  manualBack?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -42,6 +43,10 @@ function handleBack() {
   }
 
   emit('back')
+
+  if (props.manualBack) {
+    return
+  }
 
   const pages = getCurrentPages()
 

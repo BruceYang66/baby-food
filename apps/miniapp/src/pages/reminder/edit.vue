@@ -2,17 +2,10 @@
 import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { ReminderCategory, ReminderRepeatType } from '@baby-food/shared-types'
+import AppNavBar from '@/components/common/AppNavBar.vue'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
 import { createReminder, getReminderItems, removeReminderItem, updateReminder } from '@/services/api'
 import { getReminderCategoryOptions, getReminderRepeatOptions } from '@/services/local-reminder'
-
-function getStatusBarHeight() {
-  if (typeof uni.getWindowInfo === 'function') {
-    return uni.getWindowInfo().statusBarHeight || 0
-  }
-
-  return uni.getSystemInfoSync().statusBarHeight || 0
-}
 
 function formatYmd(date: Date) {
   const year = date.getFullYear()
@@ -26,13 +19,10 @@ function formatDisplayDate(value: string) {
   return `${year}年${Number(month)}月${Number(day)}日`
 }
 
-const navStyle = computed(() => ({
-  paddingTop: `${Math.max(getStatusBarHeight(), 20)}px`
-}))
-
 const reminderId = ref('')
 const title = ref('')
 const date = ref(formatYmd(new Date()))
+const reminderDateEnd = formatYmd(new Date(new Date().getFullYear() + 20, 11, 31))
 const time = ref('09:00')
 const category = ref<ReminderCategory>('supplement')
 const customCategoryLabel = ref('')
@@ -148,11 +138,7 @@ onLoad((options) => {
 
 <template>
   <view class="page-shell reminder-edit-page">
-    <view class="edit-nav" :style="navStyle">
-      <view class="edit-nav-side" @tap="goBack">‹</view>
-      <text class="edit-nav-title">{{ pageTitle }}</text>
-      <view class="edit-nav-side placeholder" />
-    </view>
+    <AppNavBar :show-back="true" manual-back center-title :title="pageTitle" @back="goBack" />
 
     <view class="edit-card card">
       <view class="form-row vertical">
@@ -236,7 +222,7 @@ onLoad((options) => {
       <view class="save-bar-btn primary" :class="{ disabled: !canSave }" @tap="submit">保存提醒</view>
     </view>
 
-    <DatePickerModal :show="showDatePicker" :value="date" title="选择提醒日期" label="提醒日期" @close="showDatePicker = false" @confirm="handleDateConfirm" />
+    <DatePickerModal :show="showDatePicker" :value="date" :end="reminderDateEnd" title="选择提醒日期" label="提醒日期" @close="showDatePicker = false" @confirm="handleDateConfirm" />
   </view>
 </template>
 
@@ -245,29 +231,8 @@ onLoad((options) => {
   padding-bottom: 200rpx;
 }
 
-.edit-nav {
-  display: grid;
-  grid-template-columns: 72rpx 1fr 72rpx;
-  align-items: center;
-  gap: 12rpx;
+.reminder-edit-page :deep(.app-nav) {
   margin-bottom: 26rpx;
-}
-
-.edit-nav-side {
-  font-size: 48rpx;
-  line-height: 1;
-  color: var(--mini-text);
-}
-
-.edit-nav-side.placeholder {
-  opacity: 0;
-}
-
-.edit-nav-title {
-  text-align: center;
-  font-size: 34rpx;
-  font-weight: 700;
-  color: var(--mini-text);
 }
 
 .edit-card {

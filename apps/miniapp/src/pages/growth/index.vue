@@ -41,6 +41,10 @@ const activePointId = ref('')
 const version = ref(0)
 const session = ref(readAuthSession())
 const standardOptions = getGrowthStandardOptions()
+const babyGender = computed(() => session.value?.babyProfile?.gender)
+const officialNeedsGender = computed(() => standardKey.value === 'nhc-2025' && !babyGender.value)
+const showOfficialGenderNote = computed(() => officialNeedsGender.value && activeTab.value !== 'head')
+const showHeadLegacyNote = computed(() => standardKey.value === 'nhc-2025' && activeTab.value === 'head')
 
 const birthDate = computed(() => session.value?.babyProfile?.birthDate)
 const currentAgeMonths = computed(() => {
@@ -53,19 +57,26 @@ const currentAgeMonths = computed(() => {
 })
 const records = computed(() => {
   version.value
-  return getGrowthListItems(birthDate.value, standardKey.value)
+  return getGrowthListItems(birthDate.value, standardKey.value, babyGender.value)
 })
 const chartMetric = computed(() => (activeTab.value === 'list' ? 'height' : activeTab.value))
 const chartDataset = computed(() => {
   version.value
   return getGrowthChartDataset({
     birthDate: birthDate.value,
+    gender: babyGender.value,
     metric: chartMetric.value,
     rangeKey: rangeKey.value,
     standardKey: standardKey.value
   })
 })
-const sourceText = computed(() => getGrowthSourceText(standardKey.value))
+const sourceText = computed(() => {
+  if (standardKey.value === 'nhc-2025' && chartMetric.value === 'head') {
+    return '头围曲线暂沿用本地趋势参考，未接入卫健委2025官方表'
+  }
+
+  return getGrowthSourceText(standardKey.value)
+})
 const currentMetricText = computed(() => {
   const meta = getGrowthMetricMeta(chartMetric.value)
   return `${meta.shortLabel}(${meta.unit})`
@@ -214,6 +225,14 @@ onShow(() => {
       </view>
     </view>
 
+    <view v-if="showOfficialGenderNote" class="growth-notice-card">
+      <text class="growth-notice-text">按卫健委2025指南评估身高、体重需要先在宝宝档案中补充性别，当前仅展示已记录数值。</text>
+    </view>
+
+    <view v-else-if="showHeadLegacyNote" class="growth-notice-card subtle">
+      <text class="growth-notice-text">头围曲线当前继续沿用原有趋势算法，未切换到卫健委2025官方表。</text>
+    </view>
+
     <template v-if="activeTab === 'list'">
       <view class="growth-list">
         <view v-for="record in records" :key="record.id" class="growth-record-card">
@@ -330,6 +349,24 @@ onShow(() => {
   font-size: 32rpx;
   font-weight: 700;
   color: var(--mini-text);
+}
+
+.growth-notice-card {
+  margin-bottom: 18rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 243, 205, 0.72);
+}
+
+.growth-notice-card.subtle {
+  background: rgba(247, 239, 230, 0.72);
+}
+
+.growth-notice-text {
+  display: block;
+  font-size: 22rpx;
+  line-height: 1.7;
+  color: #7b6a57;
 }
 
 .growth-tabs {

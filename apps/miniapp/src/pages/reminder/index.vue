@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+import AppNavBar from '@/components/common/AppNavBar.vue'
 import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import { useBackToTop } from '@/composables/useBackToTop'
 import { getReminderItems, markReminderItemsDone, toggleReminderDoneStatus } from '@/services/api'
@@ -14,18 +15,6 @@ import {
 } from '@/services/local-reminder'
 
 type ReminderFilterKey = 'all' | 'today' | 'pending' | 'done'
-
-function getStatusBarHeight() {
-  if (typeof uni.getWindowInfo === 'function') {
-    return uni.getWindowInfo().statusBarHeight || 0
-  }
-
-  return uni.getSystemInfoSync().statusBarHeight || 0
-}
-
-const navStyle = computed(() => ({
-  paddingTop: `${Math.max(getStatusBarHeight(), 20)}px`
-}))
 
 const filter = ref<ReminderFilterKey>('all')
 const version = ref(0)
@@ -51,14 +40,6 @@ async function refreshPage() {
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '提醒加载失败', icon: 'none' })
   }
-}
-
-function goBack() {
-  uni.navigateBack({
-    fail: () => {
-      uni.switchTab({ url: '/pages/home/index' })
-    }
-  })
 }
 
 function goEdit(id?: string) {
@@ -96,11 +77,7 @@ onShow(() => {
 
 <template>
   <view class="page-shell reminder-page">
-    <view class="reminder-nav" :style="navStyle">
-      <view class="reminder-nav-side" @tap="goBack">‹</view>
-      <text class="reminder-nav-title">提醒事项</text>
-      <view class="reminder-nav-add" @tap="goEdit()">添加</view>
-    </view>
+    <AppNavBar :show-back="true" title="提醒事项" center-title />
 
     <view class="reminder-filter-row">
       <view class="reminder-filter" :class="{ active: filter === 'all' }" @tap="filter = 'all'">全部</view>
@@ -164,47 +141,21 @@ onShow(() => {
       </view>
     </scroll-view>
 
-    <BackToTopFab :show="showBackToTop" @tap="scrollScrollViewToTop" />
+    <view class="reminder-fab" @tap="goEdit()">
+      <text class="reminder-fab-icon">＋</text>
+    </view>
+
+    <BackToTopFab :visible="showBackToTop" extra-bottom="116rpx" @tap="scrollScrollViewToTop" />
   </view>
 </template>
 
 <style scoped lang="scss">
 .reminder-page {
-  padding-bottom: 60rpx;
+  padding-bottom: 180rpx;
 }
 
-.reminder-nav {
-  display: grid;
-  grid-template-columns: 72rpx 1fr 112rpx;
-  align-items: center;
-  gap: 12rpx;
-}
-
-.reminder-nav-side {
-  font-size: 48rpx;
-  line-height: 1;
-  color: var(--mini-text);
-}
-
-.reminder-nav-title {
-  text-align: center;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: var(--mini-text);
-}
-
-.reminder-nav-add {
-  justify-self: end;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 98rpx;
-  height: 62rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, var(--mini-secondary-deep), #49ae76);
-  color: #fff;
-  font-size: 24rpx;
-  font-weight: 700;
+.reminder-page :deep(.app-nav) {
+  margin-bottom: 22rpx;
 }
 
 .reminder-filter-row {
@@ -434,6 +385,28 @@ onShow(() => {
 .reminder-status-btn.done {
   background: rgba(126, 135, 148, 0.14);
   color: #7e8794;
+}
+
+.reminder-fab {
+  position: fixed;
+  right: var(--mini-floating-edge);
+  bottom: calc(var(--mini-floating-bottom) + constant(safe-area-inset-bottom));
+  bottom: calc(var(--mini-floating-bottom) + env(safe-area-inset-bottom));
+  z-index: calc(var(--mini-floating-z) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-secondary-deep), #48b06c);
+  box-shadow: 0 16rpx 32rpx rgba(44, 105, 86, 0.22);
+}
+
+.reminder-fab-icon {
+  color: #fff;
+  font-size: 48rpx;
+  line-height: 1;
 }
 
 .reminder-empty {

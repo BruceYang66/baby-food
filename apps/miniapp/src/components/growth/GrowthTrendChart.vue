@@ -389,7 +389,7 @@ const tooltipStyle = computed(() => {
         <view v-if="resolvedActivePoint" class="trend-tooltip" :style="tooltipStyle">
           <text class="tooltip-age">{{ resolvedActivePoint.ageLabel }}</text>
           <text class="tooltip-value">{{ resolvedActivePoint.value }}{{ dataset.unit }}</text>
-          <text class="tooltip-percentile">百分位 {{ resolvedActivePoint.percentile }}%</text>
+          <text class="tooltip-percentile">{{ resolvedActivePoint.percentile != null ? `百分位 ${resolvedActivePoint.percentile}%` : '待完善评估信息' }}</text>
         </view>
 
         <view v-for="tick in xTicks" :key="`label-${tick.age}`" class="x-label" :style="{ left: `${tick.x - 28}px` }">

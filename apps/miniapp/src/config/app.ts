@@ -12,7 +12,7 @@ export const appConfig = {
   appName: '养娃小管家',
   miniProgramAppId: 'wx22461febd3e9ad52',
   shareSlogan: '科学辅食，悦享成长',
-  apiBaseUrl: 'http://localhost:3000/api',
-  //apiBaseUrl: 'https://madaicode.cn/api',
+  //apiBaseUrl: 'http://localhost:3000/api',
+  apiBaseUrl: 'https://madaicode.cn/api',
   note: '微信 secret 仅允许在后端配置，禁止写入前端。'
 }

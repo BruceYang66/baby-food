@@ -59,43 +59,45 @@ function handleTap(value: string) {
   right: 0;
   bottom: 0;
   z-index: 50;
-  background: #d2d4d8;
-  box-shadow: 0 -14rpx 34rpx rgba(25, 27, 25, 0.08);
+  padding-top: 10rpx;
+  border-radius: 32rpx 32rpx 0 0;
+  background: linear-gradient(180deg, #eef0f4, #dde1e7);
+  box-shadow: 0 -18rpx 40rpx rgba(25, 27, 25, 0.12);
 }
 
 .keyboard-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 76rpx;
+  height: 84rpx;
   padding: 0 28rpx;
-  background: rgba(255, 255, 255, 0.3);
+  background: transparent;
 }
 
 .toolbar-spacer {
-  width: 64rpx;
-  height: 64rpx;
+  width: 68rpx;
+  height: 68rpx;
 }
 
 .toolbar-close {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 64rpx;
-  height: 64rpx;
+  width: 68rpx;
+  height: 68rpx;
   border-radius: 999rpx;
-  border: 3rpx solid rgba(29, 27, 25, 0.72);
-  background: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 8rpx 18rpx rgba(51, 60, 78, 0.1);
 }
 
 .toolbar-close-icon {
   font-size: 34rpx;
   line-height: 1;
-  color: var(--mini-text);
+  color: #5c6472;
 }
 
 .keyboard-grid {
-  padding: 14rpx 14rpx calc(24rpx + env(safe-area-inset-bottom));
+  padding: 10rpx 14rpx calc(24rpx + env(safe-area-inset-bottom));
 }
 
 .keyboard-row {
@@ -112,25 +114,25 @@ function handleTap(value: string) {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 104rpx;
-  border-radius: 16rpx;
-  background: rgba(255, 255, 255, 0.88);
-  box-shadow: inset 0 -4rpx 0 rgba(0, 0, 0, 0.04);
+  height: 108rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 10rpx 18rpx rgba(64, 72, 89, 0.08), inset 0 -4rpx 0 rgba(0, 0, 0, 0.04);
 }
 
 .keyboard-key:active {
-  transform: scale(0.98);
-  background: rgba(250, 250, 250, 0.98);
+  transform: translateY(2rpx) scale(0.98);
+  background: rgba(250, 251, 253, 0.98);
 }
 
 .keyboard-key.icon {
-  background: rgba(247, 247, 247, 0.92);
+  background: rgba(245, 247, 250, 0.96);
 }
 
 .keyboard-key-text {
-  font-size: 56rpx;
+  font-size: 52rpx;
   line-height: 1;
-  color: #1f1f20;
-  font-weight: 500;
+  color: #202330;
+  font-weight: 600;
 }
 </style>

@@ -1,4 +1,5 @@
 import type {
+  BabyGender,
   GrowthChartDataset,
   GrowthChartPoint,
   GrowthMetricSnapshot,
@@ -17,12 +18,21 @@ import {
   growthStandardOptions,
   growthStandardScales
 } from '@/data/growth'
+import { nhc2025SdTables, type Nhc2025SdBandPoint } from '@/data/growth-nhc-2025'
 
 const STORAGE_KEY = 'miniapp-growth-records-v1'
 const DEFAULT_BIRTH_DATE = '2024-09-05'
 const DAY_MS = 24 * 60 * 60 * 1000
 const MONTH_DAYS = 30.4375
+const P3_Z = -1.8807936081512509
+const P97_Z = 1.8807936081512509
 let inMemoryRecords: GrowthRecord[] | null = []
+
+type GrowthBand = {
+  p3: number
+  p50: number
+  p97: number
+}
 
 function toDate(value: string) {
   return new Date(`${value}T00:00:00`)
@@ -80,7 +90,11 @@ function writeRecords(records: GrowthRecord[]) {
   uni.setStorageSync(STORAGE_KEY, next)
 }
 
-function interpolateBand(metric: GrowthMetricType, ageMonths: number, standardKey: GrowthStandardKey) {
+function isOfficialNhc2025Metric(metric: GrowthMetricType, standardKey: GrowthStandardKey) {
+  return standardKey === 'nhc-2025' && (metric === 'height' || metric === 'weight')
+}
+
+function interpolateLegacyBand(metric: GrowthMetricType, ageMonths: number, standardKey: GrowthStandardKey): GrowthBand {
   const template = growthReferenceTemplates[metric]
   const scale = growthStandardScales[standardKey][metric]
 
@@ -123,7 +137,115 @@ function interpolateBand(metric: GrowthMetricType, ageMonths: number, standardKe
   }
 }
 
-function toPercentile(value: number, band: { p3: number; p50: number; p97: number }) {
+function normalCdf(value: number) {
+  const sign = value < 0 ? -1 : 1
+  const x = Math.abs(value) / Math.sqrt(2)
+  const t = 1 / (1 + 0.3275911 * x)
+  const a1 = 0.254829592
+  const a2 = -0.284496736
+  const a3 = 1.421413741
+  const a4 = -1.453152027
+  const a5 = 1.061405429
+  const erf = 1 - (((((a5 * t + a4) * t + a3) * t + a2) * t + a1) * t) * Math.exp(-x * x)
+  return 0.5 * (1 + sign * erf)
+}
+
+function interpolateSdPoint(current: Nhc2025SdBandPoint, next: Nhc2025SdBandPoint, ratio: number): Nhc2025SdBandPoint {
+  return {
+    ageMonths: Number((current.ageMonths + (next.ageMonths - current.ageMonths) * ratio).toFixed(2)),
+    minus3: current.minus3 + (next.minus3 - current.minus3) * ratio,
+    minus2: current.minus2 + (next.minus2 - current.minus2) * ratio,
+    minus1: current.minus1 + (next.minus1 - current.minus1) * ratio,
+    median: current.median + (next.median - current.median) * ratio,
+    plus1: current.plus1 + (next.plus1 - current.plus1) * ratio,
+    plus2: current.plus2 + (next.plus2 - current.plus2) * ratio,
+    plus3: current.plus3 + (next.plus3 - current.plus3) * ratio
+  }
+}
+
+function interpolateNhc2025Row(metric: 'height' | 'weight', gender: BabyGender, ageMonths: number): Nhc2025SdBandPoint {
+  const table = nhc2025SdTables[metric][gender]
+
+  if (ageMonths <= table[0].ageMonths) {
+    return table[0]
+  }
+
+  const last = table[table.length - 1]
+  if (ageMonths >= last.ageMonths) {
+    return last
+  }
+
+  for (let index = 0; index < table.length - 1; index += 1) {
+    const current = table[index]
+    const next = table[index + 1]
+
+    if (ageMonths >= current.ageMonths && ageMonths <= next.ageMonths) {
+      const ratio = (ageMonths - current.ageMonths) / Math.max(next.ageMonths - current.ageMonths, 0.001)
+      return interpolateSdPoint(current, next, ratio)
+    }
+  }
+
+  return last
+}
+
+function getNhc2025ValueAtZ(row: Nhc2025SdBandPoint, z: number) {
+  const zAnchors = [-3, -2, -1, 0, 1, 2, 3]
+  const values = [row.minus3, row.minus2, row.minus1, row.median, row.plus1, row.plus2, row.plus3]
+
+  if (z <= zAnchors[0]) {
+    return values[0]
+  }
+
+  if (z >= zAnchors[zAnchors.length - 1]) {
+    return values[values.length - 1]
+  }
+
+  for (let index = 0; index < zAnchors.length - 1; index += 1) {
+    const currentZ = zAnchors[index]
+    const nextZ = zAnchors[index + 1]
+    if (z >= currentZ && z <= nextZ) {
+      const ratio = (z - currentZ) / (nextZ - currentZ)
+      return values[index] + (values[index + 1] - values[index]) * ratio
+    }
+  }
+
+  return row.median
+}
+
+function getNhc2025ZForValue(row: Nhc2025SdBandPoint, value: number) {
+  const zAnchors = [-3, -2, -1, 0, 1, 2, 3]
+  const values = [row.minus3, row.minus2, row.minus1, row.median, row.plus1, row.plus2, row.plus3]
+
+  if (value <= values[0]) {
+    return zAnchors[0]
+  }
+
+  if (value >= values[values.length - 1]) {
+    return zAnchors[zAnchors.length - 1]
+  }
+
+  for (let index = 0; index < values.length - 1; index += 1) {
+    const currentValue = values[index]
+    const nextValue = values[index + 1]
+    if (value >= currentValue && value <= nextValue) {
+      const ratio = (value - currentValue) / Math.max(nextValue - currentValue, 0.001)
+      return zAnchors[index] + (zAnchors[index + 1] - zAnchors[index]) * ratio
+    }
+  }
+
+  return 0
+}
+
+function buildNhc2025Band(metric: 'height' | 'weight', ageMonths: number, gender: BabyGender): GrowthBand {
+  const row = interpolateNhc2025Row(metric, gender, ageMonths)
+  return {
+    p3: getNhc2025ValueAtZ(row, P3_Z),
+    p50: row.median,
+    p97: getNhc2025ValueAtZ(row, P97_Z)
+  }
+}
+
+function toLegacyPercentile(value: number, band: GrowthBand) {
   if (value <= band.p3) {
     return Math.max(0.5, 3 - ((band.p3 - value) / Math.max(band.p3, 1)) * 2)
   }
@@ -139,7 +261,7 @@ function toPercentile(value: number, band: { p3: number; p50: number; p97: numbe
   return Math.min(99.5, 97 + ((value - band.p97) / Math.max(band.p97, 1)) * 3)
 }
 
-function getStatus(percentile: number): { label: string; tone: GrowthStatusTone } {
+function getLegacyStatus(percentile: number): { label: string; tone: GrowthStatusTone } {
   if (percentile < 3) {
     return { label: '偏低', tone: 'warning' }
   }
@@ -157,6 +279,18 @@ function getStatus(percentile: number): { label: string; tone: GrowthStatusTone 
   }
 
   return { label: '偏高', tone: 'warning' }
+}
+
+function getNhc2025Status(value: number, band: GrowthBand): { label: string; tone: GrowthStatusTone } {
+  if (value <= band.p3) {
+    return { label: '偏低', tone: 'warning' }
+  }
+
+  if (value >= band.p97) {
+    return { label: '偏高', tone: 'warning' }
+  }
+
+  return { label: '正常', tone: 'healthy' }
 }
 
 function getMetricValue(record: GrowthRecord, metric: GrowthMetricType) {
@@ -179,7 +313,29 @@ function formatMetricValue(metric: GrowthMetricType, value: number) {
   return Number(value.toFixed(1))
 }
 
-function buildMetricSnapshot(record: GrowthRecord, birthDate: string, metric: GrowthMetricType, standardKey: GrowthStandardKey): GrowthMetricSnapshot {
+function buildGrowthEvaluation(metric: GrowthMetricType, ageMonths: number, value: number, standardKey: GrowthStandardKey, gender?: BabyGender) {
+  if (isOfficialNhc2025Metric(metric, standardKey) && gender) {
+    const band = buildNhc2025Band(metric, ageMonths, gender)
+    const row = interpolateNhc2025Row(metric, gender, ageMonths)
+    const z = getNhc2025ZForValue(row, value)
+    const percentile = Number((normalCdf(z) * 100).toFixed(1))
+    return {
+      band,
+      percentile,
+      status: getNhc2025Status(value, band)
+    }
+  }
+
+  const band = interpolateLegacyBand(metric, ageMonths, standardKey)
+  const percentile = Number(toLegacyPercentile(value, band).toFixed(1))
+  return {
+    band,
+    percentile,
+    status: getLegacyStatus(percentile)
+  }
+}
+
+function buildMetricSnapshot(record: GrowthRecord, birthDate: string, metric: GrowthMetricType, standardKey: GrowthStandardKey, gender?: BabyGender): GrowthMetricSnapshot {
   const value = getMetricValue(record, metric)
   const meta = growthMetricMeta[metric]
 
@@ -195,19 +351,29 @@ function buildMetricSnapshot(record: GrowthRecord, birthDate: string, metric: Gr
     }
   }
 
+  if (isOfficialNhc2025Metric(metric, standardKey) && !gender) {
+    return {
+      metric,
+      label: meta.shortLabel,
+      unit: meta.unit,
+      value: formatMetricValue(metric, value),
+      percentile: null,
+      statusLabel: '需性别',
+      statusTone: 'caution'
+    }
+  }
+
   const ageMonths = getAgeMonths(birthDate, record.measuredAt)
-  const band = interpolateBand(metric, ageMonths, standardKey)
-  const percentile = toPercentile(value, band)
-  const status = getStatus(percentile)
+  const evaluation = buildGrowthEvaluation(metric, ageMonths, value, standardKey, gender)
 
   return {
     metric,
     label: meta.shortLabel,
     unit: meta.unit,
     value: formatMetricValue(metric, value),
-    percentile: Number(percentile.toFixed(1)),
-    statusLabel: status.label,
-    statusTone: status.tone
+    percentile: evaluation.percentile,
+    statusLabel: evaluation.status.label,
+    statusTone: evaluation.status.tone
   }
 }
 
@@ -221,9 +387,9 @@ function buildSeedRecords(birthDate?: string) {
 
   return seedAgeMonths.map((ageMonths, index) => {
     const measuredAt = formatYmd(addDays(toDate(resolvedBirthDate), Math.round(ageMonths * MONTH_DAYS)))
-    const heightBand = interpolateBand('height', ageMonths, 'nhc-2025')
-    const weightBand = interpolateBand('weight', ageMonths, 'nhc-2025')
-    const headBand = interpolateBand('head', ageMonths, 'nhc-2025')
+    const heightBand = interpolateLegacyBand('height', ageMonths, 'nhc-2025')
+    const weightBand = interpolateLegacyBand('weight', ageMonths, 'nhc-2025')
+    const headBand = interpolateLegacyBand('head', ageMonths, 'nhc-2025')
     const valueRatio = [0.97, 0.985, 0.995, 1.01, 1.02, 1.015][index] || 1
 
     return {
@@ -280,7 +446,7 @@ export function deleteGrowthRecord(id: string, birthDate?: string) {
   return next
 }
 
-export function getGrowthListItems(birthDate?: string, standardKey: GrowthStandardKey = 'nhc-2025'): GrowthRecordListItem[] {
+export function getGrowthListItems(birthDate?: string, standardKey: GrowthStandardKey = 'nhc-2025', gender?: BabyGender): GrowthRecordListItem[] {
   const resolvedBirthDate = getBirthDate(birthDate)
 
   return ensureRecords(resolvedBirthDate).map((record) => ({
@@ -288,20 +454,27 @@ export function getGrowthListItems(birthDate?: string, standardKey: GrowthStanda
     measuredAt: record.measuredAt,
     ageLabel: formatAgeLabel(resolvedBirthDate, record.measuredAt),
     metrics: [
-      buildMetricSnapshot(record, resolvedBirthDate, 'height', standardKey),
-      buildMetricSnapshot(record, resolvedBirthDate, 'weight', standardKey),
-      buildMetricSnapshot(record, resolvedBirthDate, 'head', standardKey)
+      buildMetricSnapshot(record, resolvedBirthDate, 'height', standardKey, gender),
+      buildMetricSnapshot(record, resolvedBirthDate, 'weight', standardKey, gender),
+      buildMetricSnapshot(record, resolvedBirthDate, 'head', standardKey, gender)
     ]
   }))
 }
 
-function buildBandWindow(metric: GrowthMetricType, minimumAge: number, maximumAge: number, standardKey: GrowthStandardKey) {
+function buildBandWindow(metric: GrowthMetricType, minimumAge: number, maximumAge: number, standardKey: GrowthStandardKey, gender?: BabyGender) {
+  if (isOfficialNhc2025Metric(metric, standardKey) && !gender) {
+    return []
+  }
+
   const points: GrowthReferenceBandPoint[] = []
   const step = 0.5
 
   for (let age = minimumAge; age <= maximumAge + 0.001; age += step) {
     const normalizedAge = Number(age.toFixed(2))
-    const band = interpolateBand(metric, normalizedAge, standardKey)
+    const band = isOfficialNhc2025Metric(metric, standardKey) && gender
+      ? buildNhc2025Band(metric, normalizedAge, gender)
+      : interpolateLegacyBand(metric, normalizedAge, standardKey)
+
     points.push({
       ageMonths: normalizedAge,
       p3: Number(band.p3.toFixed(1)),
@@ -334,8 +507,21 @@ function resolveRangeDomain(rangeKey: GrowthRangeKey) {
   }
 }
 
+function getFallbackMetricValues(metric: GrowthMetricType) {
+  if (metric === 'weight') {
+    return [2, 18]
+  }
+
+  if (metric === 'head') {
+    return [32, 50]
+  }
+
+  return [44, 108]
+}
+
 export function getGrowthChartDataset(options: {
   birthDate?: string
+  gender?: BabyGender
   metric: GrowthMetricType
   rangeKey: GrowthRangeKey
   standardKey: GrowthStandardKey
@@ -358,9 +544,20 @@ export function getGrowthChartDataset(options: {
         return null
       }
 
-      const band = interpolateBand(options.metric, ageMonths, options.standardKey)
-      const percentile = toPercentile(value, band)
-      const status = getStatus(percentile)
+      if (isOfficialNhc2025Metric(options.metric, options.standardKey) && !options.gender) {
+        return {
+          id: record.id,
+          measuredAt: record.measuredAt,
+          ageLabel: formatAgeLabel(resolvedBirthDate, record.measuredAt),
+          xLabel: `${Math.round(ageMonths)}个月`,
+          ageMonths: Number(ageMonths.toFixed(2)),
+          value: formatMetricValue(options.metric, value),
+          percentile: null,
+          statusLabel: '需性别'
+        } satisfies GrowthChartPoint
+      }
+
+      const evaluation = buildGrowthEvaluation(options.metric, ageMonths, value, options.standardKey, options.gender)
 
       return {
         id: record.id,
@@ -369,20 +566,21 @@ export function getGrowthChartDataset(options: {
         xLabel: `${Math.round(ageMonths)}个月`,
         ageMonths: Number(ageMonths.toFixed(2)),
         value: formatMetricValue(options.metric, value),
-        percentile: Number(percentile.toFixed(1)),
-        statusLabel: status.label
+        percentile: evaluation.percentile,
+        statusLabel: evaluation.status.label
       } satisfies GrowthChartPoint
     })
     .filter((item): item is GrowthChartPoint => !!item)
 
-  const bands = buildBandWindow(options.metric, minAgeMonths, maxAgeMonths, options.standardKey)
+  const bands = buildBandWindow(options.metric, minAgeMonths, maxAgeMonths, options.standardKey, options.gender)
+  const fallbackValues = getFallbackMetricValues(options.metric)
   const allValues = [
     ...points.map((item) => item.value),
     ...bands.map((item) => item.p3),
     ...bands.map((item) => item.p97)
   ]
-  const minValue = Math.min(...allValues)
-  const maxValue = Math.max(...allValues)
+  const minValue = Math.min(...(allValues.length ? allValues : fallbackValues))
+  const maxValue = Math.max(...(allValues.length ? allValues : fallbackValues))
   const padding = Math.max((maxValue - minValue) * 0.08, options.metric === 'weight' ? 0.6 : 2)
 
   return {
