@@ -6,6 +6,7 @@ import GrowthStandardSheet from '@/components/growth/GrowthStandardSheet.vue'
 import GrowthTrendChart from '@/components/growth/GrowthTrendChart.vue'
 import { deleteGrowthRecordEntry, getGrowthRecords, readAuthSession } from '@/services/api'
 import {
+  getGrowthAgeMonths,
   getGrowthChartDataset,
   getGrowthListItems,
   getGrowthMetricMeta,
@@ -52,8 +53,9 @@ const currentAgeMonths = computed(() => {
     return 18
   }
 
-  const diffMs = new Date().getTime() - new Date(`${birthDate.value}T00:00:00`).getTime()
-  return Math.max(1, diffMs / (24 * 60 * 60 * 1000 * 30.4375))
+  const today = new Date()
+  const todayYmd = `${today.getFullYear()}-${`${today.getMonth() + 1}`.padStart(2, '0')}-${`${today.getDate()}`.padStart(2, '0')}`
+  return Math.max(1, getGrowthAgeMonths(birthDate.value, todayYmd))
 })
 const records = computed(() => {
   version.value

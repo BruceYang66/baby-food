@@ -12,6 +12,7 @@ import type {
   GrowthStandardKey,
   GrowthStatusTone
 } from '@baby-food/shared-types'
+import { formatAgeLabel as formatSharedAgeLabel } from '@/utils/age'
 import {
   growthMetricMeta,
   growthReferenceTemplates,
@@ -57,22 +58,12 @@ function getDiffDays(start: string, end: string) {
   return Math.max(0, Math.round((toDate(end).getTime() - toDate(start).getTime()) / DAY_MS))
 }
 
-function getAgeMonths(birthDate: string, measuredAt: string) {
+export function getGrowthAgeMonths(birthDate: string, measuredAt: string) {
   return getDiffDays(birthDate, measuredAt) / MONTH_DAYS
 }
 
 function formatAgeLabel(birthDate: string, measuredAt: string) {
-  const totalDays = getDiffDays(birthDate, measuredAt)
-  const years = Math.floor(totalDays / 365)
-  const daysAfterYears = totalDays - years * 365
-  const months = Math.floor(daysAfterYears / 30)
-  const days = Math.max(0, daysAfterYears - months * 30)
-
-  if (years > 0) {
-    return `${years}岁${months}个月${days}天`
-  }
-
-  return `${months}个月${days}天`
+  return formatSharedAgeLabel(birthDate, measuredAt)
 }
 
 function getStoredRecords() {
@@ -363,7 +354,7 @@ function buildMetricSnapshot(record: GrowthRecord, birthDate: string, metric: Gr
     }
   }
 
-  const ageMonths = getAgeMonths(birthDate, record.measuredAt)
+  const ageMonths = getGrowthAgeMonths(birthDate, record.measuredAt)
   const evaluation = buildGrowthEvaluation(metric, ageMonths, value, standardKey, gender)
 
   return {
@@ -380,7 +371,7 @@ function buildMetricSnapshot(record: GrowthRecord, birthDate: string, metric: Gr
 function buildSeedRecords(birthDate?: string) {
   const resolvedBirthDate = getBirthDate(birthDate)
   const today = new Date()
-  const totalAgeMonths = Math.max(8, getAgeMonths(resolvedBirthDate, formatYmd(today)))
+  const totalAgeMonths = Math.max(8, getGrowthAgeMonths(resolvedBirthDate, formatYmd(today)))
   const seedAgeMonths = [0.42, 0.56, 0.72, 0.84, 0.94, 1]
     .map((ratio) => Math.max(1.5, Number((totalAgeMonths * ratio).toFixed(2))))
     .filter((value, index, list) => index === 0 || value - list[index - 1] > 0.35)
@@ -539,7 +530,7 @@ export function getGrowthChartDataset(options: {
         return null
       }
 
-      const ageMonths = getAgeMonths(resolvedBirthDate, record.measuredAt)
+      const ageMonths = getGrowthAgeMonths(resolvedBirthDate, record.measuredAt)
       if (ageMonths < minAgeMonths || ageMonths > maxAgeMonths) {
         return null
       }

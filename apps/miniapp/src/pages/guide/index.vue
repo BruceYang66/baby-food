@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import type { GuideStage } from '@baby-food/shared-types'
+import { getCalendarAge, getGuideStageKey } from '@/utils/age'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AgeStageTabs from '@/components/guide/AgeStageTabs.vue'
 import FoodRuleSection from '@/components/guide/FoodRuleSection.vue'
@@ -20,16 +21,7 @@ function getDefaultStageKey() {
     return '6-7'
   }
 
-  const birthDate = new Date(baby.birthDate)
-  const today = new Date()
-  const monthAge = Math.max(0, (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth()))
-
-  if (monthAge < 6) return '4-6'
-  if (monthAge < 8) return '6-7'
-  if (monthAge < 10) return '8-9'
-  if (monthAge < 12) return '10-12'
-  if (monthAge < 18) return '12-18'
-  return '18-24'
+  return getGuideStageKey(getCalendarAge(baby.birthDate).totalCompletedMonths)
 }
 
 onMounted(async () => {

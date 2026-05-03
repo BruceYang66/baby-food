@@ -11,6 +11,7 @@ import type {
   LifeRecordScope,
   SupplementDoseUnit
 } from '@baby-food/shared-types'
+import { formatAgeLabel } from '@/utils/age'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
 import {
@@ -247,29 +248,12 @@ function getCurrentTime() {
   return `${`${now.getHours()}`.padStart(2, '0')}:${`${now.getMinutes()}`.padStart(2, '0')}`
 }
 
-function parseYmd(value: string) {
-  const [year, month, day] = value.split('-').map(Number)
-  return new Date(year, (month || 1) - 1, day || 1)
-}
-
 function formatAgeAtDate(dateValue: string) {
   if (!currentBabyBirthDate.value) {
     return ''
   }
 
-  const birthDate = parseYmd(currentBabyBirthDate.value)
-  const targetDate = parseYmd(dateValue)
-  const diffDays = Math.max(0, Math.floor((targetDate.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24)))
-  const totalMonths = Math.floor(diffDays / 30.44)
-  const remainDays = Math.floor(diffDays % 30.44)
-
-  if (totalMonths < 12) {
-    return `${totalMonths}个月${remainDays}天`
-  }
-
-  const years = Math.floor(totalMonths / 12)
-  const months = totalMonths % 12
-  return `${years}岁${months}个月${remainDays}天`
+  return formatAgeLabel(currentBabyBirthDate.value, dateValue)
 }
 
 function toNumber(value: string) {

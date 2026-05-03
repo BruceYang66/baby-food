@@ -1,4 +1,5 @@
 import { randomBytes } from 'node:crypto'
+import { formatAgeLabel, getCalendarAge, getFeedingStageLabel, getTodayDateOnly, type DateOnlyInput } from '../utils/age.js'
 import { prisma } from '../db/prisma.js'
 import { parseKnowledgeSectionMedia } from './knowledgeSectionMedia.js'
 
@@ -64,46 +65,16 @@ const mealSlots = [
   { slot: 'dinner', time: '18:00' }
 ] as const
 
-function getMonthAge(birthDate: Date) {
-  const today = new Date()
-  return Math.max(0, (today.getFullYear() - birthDate.getFullYear()) * 12 + (today.getMonth() - birthDate.getMonth()))
+function getMonthAge(birthDate: Date, referenceDate: DateOnlyInput = getTodayDateOnly()) {
+  return getCalendarAge(birthDate, referenceDate).totalCompletedMonths
 }
 
-function formatMonthAgeLabel(birthDate: Date) {
-  const today = new Date()
-  const diffDays = Math.max(0, Math.floor((today.getTime() - birthDate.getTime()) / (1000 * 60 * 60 * 24)))
-  const totalMonths = Math.floor(diffDays / 30.44)
-  const remainDays = Math.floor(diffDays % 30.44)
-
-  if (totalMonths < 12) {
-    return `${totalMonths}个月${remainDays}天`
-  }
-
-  const years = Math.floor(totalMonths / 12)
-  const months = totalMonths % 12
-  return `${years}岁${months}个月${remainDays}天`
+function formatMonthAgeLabel(birthDate: Date, referenceDate: DateOnlyInput = getTodayDateOnly()) {
+  return formatAgeLabel(birthDate, referenceDate)
 }
 
-function getStageLabelFromBirthDate(birthDate: Date) {
-  const monthAge = getMonthAge(birthDate)
-
-  if (monthAge < 6) {
-    return '泥糊状辅食阶段'
-  }
-
-  if (monthAge < 8) {
-    return '碎末状辅食阶段'
-  }
-
-  if (monthAge < 10) {
-    return '软烂颗粒阶段'
-  }
-
-  if (monthAge < 12) {
-    return '手抓食过渡阶段'
-  }
-
-  return '软饭阶段'
+function getStageLabelFromBirthDate(birthDate: Date, referenceDate: DateOnlyInput = getTodayDateOnly()) {
+  return getFeedingStageLabel(getMonthAge(birthDate, referenceDate))
 }
 
 function formatBabyProfile(baby: {
@@ -125,7 +96,7 @@ function formatBabyProfile(baby: {
     id: baby.id,
     nickname: baby.nickname,
     monthAgeLabel: formatMonthAgeLabel(baby.birthDate),
-    stageLabel: baby.stageLabel,
+    stageLabel: getStageLabelFromBirthDate(baby.birthDate),
     birthDate: formatDateKey(baby.birthDate),
     avatar: baby.avatarUrl ?? baby.user?.avatarUrl ?? '',
     backgroundImageUrl: baby.backgroundImageUrl ?? undefined,
@@ -1460,7 +1431,7 @@ async function buildPreviewMealPlan(
   const mealCount = options.mealCount ?? '3餐'
   const selectedGoals = options.goals?.length ? options.goals : ['补钙']
   const planDate = options.planDate ?? getToday()
-  const monthAge = getMonthAge(baby.birthDate)
+  const monthAge = getMonthAge(baby.birthDate, planDate)
   const allergenNames = baby.allergens.map((item) => item.name)
   const slotCount = mealCount === '2餐' ? 2 : 3
 
