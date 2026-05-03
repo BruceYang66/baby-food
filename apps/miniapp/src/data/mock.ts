@@ -411,7 +411,8 @@ export const homeDashboardModules = [
     key: 'wheel',
     title: '辅食转盘',
     icon: '🎡',
-    implemented: false,
+    route: '/pages/wheel/index',
+    implemented: true,
     tone: 'purple',
     shape: 'shape-1'
   },
@@ -419,7 +420,8 @@ export const homeDashboardModules = [
     key: 'record',
     title: '喂养记录',
     icon: '📝',
-    implemented: false,
+    route: '/pages/record/index',
+    implemented: true,
     tone: 'pink',
     shape: 'shape-1'
   },
@@ -427,7 +429,8 @@ export const homeDashboardModules = [
     key: 'growth',
     title: '身高体重',
     icon: '📏',
-    implemented: false,
+    route: '/pages/growth/index?tab=list',
+    implemented: true,
     tone: 'green',
     shape: 'shape-3'
   },

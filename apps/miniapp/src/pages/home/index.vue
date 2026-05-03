@@ -18,9 +18,15 @@ import {
   homeDashboardRecommendations,
   homeDashboardTodos
 } from '@/data/mock'
+import { getHomeReminderPreview } from '@/services/local-reminder'
 
 type DashboardModule = (typeof homeDashboardModules)[number]
-type DashboardTodo = (typeof homeDashboardTodos)[number]
+type DashboardTodo = {
+  id: string
+  title: string
+  timeLabel?: string
+  route?: string
+}
 type DashboardRecommendation = {
   id: string
   title: string
@@ -35,6 +41,12 @@ const HOME_HERO_BACKDROP = 'https://lh3.googleusercontent.com/aida-public/AB6AXu
 const isLoggedIn = ref(false)
 const baby = ref<BabyProfile | null>(null)
 const familyFriendCount = ref(0)
+const dashboardTodos = ref<DashboardTodo[]>(homeDashboardTodos.map((item) => ({
+  id: item.id,
+  title: item.title,
+  timeLabel: item.timeLabel,
+  route: item.id === 'todo-vaccine' ? '/pages/vaccine/index' : '/pages/reminder/index'
+})))
 const homeRecommendations = ref<DashboardRecommendation[]>(homeDashboardRecommendations.map((item, index) => ({
   id: item.id,
   title: item.title,
@@ -99,7 +111,16 @@ const heroAvatar = computed(() => {
   return normalizeAppImageUrl(baby.value.avatar)
 })
 
-const heroBackdrop = computed(() => heroAvatar.value || HOME_HERO_BACKDROP)
+const heroBackgroundImage = computed(() => {
+  if (!baby.value?.backgroundImageUrl) {
+    return ''
+  }
+
+  return normalizeAppImageUrl(baby.value.backgroundImageUrl)
+})
+
+const heroHasCustomBackdrop = computed(() => Boolean(heroBackgroundImage.value))
+const heroBackdrop = computed(() => heroBackgroundImage.value || heroAvatar.value || HOME_HERO_BACKDROP)
 const displayBabyName = computed(() => baby.value?.nickname || '米米')
 const displayBabyAge = computed(() => baby.value?.monthAgeLabel || '')
 const displayBabyStage = computed(() => baby.value?.stageLabel || '')
@@ -159,10 +180,29 @@ async function loadHomeRecommendations() {
   }
 }
 
+function loadDashboardTodos() {
+  const preview = getHomeReminderPreview(3)
+
+  dashboardTodos.value = preview.length
+    ? preview.map((item) => ({
+        id: item.id,
+        title: item.title,
+        timeLabel: item.timeLabel,
+        route: item.route
+      }))
+    : homeDashboardTodos.map((item) => ({
+        id: item.id,
+        title: item.title,
+        timeLabel: item.timeLabel,
+        route: item.id === 'todo-vaccine' ? '/pages/vaccine/index' : '/pages/reminder/index'
+      }))
+}
+
 async function loadHome() {
   const session = readAuthSession()
   isLoggedIn.value = !!session?.token
   baby.value = session?.babyProfile ?? null
+  loadDashboardTodos()
 
   if (!isLoggedIn.value) {
     familyFriendCount.value = 0
@@ -256,16 +296,25 @@ function openMonthlyFocus() {
 }
 
 function openTodo(todo: DashboardTodo) {
+  if (todo.route) {
+    go(todo.route)
+    return
+  }
+
   if (todo.id === 'todo-vaccine') {
     go('/pages/vaccine/index')
     return
   }
 
-  go('/pages/message/index')
+  go('/pages/reminder/index')
 }
 
 function addReminder() {
-  showComingSoon('提醒功能建设中')
+  go('/pages/reminder/edit')
+}
+
+function openReminderList() {
+  go('/pages/reminder/index')
 }
 
 function openRecommendation(item: DashboardRecommendation) {
@@ -338,7 +387,7 @@ onShareTimeline(() => ({
     </view>
 
     <view v-else class="logged-view">
-      <view class="dashboard-hero">
+      <view class="dashboard-hero" :class="{ 'custom-backdrop': heroHasCustomBackdrop }">
         <image class="dashboard-hero-bg" :src="heroBackdrop" mode="aspectFill" />
         <view class="dashboard-hero-overlay" />
         <view class="hero-deco hero-deco-left" />
@@ -410,16 +459,22 @@ onShareTimeline(() => ({
       </view>
 
       <view class="todo-card card">
-        <view class="todo-head">
+        <view class="todo-head" @tap="openReminderList">
           <view class="todo-title-row">
             <text class="todo-badge">待办</text>
             <text class="todo-title">提醒事项</text>
           </view>
-          <text class="todo-date">{{ todayLabel }}</text>
+          <view class="todo-head-right">
+            <text class="todo-date">{{ todayLabel }}</text>
+            <view class="todo-head-link">
+              <text class="todo-head-link-text">更多</text>
+              <text class="todo-head-arrow">›</text>
+            </view>
+          </view>
         </view>
 
         <view class="todo-list">
-          <view v-for="todo in homeDashboardTodos" :key="todo.id" class="todo-item" @tap="openTodo(todo)">
+          <view v-for="todo in dashboardTodos" :key="todo.id" class="todo-item" @tap="openTodo(todo)">
             <view class="todo-main">
               <view class="todo-radio" />
               <text class="todo-item-title">{{ todo.title }}</text>
@@ -666,11 +721,15 @@ onShareTimeline(() => ({
 .dashboard-hero {
   position: relative;
   overflow: hidden;
-  min-height: 250rpx;
-  padding: 18rpx 24rpx 36rpx;
-  border-radius: 30rpx;
+  min-height: 268rpx;
+  padding: 18rpx 24rpx 40rpx;
+  border-radius: 34rpx;
   background: linear-gradient(180deg, rgba(251, 246, 241, 0.22) 0%, rgba(225, 207, 191, 0.22) 100%);
   box-shadow: var(--mini-shadow-soft);
+}
+
+.dashboard-hero.custom-backdrop {
+  min-height: 286rpx;
 }
 
 .dashboard-hero-bg {
@@ -683,10 +742,18 @@ onShareTimeline(() => ({
   filter: blur(2rpx) saturate(0.92);
 }
 
+.dashboard-hero.custom-backdrop .dashboard-hero-bg {
+  filter: blur(0) saturate(0.98);
+}
+
 .dashboard-hero-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, rgba(96, 73, 56, 0.14) 0%, rgba(89, 68, 53, 0.24) 100%);
+}
+
+.dashboard-hero.custom-backdrop .dashboard-hero-overlay {
+  background: linear-gradient(180deg, rgba(76, 56, 42, 0.06) 0%, rgba(76, 56, 42, 0.28) 100%);
 }
 
 .hero-deco {
@@ -748,7 +815,7 @@ onShareTimeline(() => ({
   align-items: flex-end;
   justify-content: space-between;
   gap: 18rpx;
-  margin-top: 92rpx;
+  margin-top: 104rpx;
 }
 
 .hero-profile-main {
@@ -1046,6 +1113,21 @@ onShareTimeline(() => ({
   gap: 12rpx;
 }
 
+.todo-head-right {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.todo-head-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6rpx;
+  padding: 10rpx 16rpx;
+  border-radius: 999rpx;
+  background: rgba(247, 239, 230, 0.92);
+}
+
 .todo-title-row {
   display: flex;
   align-items: center;
@@ -1069,6 +1151,18 @@ onShareTimeline(() => ({
 
 .todo-date {
   font-size: 20rpx;
+  color: var(--mini-text-muted);
+}
+
+.todo-head-link-text {
+  font-size: 22rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.todo-head-arrow {
+  font-size: 28rpx;
+  font-weight: 700;
   color: var(--mini-text-muted);
 }
 

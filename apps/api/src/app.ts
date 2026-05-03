@@ -88,6 +88,9 @@ type BabyProfilePayload = {
   birthDate: string
   allergens: string[]
   avatarUrl?: string
+  backgroundImageUrl?: string
+  relationshipLabel?: string
+  gender?: 'boy' | 'girl'
 }
 
 type FamilyInvitePayload = {
@@ -417,6 +420,7 @@ async function requireAppAdminPermission(req: Request, res: Response, next: Next
 
 function parseBabyProfilePayload(body: unknown): BabyProfilePayload {
   const payload = body as Record<string, unknown> | null | undefined
+  const gender = payload?.gender
 
   return {
     nickname: typeof payload?.nickname === 'string' ? payload.nickname : '',
@@ -424,7 +428,10 @@ function parseBabyProfilePayload(body: unknown): BabyProfilePayload {
     allergens: Array.isArray(payload?.allergens)
       ? payload.allergens.filter((item): item is string => typeof item === 'string')
       : [],
-    avatarUrl: typeof payload?.avatarUrl === 'string' ? payload.avatarUrl : undefined
+    avatarUrl: typeof payload?.avatarUrl === 'string' ? payload.avatarUrl : undefined,
+    backgroundImageUrl: typeof payload?.backgroundImageUrl === 'string' ? payload.backgroundImageUrl : undefined,
+    relationshipLabel: typeof payload?.relationshipLabel === 'string' ? payload.relationshipLabel : undefined,
+    gender: gender === 'boy' || gender === 'girl' ? gender : undefined
   }
 }
 

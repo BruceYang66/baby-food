@@ -31,6 +31,10 @@ COMMENT ON COLUMN babies.user_id         IS '所属用户 ID，关联 users.id';
 COMMENT ON COLUMN babies.nickname        IS '宝宝昵称，家长自定义';
 COMMENT ON COLUMN babies.birth_date      IS '宝宝出生日期，用于计算月龄和辅食阶段';
 COMMENT ON COLUMN babies.stage_label     IS '当前辅食阶段标签（由出生日期自动计算写入），如：泥糊状辅食阶段';
+COMMENT ON COLUMN babies.avatar_url      IS '宝宝头像 URL，用于资料页头像与首页头像展示，可为空';
+COMMENT ON COLUMN babies.background_image_url IS '宝宝主页背景图 URL，用于资料页头图与首页顶部背景展示，可为空';
+COMMENT ON COLUMN babies.relationship_label IS '档案拥有者与宝宝的关系标签，如：妈妈、爸爸、奶奶，可为空';
+COMMENT ON COLUMN babies.gender          IS '宝宝性别标识：boy=男宝，girl=女宝，可为空';
 
 -- ── baby_allergens ─────────────────────────────────────────────
 COMMENT ON TABLE  baby_allergens         IS '宝宝过敏原记录表，一个宝宝可有多条';

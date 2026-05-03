@@ -96,19 +96,22 @@ model User {
 }
 
 model Baby {
-  id             String          @id @default(cuid())
-  userId         String          @map("user_id")
-  nickname       String
-  birthDate      DateTime        @map("birth_date")
-  stageLabel     String          @map("stage_label")
-  avatarUrl      String?         @map("avatar_url")
-  allergens      BabyAllergen[]
-  mealPlans      MealPlan[]
-  customRecipes  CustomRecipe[]
-  vaccineRecords VaccineRecord[]
-  members        BabyMember[]
-  invites        BabyInvite[]
-  user           User            @relation(fields: [userId], references: [id])
+  id                 String          @id @default(cuid())
+  userId             String          @map("user_id")
+  nickname           String
+  birthDate          DateTime        @map("birth_date")
+  stageLabel         String          @map("stage_label")
+  avatarUrl          String?         @map("avatar_url")
+  backgroundImageUrl String?         @map("background_image_url")
+  relationshipLabel  String?         @map("relationship_label")
+  gender             String?
+  allergens          BabyAllergen[]
+  mealPlans          MealPlan[]
+  customRecipes      CustomRecipe[]
+  vaccineRecords     VaccineRecord[]
+  members            BabyMember[]
+  invites            BabyInvite[]
+  user               User            @relation(fields: [userId], references: [id])
 
   @@map("babies")
 }

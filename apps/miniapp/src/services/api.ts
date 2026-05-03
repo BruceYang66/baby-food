@@ -95,6 +95,7 @@ const PROTECTED_PAGES = new Set([
   '/pages/generate/index',
   '/pages/plan/index',
   '/pages/plan-detail/index',
+  '/pages/record/index',
   FAMILY_PAGE
 ])
 

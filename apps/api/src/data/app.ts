@@ -113,6 +113,9 @@ function formatBabyProfile(baby: {
   stageLabel: string
   userId?: string
   avatarUrl?: string | null
+  backgroundImageUrl?: string | null
+  relationshipLabel?: string | null
+  gender?: string | null
   user?: { avatarUrl: string | null }
   allergens: Array<{ name: string }>
   accessRole?: 'owner' | 'editor' | 'viewer'
@@ -125,6 +128,9 @@ function formatBabyProfile(baby: {
     stageLabel: baby.stageLabel,
     birthDate: formatDateKey(baby.birthDate),
     avatar: baby.avatarUrl ?? baby.user?.avatarUrl ?? '',
+    backgroundImageUrl: baby.backgroundImageUrl ?? undefined,
+    relationshipLabel: normalizeBabyRelationshipLabel(baby.relationshipLabel),
+    gender: normalizeBabyGender(baby.gender),
     allergens: baby.allergens.map((item) => item.name),
     role: baby.accessRole,
     ownerUserId: baby.userId,
@@ -142,6 +148,35 @@ function formatAppUser(user: { id: string; nickname: string; avatarUrl: string |
 
 function normalizeAllergens(allergens: string[]) {
   return [...new Set(allergens.map((item) => item.trim()).filter(Boolean))]
+}
+
+function normalizeBabyRelationshipLabel(value?: string | null) {
+  const normalized = value?.trim().slice(0, 12) ?? ''
+  return normalized || undefined
+}
+
+function normalizeBabyGender(value?: string | null): 'boy' | 'girl' | undefined {
+  return value === 'boy' || value === 'girl' ? value : undefined
+}
+
+let ensureBabyProfileColumnsPromise: Promise<void> | null = null
+
+async function ensureBabyProfileColumns() {
+  if (!ensureBabyProfileColumnsPromise) {
+    ensureBabyProfileColumnsPromise = prisma.$executeRawUnsafe(`
+      ALTER TABLE babies
+        ADD COLUMN IF NOT EXISTS background_image_url TEXT,
+        ADD COLUMN IF NOT EXISTS relationship_label TEXT,
+        ADD COLUMN IF NOT EXISTS gender TEXT
+    `)
+      .then(() => undefined)
+      .catch((error) => {
+        ensureBabyProfileColumnsPromise = null
+        throw error
+      })
+  }
+
+  await ensureBabyProfileColumnsPromise
 }
 
 const generatedUserNicknameSeeds = ['小饭团', '小米粒', '小南瓜', '小月芽', '小奶瓶', '小云朵'] as const
@@ -969,6 +1004,8 @@ function matchRecipeAgeRange(recipeAgeLabel: string, selectedAgeRange: MonthRang
 }
 
 async function getBabyAccessRecords(userId: string) {
+  await ensureBabyProfileColumns()
+
   const [ownedBabies, memberships] = await Promise.all([
     prisma.baby.findMany({
       where: { userId },
@@ -1706,7 +1743,12 @@ export async function createBabyProfile(userId: string, payload: {
   birthDate: string
   allergens: string[]
   avatarUrl?: string
+  backgroundImageUrl?: string
+  relationshipLabel?: string
+  gender?: 'boy' | 'girl'
 }) {
+  await ensureBabyProfileColumns()
+
   const nickname = payload.nickname.trim()
 
   if (!nickname) {
@@ -1716,6 +1758,10 @@ export async function createBabyProfile(userId: string, payload: {
   const birthDate = parseBirthDate(payload.birthDate)
   const stageLabel = getStageLabelFromBirthDate(birthDate)
   const allergens = normalizeAllergens(payload.allergens)
+  const avatarUrl = payload.avatarUrl?.trim() || undefined
+  const backgroundImageUrl = payload.backgroundImageUrl?.trim() || undefined
+  const relationshipLabel = normalizeBabyRelationshipLabel(payload.relationshipLabel)
+  const gender = normalizeBabyGender(payload.gender)
   const [ownedBabyCount, currentUser] = await Promise.all([
     prisma.baby.count({ where: { userId } }),
     ensureCurrentUser(userId)
@@ -1737,14 +1783,20 @@ export async function createBabyProfile(userId: string, payload: {
     }
   })
 
-  // Store avatar on baby — raw SQL fallback for Prisma client not regenerated yet
-  if (payload.avatarUrl) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await prisma.baby.update({ where: { id: baby.id }, data: { avatarUrl: payload.avatarUrl } as any })
-    } catch {
-      await prisma.$executeRaw`UPDATE babies SET avatar_url = ${payload.avatarUrl} WHERE id = ${baby.id}`
-    }
+  if (avatarUrl) {
+    await prisma.$executeRaw`UPDATE babies SET avatar_url = ${avatarUrl} WHERE id = ${baby.id}`
+  }
+
+  if (backgroundImageUrl) {
+    await prisma.$executeRaw`UPDATE babies SET background_image_url = ${backgroundImageUrl} WHERE id = ${baby.id}`
+  }
+
+  if (relationshipLabel !== undefined) {
+    await prisma.$executeRaw`UPDATE babies SET relationship_label = ${relationshipLabel} WHERE id = ${baby.id}`
+  }
+
+  if (gender !== undefined) {
+    await prisma.$executeRaw`UPDATE babies SET gender = ${gender} WHERE id = ${baby.id}`
   }
 
   await ensureBabyMembership(userId, baby.id, { role: 'owner' })
@@ -1760,7 +1812,13 @@ export async function createBabyProfile(userId: string, payload: {
   }
 
   return {
-    babyProfile: formatBabyProfile({ ...baby, avatarUrl: payload.avatarUrl || null })
+    babyProfile: formatBabyProfile({
+      ...baby,
+      avatarUrl: avatarUrl ?? null,
+      backgroundImageUrl: backgroundImageUrl ?? null,
+      relationshipLabel: relationshipLabel ?? null,
+      gender: gender ?? null
+    })
   }
 }
 
@@ -1769,7 +1827,12 @@ export async function updateBabyProfile(userId: string, babyId: string, payload:
   birthDate: string
   allergens: string[]
   avatarUrl?: string
+  backgroundImageUrl?: string
+  relationshipLabel?: string
+  gender?: 'boy' | 'girl'
 }) {
+  await ensureBabyProfileColumns()
+
   const nickname = payload.nickname.trim()
 
   if (!nickname) {
@@ -1779,6 +1842,12 @@ export async function updateBabyProfile(userId: string, babyId: string, payload:
   const birthDate = parseBirthDate(payload.birthDate)
   const stageLabel = getStageLabelFromBirthDate(birthDate)
   const allergens = normalizeAllergens(payload.allergens)
+  const avatarUrl = payload.avatarUrl?.trim() || undefined
+  const backgroundImageUrl = payload.backgroundImageUrl?.trim() || undefined
+  const relationshipLabel = normalizeBabyRelationshipLabel(payload.relationshipLabel)
+  const gender = normalizeBabyGender(payload.gender)
+  const shouldUpdateRelationshipLabel = payload.relationshipLabel !== undefined
+  const shouldUpdateGender = payload.gender !== undefined
   const existingBaby = await prisma.baby.findFirst({
     where: {
       id: babyId,
@@ -1790,13 +1859,26 @@ export async function updateBabyProfile(userId: string, babyId: string, payload:
     throw new Error('未找到可编辑的宝宝档案')
   }
 
-  // Read existing avatar via raw SQL (Prisma client may not know avatarUrl yet)
-  let existingAvatarUrl: string | null = null
+  let existingProfileFields = {
+    avatar_url: null as string | null,
+    background_image_url: null as string | null,
+    relationship_label: null as string | null,
+    gender: null as string | null
+  }
+
   try {
-    const rows = await prisma.$queryRaw<Array<{ avatar_url: string | null }>>`
-      SELECT avatar_url FROM babies WHERE id = ${babyId} LIMIT 1
+    const rows = await prisma.$queryRaw<Array<{
+      avatar_url: string | null
+      background_image_url: string | null
+      relationship_label: string | null
+      gender: string | null
+    }>>`
+      SELECT avatar_url, background_image_url, relationship_label, gender
+      FROM babies
+      WHERE id = ${babyId}
+      LIMIT 1
     `
-    existingAvatarUrl = rows[0]?.avatar_url ?? null
+    existingProfileFields = rows[0] ?? existingProfileFields
   } catch {
     // ignore
   }
@@ -1817,18 +1899,32 @@ export async function updateBabyProfile(userId: string, babyId: string, payload:
     }
   })
 
-  // Store avatar — raw SQL fallback for Prisma client not regenerated yet
-  if (payload.avatarUrl) {
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      await prisma.baby.update({ where: { id: babyId }, data: { avatarUrl: payload.avatarUrl } as any })
-    } catch {
-      await prisma.$executeRaw`UPDATE babies SET avatar_url = ${payload.avatarUrl} WHERE id = ${babyId}`
-    }
+  if (avatarUrl) {
+    await prisma.$executeRaw`UPDATE babies SET avatar_url = ${avatarUrl} WHERE id = ${babyId}`
+  }
+
+  if (backgroundImageUrl) {
+    await prisma.$executeRaw`UPDATE babies SET background_image_url = ${backgroundImageUrl} WHERE id = ${babyId}`
+  }
+
+  if (shouldUpdateRelationshipLabel) {
+    await prisma.$executeRaw`UPDATE babies SET relationship_label = ${relationshipLabel ?? null} WHERE id = ${babyId}`
+  }
+
+  if (shouldUpdateGender) {
+    await prisma.$executeRaw`UPDATE babies SET gender = ${gender ?? null} WHERE id = ${babyId}`
   }
 
   return {
-    babyProfile: formatBabyProfile({ ...baby, avatarUrl: payload.avatarUrl || existingAvatarUrl })
+    babyProfile: formatBabyProfile({
+      ...baby,
+      avatarUrl: avatarUrl ?? existingProfileFields.avatar_url,
+      backgroundImageUrl: backgroundImageUrl ?? existingProfileFields.background_image_url,
+      relationshipLabel: shouldUpdateRelationshipLabel
+        ? relationshipLabel ?? null
+        : existingProfileFields.relationship_label,
+      gender: shouldUpdateGender ? gender ?? null : existingProfileFields.gender
+    })
   }
 }
 
@@ -2954,7 +3050,7 @@ export async function createFamilyInvite(userId: string, payload: {
   relationshipLabel?: string
 }) {
   const baby = await ensureOwnerBaby(userId, payload.babyId)
-  const relationshipLabel = normalizeRelationshipLabel(payload.relationshipLabel)
+  const relationshipLabel = normalizeBabyRelationshipLabel(payload.relationshipLabel)
   const invite = await prisma.babyInvite.create({
     data: {
       babyId: baby.id,

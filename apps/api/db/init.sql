@@ -25,7 +25,10 @@ CREATE TABLE babies (
   nickname TEXT NOT NULL,
   birth_date DATE NOT NULL,
   stage_label TEXT NOT NULL,
-  avatar_url TEXT
+  avatar_url TEXT,
+  background_image_url TEXT,
+  relationship_label TEXT,
+  gender TEXT
 );
 
 CREATE TABLE baby_allergens (

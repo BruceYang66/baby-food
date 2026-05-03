@@ -4,6 +4,7 @@ export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack'
 export type GuideRuleType = 'recommended' | 'cautious' | 'forbidden'
 export type TabooRuleType = 'avoid' | 'recommended'
 export type FamilyRole = 'owner' | 'editor' | 'viewer'
+export type BabyGender = 'boy' | 'girl'
 export type FeedingRecordStatus = 'fed' | 'skipped'
 
 export interface BabyProfile {
@@ -13,6 +14,9 @@ export interface BabyProfile {
   stageLabel: string
   birthDate: string
   avatar: string
+  backgroundImageUrl?: string
+  relationshipLabel?: string
+  gender?: BabyGender
   allergens: string[]
   role?: FamilyRole
   ownerUserId?: string
@@ -25,6 +29,9 @@ export interface BabyProfilePayload {
   birthDate: string
   allergens: string[]
   avatarUrl?: string
+  backgroundImageUrl?: string
+  relationshipLabel?: string
+  gender?: BabyGender
 }
 
 export interface AppUser {
@@ -222,6 +229,123 @@ export interface SaveFeedingRecordPayload {
 export interface SaveFeedingRecordResponse {
   mealPlan: DailyMealPlan
   feedingRecord: FeedingRecord
+}
+
+export type FeedingJournalType = 'breast' | 'formula' | 'bottle-breast' | 'sleep' | 'diaper' | 'pump' | 'solid' | 'bath' | 'play' | 'swim' | 'water' | 'supplement' | 'other'
+export type FeedingSolidIntake = 'finished' | 'half' | 'few-bites' | 'refused'
+export type FeedingReactionTag = 'rash' | 'diarrhea' | 'vomit' | 'constipation'
+export type SupplementDoseUnit = '滴' | '粒' | 'ml' | '勺'
+export type LifeRecordScope = 'week' | 'month' | 'all'
+export type LifeRecordDisplayMode = 'timeline' | 'chart'
+export type DiaperRecordKind = 'wet' | 'dirty' | 'mixed'
+
+export interface FeedingJournalEntry {
+  id: string
+  date: string
+  time: string
+  type: FeedingJournalType
+  title: string
+  description: string
+  amountValue?: number
+  amountUnit?: string
+  note?: string
+  tags?: string[]
+  source?: 'manual' | 'reminder'
+  sourceReminderIds?: string[]
+  createdAt: string
+  updatedAt: string
+  breast?: {
+    side?: 'left' | 'right' | 'switch'
+    durationMinutes?: number
+    estimatedMilkMl?: number
+    quickNotes?: string[]
+  }
+  formula?: {
+    brand?: string
+    stage?: '1段' | '2段' | '3段' | '4段'
+    temperature?: '37℃' | '40℃' | '45℃'
+    tags?: string[]
+  }
+  bottleBreast?: {
+    amountMl?: number
+  }
+  solid?: {
+    foodName: string
+    intakeLevel: FeedingSolidIntake
+    reactions?: FeedingReactionTag[]
+  }
+  water?: {
+    amountMl?: number
+  }
+  supplement?: {
+    name: string
+    doseText?: string
+    unit?: SupplementDoseUnit
+  }
+  sleep?: {
+    durationMinutes?: number
+  }
+  diaper?: {
+    kind?: DiaperRecordKind
+  }
+  pump?: {
+    amountMl?: number
+  }
+  bath?: {
+    durationMinutes?: number
+  }
+  play?: {
+    durationMinutes?: number
+  }
+  swim?: {
+    durationMinutes?: number
+  }
+  other?: {
+    categoryLabel?: string
+  }
+}
+
+export interface FeedingJournalDaySummary {
+  milkMl: number
+  milkTargetMl: number
+  milkProgress: number
+  solidCount: number
+  waterMl: number
+  supplementCount: number
+  totalCount: number
+}
+
+export interface FeedingJournalDayStat {
+  date: string
+  label: string
+  milkMl: number
+  solidCount: number
+  waterMl: number
+  supplementCount: number
+  totalCount: number
+}
+
+export interface FeedingJournalWeekStats {
+  days: FeedingJournalDayStat[]
+  maxMilkMl: number
+  maxSolidCount: number
+  maxTotalCount: number
+}
+
+export interface FeedingJournalMonthPoint {
+  date: string
+  label: string
+  milkMl: number
+  solidCount: number
+  waterMl: number
+  totalCount: number
+}
+
+export interface FeedingJournalMonthStats {
+  points: FeedingJournalMonthPoint[]
+  maxMilkMl: number
+  maxSolidCount: number
+  maxTotalCount: number
 }
 
 export interface BatchRecipeSummaryPayload {
@@ -510,4 +634,119 @@ export interface FavoritesPageData {
   recipeIds: string[]
   recipes: FavoriteRecipeItem[]
   articles: FavoriteKnowledgeItem[]
+}
+
+export type GrowthMetricType = 'height' | 'weight' | 'head'
+export type GrowthTabKey = 'list' | 'height' | 'weight' | 'head'
+export type GrowthRangeKey = 'halfYear' | 'oneYear' | 'threeYear'
+export type GrowthStandardKey = 'nhc-2025' | 'nhc-2022' | 'who'
+export type GrowthStatusTone = 'healthy' | 'caution' | 'warning' | 'elevated'
+
+export interface GrowthRecord {
+  id: string
+  measuredAt: string
+  heightCm?: number | null
+  weightKg?: number | null
+  headCircumferenceCm?: number | null
+}
+
+export interface GrowthRecordPayload {
+  measuredAt: string
+  heightCm?: number | null
+  weightKg?: number | null
+  headCircumferenceCm?: number | null
+}
+
+export interface GrowthMetricSnapshot {
+  metric: GrowthMetricType
+  label: string
+  unit: string
+  value: number | null
+  percentile: number | null
+  statusLabel: string
+  statusTone: GrowthStatusTone
+}
+
+export interface GrowthRecordListItem {
+  id: string
+  measuredAt: string
+  ageLabel: string
+  metrics: GrowthMetricSnapshot[]
+}
+
+export interface GrowthStandardOption {
+  key: GrowthStandardKey
+  label: string
+  ageRangeLabel: string
+  sourceLabel: string
+}
+
+export interface GrowthRangeOption {
+  key: GrowthRangeKey
+  label: string
+  months: number
+}
+
+export interface GrowthReferenceBandPoint {
+  ageMonths: number
+  p3: number
+  p50: number
+  p97: number
+}
+
+export interface GrowthChartPoint {
+  id: string
+  measuredAt: string
+  ageLabel: string
+  xLabel: string
+  ageMonths: number
+  value: number
+  percentile: number | null
+  statusLabel: string
+}
+
+export interface GrowthChartDataset {
+  metric: GrowthMetricType
+  unit: string
+  minValue: number
+  maxValue: number
+  points: GrowthChartPoint[]
+  bands: GrowthReferenceBandPoint[]
+}
+
+export type ReminderRepeatType = 'once' | 'daily' | 'alternate-day' | 'weekly' | 'monthly'
+export type ReminderStatus = 'pending' | 'done'
+export type ReminderCategory = 'supplement' | 'vaccine' | 'growth' | 'feeding' | 'outing' | 'custom'
+
+export interface ReminderItem {
+  id: string
+  title: string
+  date: string
+  time?: string
+  repeatType: ReminderRepeatType
+  status: ReminderStatus
+  category: ReminderCategory
+  note?: string
+  completedAt?: string
+  source?: 'local' | 'system'
+}
+
+export interface ReminderGroup {
+  label: string
+  items: ReminderItem[]
+}
+
+export type WheelCategory = 'vegetable' | 'protein' | 'egg' | 'grain' | 'fruit' | 'mixed' | 'finger' | 'soup'
+
+export interface WheelCandidate {
+  id: string
+  title: string
+  category: WheelCategory
+  icon: string
+  ageLabel: string
+  ingredients: string[]
+  steps: string[]
+  nutritionTags: string[]
+  filterTags: string[]
+  route?: string
 }

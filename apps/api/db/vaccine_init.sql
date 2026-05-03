@@ -137,6 +137,48 @@ VALUES
   ('vaccine_hib_3', 'Hib疫苗第3剂', 'b型流感嗜血杆菌感染', '6月龄', '满6个月', 'optional', 'Hib疫苗第三剂，与第二剂间隔2个月', '["接种后可能出现发热、局部红肿"]', 65),
   ('vaccine_hib_boost', 'Hib疫苗加强', 'b型流感嗜血杆菌感染', '18月龄', '满18个月', 'optional', 'Hib疫苗加强针', '["接种后可能出现发热、局部红肿"]', 184);
 
+-- 五价轮状病毒疫苗（广东/广州常用程序）
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_rotavirus_pentavalent_1', '五价轮状病毒疫苗第1剂', '轮状病毒感染', '2-3月龄', '满6周龄起，首剂不晚于12周龄', 'optional', '口服五价重配轮状病毒减毒活疫苗第1剂，按广东非免疫规划程序共3剂，第3剂不晚于32周龄。', '["口服疫苗", "接种前后半小时不要进食", "各剂间隔4-10周", "首剂建议尽早开始且不晚于12周龄"]', 25),
+  ('vaccine_rotavirus_pentavalent_2', '五价轮状病毒疫苗第2剂', '轮状病毒感染', '3-5月龄', '与第1剂间隔4-10周', 'optional', '口服五价重配轮状病毒减毒活疫苗第2剂。', '["口服疫苗", "接种前后半小时不要进食", "如近期腹泻或呕吐需先咨询门诊"]', 35),
+  ('vaccine_rotavirus_pentavalent_3', '五价轮状病毒疫苗第3剂', '轮状病毒感染', '4-7月龄', '与第2剂间隔4-10周，且第3剂不晚于32周龄', 'optional', '口服五价重配轮状病毒减毒活疫苗第3剂，完成3剂程序。', '["口服疫苗", "接种前后半小时不要进食", "第3剂需在32周龄前完成", "完成全程后保护更稳定"]', 46);
+
+-- 四联疫苗（无细胞百白破-Hib联合疫苗）
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_quadrivalent_1', '四联疫苗第1剂', '百日咳、白喉、破伤风、b型流感嗜血杆菌', '3月龄', '满3个月', 'optional', '无细胞百白破-Hib联合疫苗第1剂，可替代百白破和Hib对应剂次。', '["如已选择五联疫苗则通常无需重复接种", "接种后可能出现发热、局部红肿", "接种后24小时内避免洗澡"]', 33),
+  ('vaccine_quadrivalent_2', '四联疫苗第2剂', '百日咳、白喉、破伤风、b型流感嗜血杆菌', '4月龄', '满4个月', 'optional', '无细胞百白破-Hib联合疫苗第2剂。', '["与前一剂保持程序间隔", "接种后可能出现发热、局部红肿"]', 45),
+  ('vaccine_quadrivalent_3', '四联疫苗第3剂', '百日咳、白喉、破伤风、b型流感嗜血杆菌', '5月龄', '满5个月', 'optional', '无细胞百白破-Hib联合疫苗第3剂，完成基础免疫。', '["按预约时间完成基础免疫", "接种后可能出现发热、局部红肿"]', 54),
+  ('vaccine_quadrivalent_boost', '四联疫苗第4剂', '百日咳、白喉、破伤风、b型流感嗜血杆菌', '18月龄', '18-24月龄加强1剂', 'optional', '无细胞百白破-Hib联合疫苗加强剂。', '["加强剂建议按程序完成", "如已选择五联疫苗则通常无需重复接种"]', 185);
+
+-- 自费全程灭活脊灰疫苗（IPV）
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_ipv_optional_1', '脊灰灭活疫苗（自费）第1剂', '脊髓灰质炎', '2月龄', '满2个月', 'optional', '自费全程灭活脊灰疫苗第1剂，广东非免疫规划程序为2、3、4月龄基础3剂，18月龄加强1剂。', '["接种后注意观察", "按程序完成后续剂次"]', 26),
+  ('vaccine_ipv_optional_2', '脊灰灭活疫苗（自费）第2剂', '脊髓灰质炎', '3月龄', '满3个月', 'optional', '自费全程灭活脊灰疫苗第2剂。', '["与前一剂保持程序间隔", "如改用联合疫苗需由门诊确认程序衔接"]', 36),
+  ('vaccine_ipv_optional_3', '脊灰灭活疫苗（自费）第3剂', '脊髓灰质炎', '4月龄', '满4个月', 'optional', '自费全程灭活脊灰疫苗第3剂，完成基础免疫。', '["按程序完成基础3剂", "接种后避免剧烈活动"]', 47),
+  ('vaccine_ipv_optional_boost', '脊灰灭活疫苗（自费）加强剂', '脊髓灰质炎', '18月龄', '满18个月', 'optional', '自费全程灭活脊灰疫苗加强剂。', '["加强剂建议按时完成", "与既往接种记录一并核对"]', 186);
+
+-- 乙脑灭活疫苗
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_je_inactivated_1', '乙脑灭活疫苗第1剂', '流行性乙型脑炎', '8月龄', '满8个月', 'optional', '乙型脑炎灭活疫苗第1剂，广东非免疫规划程序为8月龄2剂，间隔7-10天，2岁和6岁各加强1剂。', '["接种前确认无发热", "夏秋季前完成更有利于建立保护"]', 82),
+  ('vaccine_je_inactivated_2', '乙脑灭活疫苗第2剂', '流行性乙型脑炎', '8月龄', '第1剂后7-10天', 'optional', '乙型脑炎灭活疫苗第2剂，完成基础2剂。', '["注意与第1剂间隔7-10天", "接种后可能出现轻微发热"]', 83),
+  ('vaccine_je_inactivated_3', '乙脑灭活疫苗第3剂', '流行性乙型脑炎', '2岁', '满2岁', 'optional', '乙型脑炎灭活疫苗第3剂（第1次加强）。', '["加强剂前核对既往2剂记录", "必要时与门诊确认程序衔接"]', 241),
+  ('vaccine_je_inactivated_4', '乙脑灭活疫苗第4剂', '流行性乙型脑炎', '6岁', '满6岁', 'optional', '乙型脑炎灭活疫苗第4剂（第2次加强）。', '["建议入学前完成程序核对", "如已走减毒活疫苗程序需先咨询门诊"]', 722);
+
+-- 甲肝灭活疫苗
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_hepa_inactivated_1', '甲肝灭活疫苗第1剂', '甲型肝炎', '18月龄', '18月龄及以上', 'optional', '甲型肝炎灭活疫苗第1剂，广东非免疫规划程序为2剂，两剂间隔至少6个月。', '["接种前确认无发热", "注意与减毒活甲肝疫苗不要重复程序"]', 187),
+  ('vaccine_hepa_inactivated_2', '甲肝灭活疫苗第2剂', '甲型肝炎', '2岁', '与第1剂间隔至少6个月', 'optional', '甲型肝炎灭活疫苗第2剂，完成2剂程序。', '["与第1剂至少间隔6个月", "完成2剂后保护更完整"]', 242);
+
+-- 23价肺炎球菌多糖疫苗
+INSERT INTO vaccine_schedules (id, name, disease, stage_label, recommended_age_label, category, description, precautions_json, sort_order)
+VALUES
+  ('vaccine_ppsv23', '23价肺炎球菌多糖疫苗', '肺炎链球菌感染', '2岁+', '满2岁（高风险儿童优先）', 'optional', '覆盖更多血清型，适合2岁以上高风险儿童。', '["接种前确认无发热", "功能性或解剖性无脾等高风险儿童可优先评估"]', 243);
+
 -- 验证数据
 SELECT
   category,
