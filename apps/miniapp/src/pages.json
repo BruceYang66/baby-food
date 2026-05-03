@@ -195,6 +195,12 @@
       }
     },
     {
+      "path": "pages/growth/explainer",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/reminder/index",
       "style": {
         "navigationStyle": "custom"

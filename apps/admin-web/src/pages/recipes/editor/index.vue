@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
+import BackToTopButton from '@/components/common/BackToTopButton.vue'
 import RecipeEditorForm from '@/components/recipes/RecipeEditorForm.vue'
 import { getRecipeDetail, type RecipeEditorDetail } from '@/services/api'
 
@@ -15,4 +16,5 @@ onMounted(async () => {
 
 <template>
   <RecipeEditorForm :recipe="recipe" />
+  <BackToTopButton />
 </template>

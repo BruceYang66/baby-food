@@ -237,6 +237,21 @@ function goGeneratePage() {
   openProtectedPage('/pages/generate/index')
 }
 
+function handleBack() {
+  const pages = getCurrentPages()
+  if (pages.length > 1) {
+    uni.navigateBack({
+      delta: 1,
+      fail: () => {
+        uni.switchTab({ url: '/pages/feeding/index' })
+      }
+    })
+    return
+  }
+
+  uni.switchTab({ url: '/pages/feeding/index' })
+}
+
 function goPlanDetail(planId: string) {
   uni.navigateTo({ url: `/pages/plan-detail/index?id=${planId}` })
 }
@@ -299,7 +314,7 @@ const todayKey = getLocalDateKey()
 
 <template>
   <view class="page-shell">
-    <AppNavBar title="我的辅食计划" subtitle="今日 / 本周 / 历史 一键管理" />
+    <AppNavBar title="我的辅食计划" subtitle="今日 / 本周 / 历史 一键管理" :show-back="true" @back="handleBack" />
 
     <view class="tab-switcher soft-card">
       <view class="tab-chip" :class="{ active: activeTab === 'today' }" @tap="activeTab = 'today'">今日</view>
@@ -410,7 +425,7 @@ const todayKey = getLocalDateKey()
         <text class="cal-empty-icon">📅</text>
         <text class="cal-empty-title">还没有历史记录</text>
         <text class="cal-empty-desc">生成并保存今日计划后，这里会显示每天的饮食安排</text>
-        <view class="primary-button" style="margin-top: 24rpx;" @tap="goGeneratePage">立即生成今日计划</view>
+        <view class="primary-button cal-empty-btn" @tap="goGeneratePage">立即生成今日计划</view>
       </view>
     </view>
 
@@ -775,9 +790,12 @@ const todayKey = getLocalDateKey()
   color: var(--mini-primary-deep);
 }
 
-.cal-empty-desc {
-  font-size: 24rpx;
-  color: var(--mini-text-muted);
-  line-height: 1.7;
+.cal-empty-btn {
+  align-self: stretch;
+  height: 88rpx;
+  margin: 12rpx 24rpx 0;
+  border-radius: var(--mini-radius-md);
+  font-size: 28rpx;
+  box-shadow: 0 10rpx 24rpx rgba(138, 81, 8, 0.12);
 }
 </style>

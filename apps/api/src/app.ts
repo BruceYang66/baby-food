@@ -75,7 +75,24 @@ import {
   swapMealPlanEntry,
   updateBabyProfile,
   updateMealPlan,
-  updateUserProfile
+  updateUserProfile,
+  getWheelHistory,
+  createWheelHistoryEntry,
+  listGrowthRecords,
+  createGrowthRecord,
+  updateGrowthRecord,
+  deleteGrowthRecord,
+  listReminderItems,
+  createReminderItem,
+  updateReminderItem,
+  toggleReminderDone,
+  markReminderItemsDone,
+  deleteReminderItem,
+  listFeedingJournalEntries,
+  getFeedingJournalEntryDetail,
+  createFeedingJournalEntry,
+  updateFeedingJournalEntry,
+  deleteFeedingJournalEntry
 } from './data/app.js'
 import { checkDatabaseHealth } from './db/prisma.js'
 
@@ -228,6 +245,22 @@ function getStatusCode(error: unknown) {
     || error.message === '未找到可移除的亲友成员'
     || error.message === '不能移除拥有者'
     || error.message === '不能移除自己，请使用退出功能'
+    || error.message === '缺少转盘结果'
+    || error.message === '转盘结果不完整'
+    || error.message === '测量日期格式不正确'
+    || error.message === '请至少填写一项生长数据'
+    || error.message === '提醒时间格式不正确'
+    || error.message === '提醒日期格式不正确'
+    || error.message === '请填写提醒标题'
+    || error.message === '提醒重复方式不正确'
+    || error.message === '提醒分类不正确'
+    || error.message === '提醒状态不正确'
+    || error.message === '请填写自定义分类'
+    || error.message === '记录日期格式不正确'
+    || error.message === '记录时间格式不正确'
+    || error.message === '喂养记录类型不正确'
+    || error.message === '请填写记录标题'
+    || error.message === '请填写记录说明'
   ) {
     return 400
   }
@@ -241,6 +274,9 @@ function getStatusCode(error: unknown) {
     || error.message === '未找到对应食谱'
     || error.message === '未找到对应疫苗计划'
     || error.message === '未找到对应干货内容'
+    || error.message === '未找到对应生长记录'
+    || error.message === '未找到对应提醒'
+    || error.message === '未找到对应喂养记录'
   ) {
     return 404
   }
@@ -687,6 +723,160 @@ app.get('/api/app/home', requireAppAuth, async (req, res) => {
     res.json({ ok: true, data: await getHomePageData(getAppUserId(req)) })
   } catch (error) {
     sendError(res, error, '首页数据读取失败')
+  }
+})
+
+app.get('/api/app/wheel/history', requireAppAuth, async (req, res) => {
+  try {
+    const limit = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) || 6 : 6
+    res.json({ ok: true, data: await getWheelHistory(getAppUserId(req), limit) })
+  } catch (error) {
+    sendError(res, error, '转盘历史读取失败')
+  }
+})
+
+app.post('/api/app/wheel/history', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await createWheelHistoryEntry(getAppUserId(req), (req.body ?? {}) as Record<string, unknown>) })
+  } catch (error) {
+    sendError(res, error, '转盘历史保存失败')
+  }
+})
+
+app.get('/api/app/growth/records', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await listGrowthRecords(getAppUserId(req)) })
+  } catch (error) {
+    sendError(res, error, '生长记录读取失败')
+  }
+})
+
+app.post('/api/app/growth/records', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await createGrowthRecord(getAppUserId(req), (req.body ?? {}) as Record<string, unknown>) })
+  } catch (error) {
+    sendError(res, error, '生长记录保存失败')
+  }
+})
+
+app.put('/api/app/growth/records/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({
+      ok: true,
+      data: await updateGrowthRecord(getAppUserId(req), getRouteParam(req.params.id), (req.body ?? {}) as Record<string, unknown>)
+    })
+  } catch (error) {
+    sendError(res, error, '生长记录更新失败')
+  }
+})
+
+app.delete('/api/app/growth/records/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await deleteGrowthRecord(getAppUserId(req), getRouteParam(req.params.id)) })
+  } catch (error) {
+    sendError(res, error, '生长记录删除失败')
+  }
+})
+
+app.get('/api/app/reminders', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await listReminderItems(getAppUserId(req)) })
+  } catch (error) {
+    sendError(res, error, '提醒读取失败')
+  }
+})
+
+app.post('/api/app/reminders', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await createReminderItem(getAppUserId(req), (req.body ?? {}) as Record<string, unknown>) })
+  } catch (error) {
+    sendError(res, error, '提醒保存失败')
+  }
+})
+
+app.put('/api/app/reminders/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({
+      ok: true,
+      data: await updateReminderItem(getAppUserId(req), getRouteParam(req.params.id), (req.body ?? {}) as Record<string, unknown>)
+    })
+  } catch (error) {
+    sendError(res, error, '提醒更新失败')
+  }
+})
+
+app.delete('/api/app/reminders/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await deleteReminderItem(getAppUserId(req), getRouteParam(req.params.id)) })
+  } catch (error) {
+    sendError(res, error, '提醒删除失败')
+  }
+})
+
+app.post('/api/app/reminders/:id/toggle-done', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await toggleReminderDone(getAppUserId(req), getRouteParam(req.params.id)) })
+  } catch (error) {
+    sendError(res, error, '提醒状态更新失败')
+  }
+})
+
+app.post('/api/app/reminders/mark-done', requireAppAuth, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids)
+      ? req.body.ids.filter((item: unknown): item is string => typeof item === 'string')
+      : []
+    res.json({ ok: true, data: await markReminderItemsDone(getAppUserId(req), ids) })
+  } catch (error) {
+    sendError(res, error, '提醒批量完成失败')
+  }
+})
+
+app.get('/api/app/feeding-journal', requireAppAuth, async (req, res) => {
+  try {
+    const scope = typeof req.query.scope === 'string' ? req.query.scope : undefined
+    const anchorDate = typeof req.query.anchorDate === 'string' ? req.query.anchorDate : undefined
+    const types = typeof req.query.types === 'string'
+      ? req.query.types.split(',').map((item) => item.trim()).filter(Boolean)
+      : []
+    res.json({ ok: true, data: await listFeedingJournalEntries(getAppUserId(req), { scope, anchorDate, types }) })
+  } catch (error) {
+    sendError(res, error, '喂养日记读取失败')
+  }
+})
+
+app.get('/api/app/feeding-journal/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getFeedingJournalEntryDetail(getAppUserId(req), getRouteParam(req.params.id)) })
+  } catch (error) {
+    sendError(res, error, '喂养日记详情读取失败')
+  }
+})
+
+app.post('/api/app/feeding-journal', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await createFeedingJournalEntry(getAppUserId(req), (req.body ?? {}) as Record<string, unknown>) })
+  } catch (error) {
+    sendError(res, error, '喂养日记保存失败')
+  }
+})
+
+app.put('/api/app/feeding-journal/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({
+      ok: true,
+      data: await updateFeedingJournalEntry(getAppUserId(req), getRouteParam(req.params.id), (req.body ?? {}) as Record<string, unknown>)
+    })
+  } catch (error) {
+    sendError(res, error, '喂养日记更新失败')
+  }
+})
+
+app.delete('/api/app/feeding-journal/:id', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await deleteFeedingJournalEntry(getAppUserId(req), getRouteParam(req.params.id)) })
+  } catch (error) {
+    sendError(res, error, '喂养日记删除失败')
   }
 })
 

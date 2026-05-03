@@ -3,8 +3,7 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
 import GrowthNumericKeyboard from '@/components/growth/GrowthNumericKeyboard.vue'
-import { deleteGrowthRecord, getGrowthRecord, saveGrowthRecord } from '@/services/local-growth'
-import { readAuthSession } from '@/services/api'
+import { createGrowthRecord, deleteGrowthRecordEntry, getGrowthRecords, updateGrowthRecordEntry } from '@/services/api'
 
 function getStatusBarHeight() {
   if (typeof uni.getWindowInfo === 'function') {
@@ -30,8 +29,6 @@ const navStyle = computed(() => ({
   paddingTop: `${Math.max(getStatusBarHeight(), 20)}px`
 }))
 
-const session = readAuthSession()
-const birthDate = session?.babyProfile?.birthDate
 const recordId = ref('')
 const heightValue = ref('')
 const weightValue = ref('')
@@ -111,6 +108,24 @@ function openDatePicker() {
   showDatePicker.value = true
 }
 
+async function loadRecord(id: string) {
+  try {
+    const records = await getGrowthRecords()
+    const record = records.find((item) => item.id === id)
+    if (!record) {
+      uni.showToast({ title: '未找到对应记录', icon: 'none' })
+      return
+    }
+
+    heightValue.value = record.heightCm != null ? `${record.heightCm}` : ''
+    weightValue.value = record.weightKg != null ? `${record.weightKg}` : ''
+    headValue.value = record.headCircumferenceCm != null ? `${record.headCircumferenceCm}` : ''
+    measuredAt.value = record.measuredAt
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '记录加载失败', icon: 'none' })
+  }
+}
+
 async function submit() {
   if (!canSave.value) {
     return
@@ -118,21 +133,25 @@ async function submit() {
 
   try {
     saving.value = true
-    saveGrowthRecord(
-      {
-        measuredAt: measuredAt.value,
-        heightCm: Number(heightValue.value),
-        weightKg: Number(weightValue.value),
-        headCircumferenceCm: headValue.value ? Number(headValue.value) : null
-      },
-      birthDate,
-      recordId.value || undefined
-    )
+    const payload = {
+      measuredAt: measuredAt.value,
+      heightCm: Number(heightValue.value),
+      weightKg: Number(weightValue.value),
+      headCircumferenceCm: headValue.value ? Number(headValue.value) : null
+    }
+
+    if (recordId.value) {
+      await updateGrowthRecordEntry(recordId.value, payload)
+    } else {
+      await createGrowthRecord(payload)
+    }
 
     uni.showToast({ title: '保存成功', icon: 'success' })
     setTimeout(() => {
       goBack()
     }, 280)
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '保存失败', icon: 'none' })
   } finally {
     saving.value = false
   }
@@ -148,16 +167,20 @@ function handleDelete() {
     content: '确定删除这条身高体重记录吗？',
     confirmText: '删除',
     confirmColor: '#d95a85',
-    success: (result) => {
+    success: async (result) => {
       if (!result.confirm) {
         return
       }
 
-      deleteGrowthRecord(recordId.value, birthDate)
-      uni.showToast({ title: '已删除', icon: 'success' })
-      setTimeout(() => {
-        goBack()
-      }, 260)
+      try {
+        await deleteGrowthRecordEntry(recordId.value)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        setTimeout(() => {
+          goBack()
+        }, 260)
+      } catch (error) {
+        uni.showToast({ title: error instanceof Error ? error.message : '删除失败', icon: 'none' })
+      }
     }
   })
 }
@@ -165,13 +188,7 @@ function handleDelete() {
 onLoad((options) => {
   if (options?.id && typeof options.id === 'string') {
     recordId.value = options.id
-    const record = getGrowthRecord(options.id, birthDate)
-    if (record) {
-      heightValue.value = record.heightCm != null ? `${record.heightCm}` : ''
-      weightValue.value = record.weightKg != null ? `${record.weightKg}` : ''
-      headValue.value = record.headCircumferenceCm != null ? `${record.headCircumferenceCm}` : ''
-      measuredAt.value = record.measuredAt
-    }
+    void loadRecord(options.id)
   }
 
   if (options?.measuredAt && typeof options.measuredAt === 'string') {
@@ -236,7 +253,7 @@ onLoad((options) => {
       <view class="save-bar-btn primary" :class="{ disabled: !canSave }" @tap="submit">保存记录</view>
     </view>
 
-    <DatePickerModal :show="showDatePicker" title="选择测量日期" @close="showDatePicker = false" @confirm="(value) => { measuredAt = value; showDatePicker = false }" />
+    <DatePickerModal :show="showDatePicker" :value="measuredAt" title="选择测量日期" label="测量日期" @close="showDatePicker = false" @confirm="(value) => { measuredAt = value; showDatePicker = false }" />
 
     <GrowthNumericKeyboard :show="keyboardVisible" @input="handleKeyboardInput" @backspace="handleKeyboardBackspace" @close="activeField = null" />
   </view>

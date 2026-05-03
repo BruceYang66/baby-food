@@ -22,6 +22,7 @@ const STORAGE_KEY = 'miniapp-growth-records-v1'
 const DEFAULT_BIRTH_DATE = '2024-09-05'
 const DAY_MS = 24 * 60 * 60 * 1000
 const MONTH_DAYS = 30.4375
+let inMemoryRecords: GrowthRecord[] | null = []
 
 function toDate(value: string) {
   return new Date(`${value}T00:00:00`)
@@ -65,12 +66,18 @@ function formatAgeLabel(birthDate: string, measuredAt: string) {
 }
 
 function getStoredRecords() {
+  if (inMemoryRecords) {
+    return inMemoryRecords.slice()
+  }
+
   const value = uni.getStorageSync(STORAGE_KEY)
   return Array.isArray(value) ? value.filter((item): item is GrowthRecord => typeof item?.id === 'string') : []
 }
 
 function writeRecords(records: GrowthRecord[]) {
-  uni.setStorageSync(STORAGE_KEY, records)
+  const next = records.slice()
+  inMemoryRecords = next
+  uni.setStorageSync(STORAGE_KEY, next)
 }
 
 function interpolateBand(metric: GrowthMetricType, ageMonths: number, standardKey: GrowthStandardKey) {
@@ -231,14 +238,16 @@ function buildSeedRecords(birthDate?: string) {
 
 function ensureRecords(birthDate?: string) {
   const current = getStoredRecords().sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
+  return current
+}
 
-  if (current.length) {
-    return current
-  }
+export function hydrateGrowthRecords(records: GrowthRecord[]) {
+  inMemoryRecords = records.slice().sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
+  return inMemoryRecords
+}
 
-  const seeded = buildSeedRecords(birthDate).sort((a, b) => b.measuredAt.localeCompare(a.measuredAt))
-  writeRecords(seeded)
-  return seeded
+export function clearHydratedGrowthRecords() {
+  inMemoryRecords = null
 }
 
 export function readGrowthRecords(birthDate?: string) {
@@ -304,6 +313,27 @@ function buildBandWindow(metric: GrowthMetricType, minimumAge: number, maximumAg
   return points
 }
 
+function resolveRangeDomain(rangeKey: GrowthRangeKey) {
+  if (rangeKey === 'threeYear') {
+    return {
+      minAgeMonths: 0,
+      maxAgeMonths: 36
+    }
+  }
+
+  if (rangeKey === 'oneYear') {
+    return {
+      minAgeMonths: 0,
+      maxAgeMonths: 12
+    }
+  }
+
+  return {
+    minAgeMonths: 0,
+    maxAgeMonths: 6
+  }
+}
+
 export function getGrowthChartDataset(options: {
   birthDate?: string
   metric: GrowthMetricType
@@ -312,22 +342,7 @@ export function getGrowthChartDataset(options: {
 }): GrowthChartDataset {
   const resolvedBirthDate = getBirthDate(options.birthDate)
   const records = ensureRecords(resolvedBirthDate)
-  const currentAgeMonths = getAgeMonths(resolvedBirthDate, formatYmd(new Date()))
-  const resolvedCurrentAge = Math.max(1, Number(currentAgeMonths.toFixed(2)))
-
-  let minimumAge = 0
-  let maximumAge = 0
-
-  if (options.rangeKey === 'threeYear') {
-    minimumAge = 0
-    maximumAge = 36
-  } else if (options.rangeKey === 'oneYear') {
-    maximumAge = Math.max(12, Math.ceil(resolvedCurrentAge))
-    minimumAge = Math.max(0, maximumAge - 11)
-  } else {
-    maximumAge = Math.ceil(resolvedCurrentAge)
-    minimumAge = Math.max(0, maximumAge - 5)
-  }
+  const { minAgeMonths, maxAgeMonths } = resolveRangeDomain(options.rangeKey)
 
   const points = records
     .slice()
@@ -339,7 +354,7 @@ export function getGrowthChartDataset(options: {
       }
 
       const ageMonths = getAgeMonths(resolvedBirthDate, record.measuredAt)
-      if (ageMonths < minimumAge || ageMonths > maximumAge) {
+      if (ageMonths < minAgeMonths || ageMonths > maxAgeMonths) {
         return null
       }
 
@@ -360,7 +375,7 @@ export function getGrowthChartDataset(options: {
     })
     .filter((item): item is GrowthChartPoint => !!item)
 
-  const bands = buildBandWindow(options.metric, minimumAge, maximumAge, options.standardKey)
+  const bands = buildBandWindow(options.metric, minAgeMonths, maxAgeMonths, options.standardKey)
   const allValues = [
     ...points.map((item) => item.value),
     ...bands.map((item) => item.p3),
@@ -373,6 +388,8 @@ export function getGrowthChartDataset(options: {
   return {
     metric: options.metric,
     unit: growthMetricMeta[options.metric].unit,
+    minAgeMonths,
+    maxAgeMonths,
     minValue: Number((minValue - padding).toFixed(1)),
     maxValue: Number((maxValue + padding).toFixed(1)),
     points,

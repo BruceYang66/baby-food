@@ -227,6 +227,154 @@ function parseJsonStringArray(value?: string | null) {
   }
 }
 
+function parseJsonObject<T>(value?: string | null) {
+  if (!value) {
+    return undefined
+  }
+
+  try {
+    const parsed = JSON.parse(value)
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed as T : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const reminderRepeatTypeMap = {
+  once: 'once',
+  daily: 'daily',
+  'alternate-day': 'alternate_day',
+  weekly: 'weekly',
+  monthly: 'monthly'
+} as const
+
+const reminderCategorySet = new Set(['supplement', 'vaccine', 'growth', 'feeding', 'outing', 'custom'])
+const reminderStatusSet = new Set(['pending', 'done'])
+const reminderSourceSet = new Set(['local', 'manual', 'system'])
+const feedingJournalTypeMap = {
+  breast: 'breast',
+  formula: 'formula',
+  'bottle-breast': 'bottle_breast',
+  sleep: 'sleep',
+  diaper: 'diaper',
+  pump: 'pump',
+  solid: 'solid',
+  bath: 'bath',
+  play: 'play',
+  swim: 'swim',
+  water: 'water',
+  supplement: 'supplement',
+  other: 'other'
+} as const
+const feedingJournalTypeReverseMap = {
+  breast: 'breast',
+  formula: 'formula',
+  bottle_breast: 'bottle-breast',
+  sleep: 'sleep',
+  diaper: 'diaper',
+  pump: 'pump',
+  solid: 'solid',
+  bath: 'bath',
+  play: 'play',
+  swim: 'swim',
+  water: 'water',
+  supplement: 'supplement',
+  other: 'other'
+} as const
+
+function parseReminderRepeatType(value?: string) {
+  if (!value || !(value in reminderRepeatTypeMap)) {
+    throw new Error('提醒重复方式不正确')
+  }
+
+  return reminderRepeatTypeMap[value as keyof typeof reminderRepeatTypeMap]
+}
+
+function formatReminderRepeatType(value: string) {
+  return value === 'alternate_day' ? 'alternate-day' : value
+}
+
+function toReminderRepeatTypeDbValue(value: string) {
+  return value === 'alternate_day' ? 'alternate-day' : value
+}
+
+function parseReminderCategory(value?: string) {
+  if (!value || !reminderCategorySet.has(value)) {
+    throw new Error('提醒分类不正确')
+  }
+
+  return value as 'supplement' | 'vaccine' | 'growth' | 'feeding' | 'outing' | 'custom'
+}
+
+function parseReminderStatus(value?: string) {
+  if (!value || !reminderStatusSet.has(value)) {
+    throw new Error('提醒状态不正确')
+  }
+
+  return value as 'pending' | 'done'
+}
+
+function normalizeReminderSource(value?: string | null) {
+  if (!value || !reminderSourceSet.has(value)) {
+    return 'manual'
+  }
+
+  return value
+}
+
+function parseFeedingJournalType(value?: string) {
+  if (!value || !(value in feedingJournalTypeMap)) {
+    throw new Error('喂养记录类型不正确')
+  }
+
+  return feedingJournalTypeMap[value as keyof typeof feedingJournalTypeMap]
+}
+
+function formatFeedingJournalType(value: string) {
+  return feedingJournalTypeReverseMap[value as keyof typeof feedingJournalTypeReverseMap] ?? value
+}
+
+function parseTimeLabel(value?: string | null, options: { required?: boolean; errorMessage?: string } = {}) {
+  const normalized = value?.trim() ?? ''
+
+  if (!normalized) {
+    if (options.required) {
+      throw new Error(options.errorMessage || '时间格式不正确')
+    }
+
+    return null
+  }
+
+  if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(normalized)) {
+    throw new Error(options.errorMessage || '时间格式不正确')
+  }
+
+  return normalized
+}
+
+function parseNumberValue(value: unknown) {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : null
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number(value)
+    return Number.isFinite(parsed) ? parsed : null
+  }
+
+  return null
+}
+
+function getMonthRange(base = getToday()) {
+  const start = createUtcDateOnly(base.getUTCFullYear(), base.getUTCMonth() + 1, 1)
+  const end = createUtcDateOnly(base.getUTCFullYear(), base.getUTCMonth() + 2, 0)
+  return { start, end }
+}
+
 type VaccineScheduleRow = {
   id: string
   name: string
@@ -783,6 +931,12 @@ function formatDateKey(date: Date) {
   const month = String(date.getUTCMonth() + 1).padStart(2, '0')
   const day = String(date.getUTCDate()).padStart(2, '0')
   return `${year}-${month}-${day}`
+}
+
+function formatTimeKey(date: Date) {
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  return `${hours}:${minutes}`
 }
 
 function formatPlanDateLabel(date: Date, options: { isToday?: boolean } = {}) {
@@ -1644,6 +1798,65 @@ async function resolveMealPlanEntryCreates(
   }))
 }
 
+type ResolvedMealPlanEntry = Awaited<ReturnType<typeof resolveMealPlanEntryCreates>>[number]
+
+function buildMealPlanItemMutationData(entry: ResolvedMealPlanEntry) {
+  return {
+    recipeId: entry.recipeId,
+    customRecipeId: entry.customRecipeId,
+    slot: entry.slot,
+    time: entry.time,
+    title: entry.title,
+    focus: entry.focus,
+    snapshotTitle: entry.snapshotTitle,
+    snapshotFocus: entry.snapshotFocus,
+    snapshotImage: entry.snapshotImage,
+    snapshotTagsJson: entry.snapshotTagsJson
+  }
+}
+
+function formatMealSlotLabel(slot: string) {
+  if (slot === 'breakfast') {
+    return '早餐'
+  }
+
+  if (slot === 'lunch') {
+    return '午餐'
+  }
+
+  if (slot === 'dinner') {
+    return '晚餐'
+  }
+
+  return '加餐'
+}
+
+function hasMeaningfulMealPlanItemChange(
+  item: {
+    recipeId: string | null
+    customRecipeId: string | null
+    slot: string
+    time: string
+    title: string
+    focus: string | null
+    snapshotTitle: string | null
+    snapshotFocus: string | null
+  },
+  nextEntry: ResolvedMealPlanEntry
+) {
+  const currentTitle = item.snapshotTitle ?? item.title
+  const currentFocus = item.snapshotFocus ?? item.focus ?? '均衡搭配'
+  const nextTitle = nextEntry.snapshotTitle ?? nextEntry.title
+  const nextFocus = nextEntry.snapshotFocus ?? nextEntry.focus ?? '均衡搭配'
+
+  return item.recipeId !== nextEntry.recipeId
+    || item.customRecipeId !== nextEntry.customRecipeId
+    || item.slot !== nextEntry.slot
+    || item.time !== nextEntry.time
+    || currentTitle !== nextTitle
+    || currentFocus !== nextFocus
+}
+
 function isWechatPlaceholderNickname(nickname: string) {
   return nickname.startsWith('微信用户') || /^wechat\s*user/i.test(nickname)
 }
@@ -2190,7 +2403,8 @@ export async function updateMealPlan(userId: string, mealPlanId: string, payload
     where: {
       id: mealPlanId,
       babyId: baby.id
-    }
+    },
+    include: mealPlanInclude
   })
 
   if (!existingMealPlan) {
@@ -2217,20 +2431,78 @@ export async function updateMealPlan(userId: string, mealPlanId: string, payload
   const normalizedEntries = normalizeMealPlanEntries(payload.entries)
   const entryCreates = await resolveMealPlanEntryCreates(baby.id, normalizedEntries)
 
-  const mealPlan = await prisma.mealPlan.update({
-    where: { id: mealPlanId },
-    data: {
-      title: payload.title?.trim() || existingMealPlan.title,
-      planDate: targetPlanDate,
-      dateLabel: getPlanDateLabel(targetPlanDate, payload.dateLabel),
-      nutritionScore: payload.nutritionScore,
-      waterSuggestion: payload.waterSuggestion,
-      items: {
-        deleteMany: {},
-        create: entryCreates
+  const mealPlan = await prisma.$transaction(async (tx) => {
+    await tx.mealPlan.update({
+      where: { id: mealPlanId },
+      data: {
+        title: payload.title?.trim() || existingMealPlan.title,
+        planDate: targetPlanDate,
+        dateLabel: getPlanDateLabel(targetPlanDate, payload.dateLabel),
+        nutritionScore: payload.nutritionScore,
+        waterSuggestion: payload.waterSuggestion
       }
-    },
-    include: mealPlanInclude
+    })
+
+    const matchedItemIds = new Set<string>()
+
+    for (const entry of entryCreates) {
+      const existingItem = existingMealPlan.items.find((item) => item.slot === entry.slot && !matchedItemIds.has(item.id))
+
+      if (!existingItem) {
+        await tx.mealPlanItem.create({
+          data: {
+            mealPlanId,
+            ...buildMealPlanItemMutationData(entry)
+          }
+        })
+        continue
+      }
+
+      matchedItemIds.add(existingItem.id)
+
+      if (existingItem.feedingRecords.length > 0) {
+        if (hasMeaningfulMealPlanItemChange(existingItem, entry)) {
+          throw new Error(`已记录喂养的${formatMealSlotLabel(existingItem.slot)}不能修改，请到计划页查看`)
+        }
+        continue
+      }
+
+      await tx.mealPlanItem.update({
+        where: { id: existingItem.id },
+        data: buildMealPlanItemMutationData(entry)
+      })
+    }
+
+    const removableItems = existingMealPlan.items.filter((item) => !matchedItemIds.has(item.id))
+    const lockedRemovedItem = removableItems.find((item) => item.feedingRecords.length > 0)
+
+    if (lockedRemovedItem) {
+      throw new Error(`已记录喂养的${formatMealSlotLabel(lockedRemovedItem.slot)}不能删除，请到计划页查看`)
+    }
+
+    if (removableItems.length > 0) {
+      await tx.mealPlanItem.deleteMany({
+        where: {
+          id: {
+            in: removableItems.map((item) => item.id)
+          }
+        }
+      })
+    }
+
+    const refreshedMealPlan = await tx.mealPlan.findFirst({
+      where: {
+        id: mealPlanId,
+        babyId: baby.id
+      },
+      include: mealPlanInclude
+    })
+
+    if (!refreshedMealPlan) {
+      throw new Error('计划刷新失败')
+    }
+
+    return refreshedMealPlan
   })
 
   return {
@@ -2270,22 +2542,78 @@ export async function saveFeedingRecord(userId: string, mealPlanId: string, item
     throw new Error('喂养时间格式不正确')
   }
 
-  const feedingRecord = await prisma.feedingRecord.upsert({
-    where: {
-      mealPlanItemId: itemId
-    },
-    create: {
-      mealPlanId,
-      mealPlanItemId: itemId,
-      status,
-      note,
-      fedAt
-    },
-    update: {
-      status,
-      note,
-      fedAt
+  const feedingRecord = await prisma.$transaction(async (tx) => {
+    const savedRecord = await tx.feedingRecord.upsert({
+      where: {
+        mealPlanItemId: itemId
+      },
+      create: {
+        mealPlanId,
+        mealPlanItemId: itemId,
+        status,
+        note,
+        fedAt
+      },
+      update: {
+        status,
+        note,
+        fedAt
+      }
+    })
+
+    const detailMarker = `"mealPlanItemId":"${itemId}"`
+    const existingJournal = await tx.feedingJournalEntry.findFirst({
+      where: {
+        babyId: baby.id,
+        type: 'solid',
+        detailJson: {
+          contains: detailMarker
+        }
+      }
+    })
+
+    if (status === 'fed') {
+      const journalData = {
+        babyId: baby.id,
+        entryDate: parsePlanDate(formatDateKey(fedAt))!,
+        entryTime: formatTimeKey(fedAt),
+        type: 'solid' as const,
+        title: targetItem.title,
+        description: `${targetItem.title} · 吃完`,
+        amountValue: null,
+        amountUnit: null,
+        note,
+        tagsJson: '[]',
+        source: 'manual',
+        sourceReminderIdsJson: '[]',
+        detailJson: JSON.stringify({
+          solid: {
+            foodName: targetItem.title,
+            intakeLevel: 'finished'
+          },
+          autoFromMealPlan: {
+            mealPlanId,
+            mealPlanItemId: itemId,
+            slot: targetItem.slot
+          }
+        })
+      }
+
+      if (existingJournal) {
+        await tx.feedingJournalEntry.update({
+          where: { id: existingJournal.id },
+          data: journalData
+        })
+      } else {
+        await tx.feedingJournalEntry.create({
+          data: journalData
+        })
+      }
+    } else if (existingJournal) {
+      await tx.feedingJournalEntry.delete({ where: { id: existingJournal.id } })
     }
+
+    return savedRecord
   })
 
   const refreshedMealPlan = await prisma.mealPlan.findFirst({
@@ -2425,6 +2753,776 @@ export async function getBatchRecipeSummaries(recipeIds: string[]) {
       description: recipe.summary ?? ''
     }))
   }
+}
+
+function formatWheelHistoryItem(record: {
+  id: string
+  candidateId: string
+  title: string
+  category: string
+  icon: string
+  ageLabel: string
+  ingredientsJson: string
+  stepsJson: string
+  nutritionTagsJson: string
+  filterTagsJson: string
+  selectedFiltersJson: string
+  generatedAt: Date
+}) {
+  return {
+    id: record.id,
+    candidateId: record.candidateId,
+    title: record.title,
+    category: record.category,
+    icon: record.icon,
+    ageLabel: record.ageLabel,
+    ingredients: parseJsonStringArray(record.ingredientsJson),
+    steps: parseJsonStringArray(record.stepsJson),
+    nutritionTags: parseJsonStringArray(record.nutritionTagsJson),
+    filterTags: parseJsonStringArray(record.filterTagsJson),
+    selectedFilters: parseJsonStringArray(record.selectedFiltersJson),
+    generatedAt: record.generatedAt.toISOString()
+  }
+}
+
+function formatGrowthRecord(record: {
+  id: string
+  measuredAt: Date
+  heightCm: number | null
+  weightKg: number | null
+  headCircumferenceCm: number | null
+}) {
+  return {
+    id: record.id,
+    measuredAt: formatDateKey(record.measuredAt),
+    heightCm: record.heightCm ?? null,
+    weightKg: record.weightKg ?? null,
+    headCircumferenceCm: record.headCircumferenceCm ?? null
+  }
+}
+
+function formatReminderItem(record: {
+  id: string
+  title: string
+  reminderDate: Date
+  reminderTime: string | null
+  repeatType: string
+  status: string
+  category: string
+  customCategoryLabel?: string | null
+  note: string | null
+  completedAt: Date | null
+  source: string | null
+}) {
+  return {
+    id: record.id,
+    title: record.title,
+    date: formatDateKey(record.reminderDate),
+    time: record.reminderTime ?? undefined,
+    repeatType: formatReminderRepeatType(record.repeatType),
+    status: record.status,
+    category: record.category,
+    customCategoryLabel: record.customCategoryLabel ?? undefined,
+    note: record.note ?? undefined,
+    completedAt: record.completedAt ? formatDateKey(record.completedAt) : undefined,
+    source: normalizeReminderSource(record.source)
+  }
+}
+
+function formatFeedingJournalEntry(record: {
+  id: string
+  entryDate: Date
+  entryTime: string
+  type: string
+  title: string
+  description: string
+  amountValue: number | null
+  amountUnit: string | null
+  note: string | null
+  tagsJson: string
+  source: string
+  sourceReminderIdsJson: string
+  detailJson: string
+  createdAt: Date
+  updatedAt: Date
+}) {
+  const detail = parseJsonObject<Record<string, unknown>>(record.detailJson) ?? {}
+
+  return {
+    id: record.id,
+    date: formatDateKey(record.entryDate),
+    time: record.entryTime,
+    type: formatFeedingJournalType(record.type),
+    title: record.title,
+    description: record.description,
+    amountValue: record.amountValue ?? undefined,
+    amountUnit: record.amountUnit ?? undefined,
+    note: record.note ?? undefined,
+    tags: parseJsonStringArray(record.tagsJson),
+    source: record.source === 'reminder' ? 'reminder' : 'manual',
+    sourceReminderIds: parseJsonStringArray(record.sourceReminderIdsJson),
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
+    breast: detail.breast,
+    formula: detail.formula,
+    bottleBreast: detail.bottleBreast,
+    solid: detail.solid,
+    water: detail.water,
+    supplement: detail.supplement,
+    sleep: detail.sleep,
+    diaper: detail.diaper,
+    pump: detail.pump,
+    bath: detail.bath,
+    play: detail.play,
+    swim: detail.swim,
+    other: detail.other
+  }
+}
+
+function normalizeIdArray(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return [...new Set(value.map((item) => typeof item === 'string' ? item.trim() : '').filter(Boolean))]
+}
+
+function buildGrowthRecordWriteInput(payload: Record<string, unknown>) {
+  const measuredAt = parsePlanDate(typeof payload.measuredAt === 'string' ? payload.measuredAt.trim() : '')
+  const heightCm = parseNumberValue(payload.heightCm)
+  const weightKg = parseNumberValue(payload.weightKg)
+  const headCircumferenceCm = parseNumberValue(payload.headCircumferenceCm)
+
+  if (!measuredAt) {
+    throw new Error('测量日期格式不正确')
+  }
+
+  if (heightCm == null && weightKg == null && headCircumferenceCm == null) {
+    throw new Error('请至少填写一项生长数据')
+  }
+
+  return {
+    measuredAt,
+    heightCm,
+    weightKg,
+    headCircumferenceCm
+  }
+}
+
+function buildReminderWriteInput(payload: Record<string, unknown>) {
+  const title = typeof payload.title === 'string' ? payload.title.trim().slice(0, 30) : ''
+  const reminderDate = parsePlanDate(typeof payload.date === 'string' ? payload.date.trim() : '')
+  const reminderTime = parseTimeLabel(typeof payload.time === 'string' ? payload.time : undefined, { errorMessage: '提醒时间格式不正确' })
+  const repeatType = parseReminderRepeatType(typeof payload.repeatType === 'string' ? payload.repeatType : undefined)
+  const category = parseReminderCategory(typeof payload.category === 'string' ? payload.category : undefined)
+  const customCategoryLabel = typeof payload.customCategoryLabel === 'string' ? payload.customCategoryLabel.trim().slice(0, 20) : ''
+  const note = typeof payload.note === 'string' ? payload.note.trim().slice(0, 200) : ''
+  const source = normalizeReminderSource(typeof payload.source === 'string' ? payload.source : undefined)
+
+  if (!title) {
+    throw new Error('请填写提醒标题')
+  }
+
+  if (!reminderDate) {
+    throw new Error('提醒日期格式不正确')
+  }
+
+  if (category === 'custom' && !customCategoryLabel) {
+    throw new Error('请填写自定义分类')
+  }
+
+  return {
+    title,
+    reminderDate,
+    reminderTime,
+    repeatType,
+    category,
+    customCategoryLabel: category === 'custom' ? customCategoryLabel : null,
+    note: note || null,
+    source
+  }
+}
+
+function buildFeedingJournalWriteInput(payload: Record<string, unknown>) {
+  const entryDate = parsePlanDate(typeof payload.date === 'string' ? payload.date.trim() : '')
+  const entryTime = parseTimeLabel(typeof payload.time === 'string' ? payload.time : undefined, { required: true, errorMessage: '记录时间格式不正确' })
+  const type = parseFeedingJournalType(typeof payload.type === 'string' ? payload.type : undefined)
+  const title = typeof payload.title === 'string' ? payload.title.trim().slice(0, 40) : ''
+  const description = typeof payload.description === 'string' ? payload.description.trim().slice(0, 200) : ''
+  const amountValue = parseNumberValue(payload.amountValue)
+  const amountUnit = typeof payload.amountUnit === 'string' ? payload.amountUnit.trim().slice(0, 16) : ''
+  const note = typeof payload.note === 'string' ? payload.note.trim().slice(0, 200) : ''
+  const tags = Array.isArray(payload.tags)
+    ? normalizeTags(payload.tags.filter((item): item is string => typeof item === 'string'))
+    : []
+  const source = typeof payload.source === 'string' && payload.source === 'reminder' ? 'reminder' : 'manual'
+  const sourceReminderIds = normalizeIdArray(payload.sourceReminderIds)
+  const detail = Object.fromEntries(Object.entries({
+    breast: payload.breast,
+    formula: payload.formula,
+    bottleBreast: payload.bottleBreast,
+    solid: payload.solid,
+    water: payload.water,
+    supplement: payload.supplement,
+    sleep: payload.sleep,
+    diaper: payload.diaper,
+    pump: payload.pump,
+    bath: payload.bath,
+    play: payload.play,
+    swim: payload.swim,
+    other: payload.other
+  }).filter(([, value]) => value !== undefined))
+
+  if (!entryDate) {
+    throw new Error('记录日期格式不正确')
+  }
+
+  if (!title) {
+    throw new Error('请填写记录标题')
+  }
+
+  if (!description) {
+    throw new Error('请填写记录说明')
+  }
+
+  return {
+    entryDate,
+    entryTime: entryTime!,
+    type,
+    title,
+    description,
+    amountValue,
+    amountUnit: amountUnit || null,
+    note: note || null,
+    tagsJson: JSON.stringify(tags),
+    source,
+    sourceReminderIds,
+    sourceReminderIdsJson: JSON.stringify(sourceReminderIds),
+    detailJson: JSON.stringify(detail)
+  }
+}
+
+function buildFeedingJournalWhere(scope?: string, anchorDateValue?: string, types: string[] = []) {
+  const anchorDate = parsePlanDate(anchorDateValue) ?? getToday()
+  const where: Record<string, unknown> = {}
+
+  if (scope === 'week') {
+    const range = getWeekRange(anchorDate)
+    where.entryDate = {
+      gte: range.start,
+      lte: range.end
+    }
+  } else if (scope === 'month') {
+    const range = getMonthRange(anchorDate)
+    where.entryDate = {
+      gte: range.start,
+      lte: range.end
+    }
+  }
+
+  if (types.length) {
+    where.type = {
+      in: types.map((item) => parseFeedingJournalType(item))
+    }
+  }
+
+  return where
+}
+
+export async function getWheelHistory(userId: string, limit = 6) {
+  const take = Math.min(Math.max(limit, 1), 20)
+  const items = await prisma.wheelGenerationHistory.findMany({
+    where: { userId },
+    orderBy: { generatedAt: 'desc' },
+    take
+  })
+
+  return {
+    items: items.map(formatWheelHistoryItem)
+  }
+}
+
+export async function createWheelHistoryEntry(userId: string, payload: Record<string, unknown>) {
+  const candidate = payload.candidate && typeof payload.candidate === 'object'
+    ? payload.candidate as Record<string, unknown>
+    : null
+
+  if (!candidate) {
+    throw new Error('缺少转盘结果')
+  }
+
+  const candidateId = typeof candidate.id === 'string' ? candidate.id.trim() : ''
+  const title = typeof candidate.title === 'string' ? candidate.title.trim() : ''
+  const category = typeof candidate.category === 'string' ? candidate.category.trim() : ''
+  const icon = typeof candidate.icon === 'string' ? candidate.icon.trim() : ''
+  const ageLabel = typeof candidate.ageLabel === 'string' ? candidate.ageLabel.trim() : ''
+  const ingredients = Array.isArray(candidate.ingredients)
+    ? candidate.ingredients.filter((item): item is string => typeof item === 'string')
+    : []
+  const steps = Array.isArray(candidate.steps)
+    ? candidate.steps.filter((item): item is string => typeof item === 'string')
+    : []
+  const nutritionTags = Array.isArray(candidate.nutritionTags)
+    ? candidate.nutritionTags.filter((item): item is string => typeof item === 'string')
+    : []
+  const filterTags = Array.isArray(candidate.filterTags)
+    ? candidate.filterTags.filter((item): item is string => typeof item === 'string')
+    : []
+  const selectedFilters = Array.isArray(payload.selectedFilters)
+    ? payload.selectedFilters.filter((item): item is string => typeof item === 'string')
+    : []
+
+  if (!candidateId || !title || !category) {
+    throw new Error('转盘结果不完整')
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.wheelGenerationHistory.create({
+      data: {
+        userId,
+        candidateId,
+        title,
+        category,
+        icon,
+        ageLabel,
+        ingredientsJson: JSON.stringify(ingredients),
+        stepsJson: JSON.stringify(steps),
+        nutritionTagsJson: JSON.stringify(nutritionTags),
+        filterTagsJson: JSON.stringify(filterTags),
+        selectedFiltersJson: JSON.stringify(selectedFilters)
+      }
+    })
+
+    const duplicateIds = await tx.wheelGenerationHistory.findMany({
+      where: { userId, candidateId },
+      orderBy: { generatedAt: 'desc' },
+      skip: 1,
+      select: { id: true }
+    })
+
+    if (duplicateIds.length) {
+      await tx.wheelGenerationHistory.deleteMany({
+        where: {
+          id: {
+            in: duplicateIds.map((item) => item.id)
+          }
+        }
+      })
+    }
+
+    const overflowIds = await tx.wheelGenerationHistory.findMany({
+      where: { userId },
+      orderBy: { generatedAt: 'desc' },
+      skip: 6,
+      select: { id: true }
+    })
+
+    if (overflowIds.length) {
+      await tx.wheelGenerationHistory.deleteMany({
+        where: {
+          id: {
+            in: overflowIds.map((item) => item.id)
+          }
+        }
+      })
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function listGrowthRecords(userId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const items = await prisma.growthRecord.findMany({
+    where: { babyId: baby.id },
+    orderBy: [
+      { measuredAt: 'desc' },
+      { createdAt: 'desc' }
+    ]
+  })
+
+  return {
+    items: items.map(formatGrowthRecord)
+  }
+}
+
+export async function createGrowthRecord(userId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildGrowthRecordWriteInput(payload)
+
+  await prisma.growthRecord.create({
+    data: {
+      babyId: baby.id,
+      ...input
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function updateGrowthRecord(userId: string, recordId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildGrowthRecordWriteInput(payload)
+  const existing = await prisma.growthRecord.findFirst({
+    where: {
+      id: recordId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应生长记录')
+  }
+
+  await prisma.growthRecord.update({
+    where: { id: existing.id },
+    data: input
+  })
+
+  return { saved: true }
+}
+
+export async function deleteGrowthRecord(userId: string, recordId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const existing = await prisma.growthRecord.findFirst({
+    where: {
+      id: recordId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应生长记录')
+  }
+
+  await prisma.growthRecord.delete({ where: { id: existing.id } })
+  return { removed: true }
+}
+
+export async function listReminderItems(userId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const items = await prisma.$queryRaw<Array<{
+    id: string
+    title: string
+    reminderDate: Date
+    reminderTime: string | null
+    repeatType: string
+    status: string
+    category: string
+    customCategoryLabel: string | null
+    note: string | null
+    completedAt: Date | null
+    source: string | null
+  }>>`
+    SELECT
+      id,
+      title,
+      reminder_date AS "reminderDate",
+      reminder_time AS "reminderTime",
+      repeat_type::text AS "repeatType",
+      status::text AS status,
+      category::text AS category,
+      custom_category_label AS "customCategoryLabel",
+      note,
+      completed_at AS "completedAt",
+      source
+    FROM baby_reminders
+    WHERE baby_id = ${baby.id}
+    ORDER BY reminder_date ASC, reminder_time ASC NULLS LAST, created_at ASC
+  `
+
+  return {
+    items: items.map(formatReminderItem)
+  }
+}
+
+export async function createReminderItem(userId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildReminderWriteInput(payload)
+  const id = `rem-${Date.now()}-${randomBytes(4).toString('hex')}`
+
+  await prisma.$executeRaw`
+    INSERT INTO baby_reminders (
+      id,
+      baby_id,
+      title,
+      reminder_date,
+      reminder_time,
+      repeat_type,
+      status,
+      category,
+      custom_category_label,
+      note,
+      source,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${id},
+      ${baby.id},
+      ${input.title},
+      ${input.reminderDate},
+      ${input.reminderTime},
+      ${toReminderRepeatTypeDbValue(input.repeatType)}::reminder_repeat_type,
+      'pending'::reminder_status,
+      ${input.category}::reminder_category,
+      ${input.customCategoryLabel},
+      ${input.note},
+      ${input.source},
+      NOW(),
+      NOW()
+    )
+  `
+
+  return { saved: true }
+}
+
+export async function updateReminderItem(userId: string, reminderId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildReminderWriteInput(payload)
+  const existing = await prisma.$queryRaw<Array<{
+    id: string
+    status: string
+    completedAt: Date | null
+  }>>`
+    SELECT id, status::text AS status, completed_at AS "completedAt"
+    FROM baby_reminders
+    WHERE id = ${reminderId} AND baby_id = ${baby.id}
+    LIMIT 1
+  `
+
+  if (!existing[0]) {
+    throw new Error('未找到对应提醒')
+  }
+
+  await prisma.$executeRaw`
+    UPDATE baby_reminders
+    SET
+      title = ${input.title},
+      reminder_date = ${input.reminderDate},
+      reminder_time = ${input.reminderTime},
+      repeat_type = ${toReminderRepeatTypeDbValue(input.repeatType)}::reminder_repeat_type,
+      category = ${input.category}::reminder_category,
+      custom_category_label = ${input.customCategoryLabel},
+      note = ${input.note},
+      source = ${input.source},
+      updated_at = NOW()
+    WHERE id = ${existing[0].id}
+  `
+
+  return { saved: true }
+}
+
+export async function toggleReminderDone(userId: string, reminderId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const existing = await prisma.babyReminder.findFirst({
+    where: {
+      id: reminderId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应提醒')
+  }
+
+  const nextStatus = existing.status === 'done' ? 'pending' : 'done'
+
+  await prisma.babyReminder.update({
+    where: { id: existing.id },
+    data: {
+      status: nextStatus,
+      completedAt: nextStatus === 'done' ? new Date() : null
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function markReminderItemsDone(userId: string, ids: string[]) {
+  const baby = await ensureCurrentBaby(userId)
+  const normalizedIds = normalizeIdArray(ids)
+
+  if (!normalizedIds.length) {
+    return { saved: true }
+  }
+
+  await prisma.babyReminder.updateMany({
+    where: {
+      babyId: baby.id,
+      id: { in: normalizedIds },
+      status: 'pending'
+    },
+    data: {
+      status: 'done',
+      completedAt: new Date()
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function deleteReminderItem(userId: string, reminderId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const existing = await prisma.babyReminder.findFirst({
+    where: {
+      id: reminderId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应提醒')
+  }
+
+  await prisma.babyReminder.delete({ where: { id: existing.id } })
+  return { removed: true }
+}
+
+export async function listFeedingJournalEntries(userId: string, options: {
+  scope?: string
+  anchorDate?: string
+  types?: string[]
+}) {
+  const baby = await ensureCurrentBaby(userId)
+  const items = await prisma.feedingJournalEntry.findMany({
+    where: {
+      babyId: baby.id,
+      ...buildFeedingJournalWhere(options.scope, options.anchorDate, options.types)
+    },
+    orderBy: [
+      { entryDate: 'desc' },
+      { entryTime: 'desc' },
+      { createdAt: 'desc' }
+    ]
+  })
+
+  return {
+    items: items.map(formatFeedingJournalEntry)
+  }
+}
+
+export async function getFeedingJournalEntryDetail(userId: string, entryId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const entry = await prisma.feedingJournalEntry.findFirst({
+    where: {
+      id: entryId,
+      babyId: baby.id
+    }
+  })
+
+  if (!entry) {
+    throw new Error('未找到对应喂养记录')
+  }
+
+  return formatFeedingJournalEntry(entry)
+}
+
+export async function createFeedingJournalEntry(userId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildFeedingJournalWriteInput(payload)
+
+  await prisma.$transaction(async (tx) => {
+    await tx.feedingJournalEntry.create({
+      data: {
+        babyId: baby.id,
+        entryDate: input.entryDate,
+        entryTime: input.entryTime,
+        type: input.type,
+        title: input.title,
+        description: input.description,
+        amountValue: input.amountValue,
+        amountUnit: input.amountUnit,
+        note: input.note,
+        tagsJson: input.tagsJson,
+        source: input.source,
+        sourceReminderIdsJson: input.sourceReminderIdsJson,
+        detailJson: input.detailJson
+      }
+    })
+
+    if (input.sourceReminderIds.length) {
+      await tx.babyReminder.updateMany({
+        where: {
+          babyId: baby.id,
+          id: { in: input.sourceReminderIds }
+        },
+        data: {
+          status: 'done',
+          completedAt: new Date()
+        }
+      })
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function updateFeedingJournalEntry(userId: string, entryId: string, payload: Record<string, unknown>) {
+  const baby = await ensureCurrentBaby(userId)
+  const input = buildFeedingJournalWriteInput(payload)
+  const existing = await prisma.feedingJournalEntry.findFirst({
+    where: {
+      id: entryId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应喂养记录')
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.feedingJournalEntry.update({
+      where: { id: existing.id },
+      data: {
+        entryDate: input.entryDate,
+        entryTime: input.entryTime,
+        type: input.type,
+        title: input.title,
+        description: input.description,
+        amountValue: input.amountValue,
+        amountUnit: input.amountUnit,
+        note: input.note,
+        tagsJson: input.tagsJson,
+        source: input.source,
+        sourceReminderIdsJson: input.sourceReminderIdsJson,
+        detailJson: input.detailJson
+      }
+    })
+
+    if (input.sourceReminderIds.length) {
+      await tx.babyReminder.updateMany({
+        where: {
+          babyId: baby.id,
+          id: { in: input.sourceReminderIds }
+        },
+        data: {
+          status: 'done',
+          completedAt: new Date()
+        }
+      })
+    }
+  })
+
+  return { saved: true }
+}
+
+export async function deleteFeedingJournalEntry(userId: string, entryId: string) {
+  const baby = await ensureCurrentBaby(userId)
+  const existing = await prisma.feedingJournalEntry.findFirst({
+    where: {
+      id: entryId,
+      babyId: baby.id
+    }
+  })
+
+  if (!existing) {
+    throw new Error('未找到对应喂养记录')
+  }
+
+  await prisma.feedingJournalEntry.delete({ where: { id: existing.id } })
+  return { removed: true }
 }
 
 export async function getVaccinePageData(userId?: string) {

@@ -3,6 +3,10 @@ CREATE TYPE review_status AS ENUM ('none', 'pending', 'approved', 'rejected');
 CREATE TYPE baby_member_role AS ENUM ('owner', 'collaborator', 'caregiver', 'viewer');
 CREATE TYPE baby_invite_status AS ENUM ('pending', 'accepted', 'declined', 'revoked', 'expired');
 CREATE TYPE feeding_record_status AS ENUM ('fed', 'skipped');
+CREATE TYPE reminder_repeat_type AS ENUM ('once', 'daily', 'alternate-day', 'weekly', 'monthly');
+CREATE TYPE reminder_status AS ENUM ('pending', 'done');
+CREATE TYPE reminder_category AS ENUM ('supplement', 'vaccine', 'growth', 'feeding', 'outing', 'custom');
+CREATE TYPE feeding_journal_type AS ENUM ('breast', 'formula', 'bottle-breast', 'sleep', 'diaper', 'pump', 'solid', 'bath', 'play', 'swim', 'water', 'supplement', 'other');
 CREATE TYPE vaccine_category AS ENUM ('free', 'optional');
 CREATE TYPE vaccine_record_status AS ENUM ('pending', 'completed', 'optional');
 CREATE TYPE knowledge_content_type AS ENUM ('article', 'guide', 'taboo');
@@ -162,6 +166,82 @@ CREATE TABLE feeding_records (
 );
 
 CREATE INDEX idx_feeding_records_meal_plan_id ON feeding_records(meal_plan_id);
+
+CREATE TABLE wheel_generation_histories (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL REFERENCES users(id),
+  candidate_id TEXT NOT NULL,
+  title TEXT NOT NULL,
+  category TEXT NOT NULL,
+  icon TEXT NOT NULL,
+  age_label TEXT NOT NULL,
+  ingredients_json TEXT NOT NULL DEFAULT '[]',
+  steps_json TEXT NOT NULL DEFAULT '[]',
+  nutrition_tags_json TEXT NOT NULL DEFAULT '[]',
+  filter_tags_json TEXT NOT NULL DEFAULT '[]',
+  selected_filters_json TEXT NOT NULL DEFAULT '[]',
+  generated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_wheel_generation_histories_user_generated_at ON wheel_generation_histories(user_id, generated_at);
+
+CREATE TABLE growth_records (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  measured_at DATE NOT NULL,
+  height_cm DOUBLE PRECISION,
+  weight_kg DOUBLE PRECISION,
+  head_circumference_cm DOUBLE PRECISION,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT chk_growth_records_metric_presence CHECK (
+    height_cm IS NOT NULL OR weight_kg IS NOT NULL OR head_circumference_cm IS NOT NULL
+  )
+);
+
+CREATE INDEX idx_growth_records_baby_measured_at ON growth_records(baby_id, measured_at);
+
+CREATE TABLE baby_reminders (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  title TEXT NOT NULL,
+  reminder_date DATE NOT NULL,
+  reminder_time TEXT,
+  repeat_type reminder_repeat_type NOT NULL,
+  status reminder_status NOT NULL DEFAULT 'pending',
+  category reminder_category NOT NULL,
+  custom_category_label TEXT,
+  note TEXT,
+  completed_at TIMESTAMP,
+  source TEXT DEFAULT 'manual',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_baby_reminders_baby_date_time ON baby_reminders(baby_id, reminder_date, reminder_time);
+CREATE INDEX idx_baby_reminders_baby_status_date ON baby_reminders(baby_id, status, reminder_date);
+
+CREATE TABLE feeding_journal_entries (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  entry_date DATE NOT NULL,
+  entry_time TEXT NOT NULL,
+  type feeding_journal_type NOT NULL,
+  title TEXT NOT NULL,
+  description TEXT NOT NULL,
+  amount_value DOUBLE PRECISION,
+  amount_unit TEXT,
+  note TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  source TEXT NOT NULL DEFAULT 'manual',
+  source_reminder_ids_json TEXT NOT NULL DEFAULT '[]',
+  detail_json TEXT NOT NULL DEFAULT '{}',
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_feeding_journal_entries_baby_date_time ON feeding_journal_entries(baby_id, entry_date, entry_time);
+CREATE INDEX idx_feeding_journal_entries_baby_type_date ON feeding_journal_entries(baby_id, type, entry_date);
 
 CREATE TABLE guide_stages (
   id TEXT PRIMARY KEY,

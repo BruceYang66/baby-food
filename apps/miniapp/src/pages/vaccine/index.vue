@@ -17,6 +17,7 @@ const loading = ref(false)
 const activeTab = ref<TabKey>('timeline')
 const showDatePicker = ref(false)
 const currentVaccineItem = ref<VaccineRecordItem | null>(null)
+const datePickerValue = computed(() => currentVaccineItem.value?.vaccinatedAt || new Date().toISOString().split('T')[0])
 const { showBackToTop, scrollViewTop, handleScrollViewScroll, scrollScrollViewToTop } = useBackToTop()
 
 // 按月龄排序时间轴组
@@ -58,7 +59,11 @@ const completedFree = computed(() => freeVaccines.value.filter((item) => item.st
 const pendingFree = computed(() => freeVaccines.value.filter((item) => item.status === 'pending').length)
 const recordedOptional = computed(() => optionalVaccines.value.filter((item) => item.status === 'completed').length)
 const availableOptional = computed(() => optionalVaccines.value.length)
-const completedItems = computed(() => allItems.value.filter((item) => item.status === 'completed'))
+const completedItems = computed(() =>
+  allItems.value
+    .filter((item) => item.status === 'completed')
+    .sort((a, b) => (b.vaccinatedAt || '').localeCompare(a.vaccinatedAt || ''))
+)
 
 function switchTab(tab: TabKey) {
   activeTab.value = tab
@@ -412,7 +417,9 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
 
     <DatePickerModal
       :show="showDatePicker"
+      :value="datePickerValue"
       title="选择接种日期"
+      label="接种日期"
       @close="handleDatePickerClose"
       @confirm="handleDatePickerConfirm"
     />

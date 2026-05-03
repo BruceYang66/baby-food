@@ -13,28 +13,39 @@ import type {
   BatchRecipeSummaryResponse,
   CreateFamilyInvitePayload,
   CreateFamilyInviteResponse,
+  CreateWheelHistoryPayload,
   FamilyInvitesResponse,
   FamilyMembersResponse,
+  FeedingJournalEntry,
+  FeedingJournalListResponse,
   GeneratePageData,
+  GrowthRecord,
+  GrowthRecordsResponse,
   GuideStage,
   HomeFeature,
   HomeShortcut,
   IngredientHighlight,
   KnowledgeArticleDetail,
   KnowledgePageData,
+  MarkRemindersDonePayload,
   MealCount,
   MealPlanDetail,
   NutritionGoal,
   PlanPageData,
   ProfilePageData,
+  ReminderItem,
+  ReminderListResponse,
+  SaveFeedingJournalEntryPayload,
   SaveFeedingRecordPayload,
   SaveFeedingRecordResponse,
   SaveMealPlanPayload,
   SaveMealPlanResponse,
+  SaveReminderPayload,
   SaveVaccineRecordPayload,
   SwapMealPlanResponse,
   TabooGuide,
-  VaccinePageData
+  VaccinePageData,
+  WheelHistoryResponse
 } from '@baby-food/shared-types'
 import { appConfig } from '@/config/app'
 
@@ -471,6 +482,115 @@ export function activateBaby(babyId: string) {
 
 export function getHomeData() {
   return request<HomePageData>('/app/home')
+}
+
+export function getWheelHistory(limit = 6) {
+  return request<WheelHistoryResponse>(`/app/wheel/history?limit=${limit}`).then((data) => data.items)
+}
+
+export function createWheelHistory(payload: CreateWheelHistoryPayload) {
+  return request<{ saved: boolean }>('/app/wheel/history', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function getGrowthRecords() {
+  return request<GrowthRecordsResponse>('/app/growth/records').then((data) => data.items)
+}
+
+export function createGrowthRecord(payload: Pick<GrowthRecord, 'measuredAt' | 'heightCm' | 'weightKg' | 'headCircumferenceCm'>) {
+  return request<{ saved: boolean }>('/app/growth/records', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function updateGrowthRecordEntry(recordId: string, payload: Pick<GrowthRecord, 'measuredAt' | 'heightCm' | 'weightKg' | 'headCircumferenceCm'>) {
+  return request<{ saved: boolean }>(`/app/growth/records/${recordId}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+export function deleteGrowthRecordEntry(recordId: string) {
+  return request<{ removed: boolean }>(`/app/growth/records/${recordId}`, {
+    method: 'DELETE'
+  })
+}
+
+export function getReminderItems() {
+  return request<ReminderListResponse>('/app/reminders').then((data) => data.items)
+}
+
+export function createReminder(payload: SaveReminderPayload) {
+  return request<{ saved: boolean }>('/app/reminders', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function updateReminder(reminderId: string, payload: SaveReminderPayload) {
+  return request<{ saved: boolean }>(`/app/reminders/${reminderId}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+export function toggleReminderDoneStatus(reminderId: string) {
+  return request<{ saved: boolean }>(`/app/reminders/${reminderId}/toggle-done`, {
+    method: 'POST'
+  })
+}
+
+export function markReminderItemsDone(payload: MarkRemindersDonePayload) {
+  return request<{ saved: boolean }>('/app/reminders/mark-done', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function removeReminderItem(reminderId: string) {
+  return request<{ removed: boolean }>(`/app/reminders/${reminderId}`, {
+    method: 'DELETE'
+  })
+}
+
+export function getFeedingJournalEntries(params?: {
+  scope?: 'week' | 'month' | 'all'
+  anchorDate?: string
+  types?: string[]
+}) {
+  const parts: string[] = []
+  if (params?.scope) parts.push(`scope=${encodeURIComponent(params.scope)}`)
+  if (params?.anchorDate) parts.push(`anchorDate=${encodeURIComponent(params.anchorDate)}`)
+  if (params?.types?.length) parts.push(`types=${encodeURIComponent(params.types.join(','))}`)
+  const qs = parts.join('&')
+  return request<FeedingJournalListResponse>(`/app/feeding-journal${qs ? `?${qs}` : ''}`).then((data) => data.items)
+}
+
+export function getFeedingJournalEntryDetail(entryId: string) {
+  return request<FeedingJournalEntry>(`/app/feeding-journal/${entryId}`)
+}
+
+export function createFeedingJournalEntry(payload: SaveFeedingJournalEntryPayload) {
+  return request<{ saved: boolean }>('/app/feeding-journal', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function updateFeedingJournalEntry(entryId: string, payload: SaveFeedingJournalEntryPayload) {
+  return request<{ saved: boolean }>(`/app/feeding-journal/${entryId}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+export function removeFeedingJournalEntry(entryId: string) {
+  return request<{ removed: boolean }>(`/app/feeding-journal/${entryId}`, {
+    method: 'DELETE'
+  })
 }
 
 export function getGeneratePageData(payload?: {

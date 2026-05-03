@@ -9,6 +9,10 @@ COMMENT ON TYPE review_status IS '食谱审核状态：none=未发起，pending=
 COMMENT ON TYPE baby_member_role IS '宝宝共享成员角色：owner=所有者，collaborator=协作者，caregiver=照护者，viewer=只读查看者';
 COMMENT ON TYPE baby_invite_status IS '宝宝共享邀请状态：pending=待处理，accepted=已接受，declined=已拒绝，revoked=已撤销，expired=已过期';
 COMMENT ON TYPE feeding_record_status IS '喂养记录状态：fed=已喂养，skipped=跳过/未进食';
+COMMENT ON TYPE reminder_repeat_type IS '提醒重复方式：once=一次，daily=每天，alternate-day=隔天，weekly=每周，monthly=每月';
+COMMENT ON TYPE reminder_status IS '提醒完成状态：pending=待完成，done=已完成';
+COMMENT ON TYPE reminder_category IS '提醒分类：supplement=补剂，vaccine=疫苗，growth=生长测量，feeding=喂养，outing=外出，custom=自定义';
+COMMENT ON TYPE feeding_journal_type IS '喂养日记类型：覆盖母乳、配方奶、瓶喂母乳、睡眠、尿布、吸奶、辅食、洗澡、玩耍、游泳、饮水、补剂及其他事件';
 COMMENT ON TYPE vaccine_category IS '疫苗分类：free=免疫规划内，optional=非免疫规划可选';
 COMMENT ON TYPE vaccine_record_status IS '疫苗接种记录状态：pending=待接种，completed=已完成，optional=本次可选/暂不接种';
 COMMENT ON TYPE knowledge_content_type IS '干货内容类型：article=文章，guide=指南，taboo=禁忌/病症饮食';
@@ -154,6 +158,69 @@ COMMENT ON COLUMN feeding_records.note           IS '喂养备注，如：吃了
 COMMENT ON COLUMN feeding_records.fed_at         IS '实际喂养时间，可为空';
 COMMENT ON COLUMN feeding_records.created_at     IS '记录创建时间';
 COMMENT ON COLUMN feeding_records.updated_at     IS '记录更新时间';
+
+-- ── wheel_generation_histories ──────────────────────────────────
+COMMENT ON TABLE  wheel_generation_histories                     IS '辅食转盘历史表，按用户维度记录每次转盘结果快照';
+COMMENT ON COLUMN wheel_generation_histories.id                  IS '转盘历史唯一标识';
+COMMENT ON COLUMN wheel_generation_histories.user_id             IS '所属用户 ID，关联 users.id，仅当前用户可见';
+COMMENT ON COLUMN wheel_generation_histories.candidate_id        IS '候选食谱/结果的原始标识';
+COMMENT ON COLUMN wheel_generation_histories.title               IS '转盘结果标题快照';
+COMMENT ON COLUMN wheel_generation_histories.category            IS '转盘分类快照，如 vegetable、protein';
+COMMENT ON COLUMN wheel_generation_histories.icon                IS '结果图标快照';
+COMMENT ON COLUMN wheel_generation_histories.age_label           IS '适用月龄标签快照';
+COMMENT ON COLUMN wheel_generation_histories.ingredients_json    IS '食材列表 JSON 数组快照';
+COMMENT ON COLUMN wheel_generation_histories.steps_json          IS '步骤列表 JSON 数组快照';
+COMMENT ON COLUMN wheel_generation_histories.nutrition_tags_json IS '营养标签 JSON 数组快照';
+COMMENT ON COLUMN wheel_generation_histories.filter_tags_json    IS '筛选标签 JSON 数组快照';
+COMMENT ON COLUMN wheel_generation_histories.selected_filters_json IS '本次转盘实际选择的筛选条件 JSON 数组';
+COMMENT ON COLUMN wheel_generation_histories.generated_at        IS '本次转盘结果生成时间';
+
+-- ── growth_records ─────────────────────────────────────────────
+COMMENT ON TABLE  growth_records                                 IS '宝宝生长记录表，按宝宝维度保存身高、体重、头围测量数据';
+COMMENT ON COLUMN growth_records.id                              IS '生长记录唯一标识';
+COMMENT ON COLUMN growth_records.baby_id                         IS '所属宝宝 ID，关联 babies.id；同一宝宝亲友团看到同一份数据';
+COMMENT ON COLUMN growth_records.measured_at                     IS '测量日期';
+COMMENT ON COLUMN growth_records.height_cm                       IS '身高，单位 cm';
+COMMENT ON COLUMN growth_records.weight_kg                       IS '体重，单位 kg';
+COMMENT ON COLUMN growth_records.head_circumference_cm           IS '头围，单位 cm，可为空';
+COMMENT ON COLUMN growth_records.created_at                      IS '记录创建时间';
+COMMENT ON COLUMN growth_records.updated_at                      IS '记录更新时间';
+
+-- ── baby_reminders ─────────────────────────────────────────────
+COMMENT ON TABLE  baby_reminders                                 IS '宝宝提醒待办表，按宝宝维度保存补剂、疫苗、喂养、生长等提醒';
+COMMENT ON COLUMN baby_reminders.id                              IS '提醒唯一标识';
+COMMENT ON COLUMN baby_reminders.baby_id                         IS '所属宝宝 ID，关联 babies.id；同一宝宝亲友团共享';
+COMMENT ON COLUMN baby_reminders.title                           IS '提醒标题，如：服用 AD 滴剂';
+COMMENT ON COLUMN baby_reminders.reminder_date                   IS '提醒日期';
+COMMENT ON COLUMN baby_reminders.reminder_time                   IS '提醒时间，格式 HH:mm，可为空';
+COMMENT ON COLUMN baby_reminders.repeat_type                     IS '重复方式，见 reminder_repeat_type 枚举';
+COMMENT ON COLUMN baby_reminders.status                          IS '完成状态，见 reminder_status 枚举';
+COMMENT ON COLUMN baby_reminders.category                        IS '提醒分类，见 reminder_category 枚举';
+COMMENT ON COLUMN baby_reminders.custom_category_label           IS '当 category=custom 时的自定义分类名称';
+COMMENT ON COLUMN baby_reminders.note                            IS '备注信息，可为空';
+COMMENT ON COLUMN baby_reminders.completed_at                    IS '实际完成时间，可为空';
+COMMENT ON COLUMN baby_reminders.source                          IS '提醒来源，如 manual=手动创建，system=系统生成';
+COMMENT ON COLUMN baby_reminders.created_at                      IS '记录创建时间';
+COMMENT ON COLUMN baby_reminders.updated_at                      IS '记录更新时间';
+
+-- ── feeding_journal_entries ────────────────────────────────────
+COMMENT ON TABLE  feeding_journal_entries                        IS '宝宝喂养日记表，按宝宝维度保存母乳、配方奶、辅食、饮水、补剂等日记事件';
+COMMENT ON COLUMN feeding_journal_entries.id                     IS '日记条目唯一标识';
+COMMENT ON COLUMN feeding_journal_entries.baby_id                IS '所属宝宝 ID，关联 babies.id；同一宝宝亲友团共享';
+COMMENT ON COLUMN feeding_journal_entries.entry_date             IS '记录日期';
+COMMENT ON COLUMN feeding_journal_entries.entry_time             IS '记录时间，格式 HH:mm';
+COMMENT ON COLUMN feeding_journal_entries.type                   IS '记录类型，见 feeding_journal_type 枚举';
+COMMENT ON COLUMN feeding_journal_entries.title                  IS '条目标题';
+COMMENT ON COLUMN feeding_journal_entries.description            IS '条目说明文字';
+COMMENT ON COLUMN feeding_journal_entries.amount_value           IS '数值型摄入量/时长等主值，可为空';
+COMMENT ON COLUMN feeding_journal_entries.amount_unit            IS '主值单位，如 ml、分钟、滴，可为空';
+COMMENT ON COLUMN feeding_journal_entries.note                   IS '备注，可为空';
+COMMENT ON COLUMN feeding_journal_entries.tags_json              IS '标签 JSON 数组，如不适反应、快捷标签';
+COMMENT ON COLUMN feeding_journal_entries.source                 IS '记录来源，如 manual=手动记录，reminder=提醒联动';
+COMMENT ON COLUMN feeding_journal_entries.source_reminder_ids_json IS '关联提醒 ID 列表 JSON 数组';
+COMMENT ON COLUMN feeding_journal_entries.detail_json            IS '各记录类型特有结构的 JSON 快照';
+COMMENT ON COLUMN feeding_journal_entries.created_at             IS '记录创建时间';
+COMMENT ON COLUMN feeding_journal_entries.updated_at             IS '记录更新时间';
 
 -- ── guide_stages ──────────────────────────────────────────────
 COMMENT ON TABLE  guide_stages             IS '月龄饮食指南阶段表，每条记录对应一个月龄区间';

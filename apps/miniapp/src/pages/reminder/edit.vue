@@ -3,13 +3,8 @@ import { computed, ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import type { ReminderCategory, ReminderRepeatType } from '@baby-food/shared-types'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
-import {
-  getReminderById,
-  getReminderCategoryOptions,
-  getReminderRepeatOptions,
-  removeReminder,
-  saveReminder
-} from '@/services/local-reminder'
+import { createReminder, getReminderItems, removeReminderItem, updateReminder } from '@/services/api'
+import { getReminderCategoryOptions, getReminderRepeatOptions } from '@/services/local-reminder'
 
 function getStatusBarHeight() {
   if (typeof uni.getWindowInfo === 'function') {
@@ -40,6 +35,7 @@ const title = ref('')
 const date = ref(formatYmd(new Date()))
 const time = ref('09:00')
 const category = ref<ReminderCategory>('supplement')
+const customCategoryLabel = ref('')
 const repeatType = ref<ReminderRepeatType>('once')
 const note = ref('')
 const showDatePicker = ref(false)
@@ -47,7 +43,7 @@ const categoryOptions = getReminderCategoryOptions()
 const repeatOptions = getReminderRepeatOptions()
 
 const pageTitle = computed(() => (reminderId.value ? '编辑提醒' : '添加提醒'))
-const canSave = computed(() => !!title.value.trim() && !!date.value && !!time.value)
+const canSave = computed(() => !!title.value.trim() && !!date.value && !!time.value && (category.value !== 'custom' || !!customCategoryLabel.value.trim()))
 
 function goBack() {
   uni.navigateBack({
@@ -57,28 +53,61 @@ function goBack() {
   })
 }
 
-function submit() {
+function handleDateConfirm(value: string) {
+  date.value = value
+  showDatePicker.value = false
+}
+
+async function loadReminder(id: string) {
+  try {
+    const record = (await getReminderItems()).find((item) => item.id === id)
+    if (!record) {
+      uni.showToast({ title: '未找到对应提醒', icon: 'none' })
+      return
+    }
+
+    title.value = record.title
+    date.value = record.date
+    time.value = record.time || '09:00'
+    category.value = record.category
+    customCategoryLabel.value = record.customCategoryLabel || ''
+    repeatType.value = record.repeatType
+    note.value = record.note || ''
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '提醒加载失败', icon: 'none' })
+  }
+}
+
+async function submit() {
   if (!canSave.value) {
     return
   }
 
-  saveReminder(
-    {
+  try {
+    const payload = {
       title: title.value.trim(),
       date: date.value,
       time: time.value,
       category: category.value,
+      customCategoryLabel: category.value === 'custom' ? customCategoryLabel.value.trim() : undefined,
       repeatType: repeatType.value,
       note: note.value.trim(),
-      source: 'local'
-    },
-    reminderId.value || undefined
-  )
+      source: 'manual' as const
+    }
 
-  uni.showToast({ title: '保存成功', icon: 'success' })
-  setTimeout(() => {
-    goBack()
-  }, 260)
+    if (reminderId.value) {
+      await updateReminder(reminderId.value, payload)
+    } else {
+      await createReminder(payload)
+    }
+
+    uni.showToast({ title: '保存成功', icon: 'success' })
+    setTimeout(() => {
+      goBack()
+    }, 260)
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '保存失败', icon: 'none' })
+  }
 }
 
 function handleDelete() {
@@ -91,16 +120,20 @@ function handleDelete() {
     content: '确定删除这条提醒吗？',
     confirmText: '删除',
     confirmColor: '#d95a85',
-    success: (result) => {
+    success: async (result) => {
       if (!result.confirm) {
         return
       }
 
-      removeReminder(reminderId.value)
-      uni.showToast({ title: '已删除', icon: 'success' })
-      setTimeout(() => {
-        goBack()
-      }, 260)
+      try {
+        await removeReminderItem(reminderId.value)
+        uni.showToast({ title: '已删除', icon: 'success' })
+        setTimeout(() => {
+          goBack()
+        }, 260)
+      } catch (error) {
+        uni.showToast({ title: error instanceof Error ? error.message : '删除失败', icon: 'none' })
+      }
     }
   })
 }
@@ -108,15 +141,7 @@ function handleDelete() {
 onLoad((options) => {
   if (options?.id && typeof options.id === 'string') {
     reminderId.value = options.id
-    const record = getReminderById(options.id)
-    if (record) {
-      title.value = record.title
-      date.value = record.date
-      time.value = record.time || '09:00'
-      category.value = record.category
-      repeatType.value = record.repeatType
-      note.value = record.note || ''
-    }
+    void loadReminder(options.id)
   }
 })
 </script>
@@ -174,6 +199,13 @@ onLoad((options) => {
         </view>
       </view>
 
+      <view v-if="category === 'custom'" class="form-divider" />
+
+      <view v-if="category === 'custom'" class="form-row vertical">
+        <text class="form-label">自定义分类</text>
+        <input v-model="customCategoryLabel" class="form-input" maxlength="20" placeholder="例如：体检、亲子活动、外出就诊" placeholder-class="placeholder" />
+      </view>
+
       <view class="form-divider" />
 
       <view class="form-row vertical">
@@ -204,7 +236,7 @@ onLoad((options) => {
       <view class="save-bar-btn primary" :class="{ disabled: !canSave }" @tap="submit">保存提醒</view>
     </view>
 
-    <DatePickerModal :show="showDatePicker" title="选择提醒日期" @close="showDatePicker = false" @confirm="(value) => { date = value; showDatePicker = false }" />
+    <DatePickerModal :show="showDatePicker" :value="date" title="选择提醒日期" label="提醒日期" @close="showDatePicker = false" @confirm="handleDateConfirm" />
   </view>
 </template>
 

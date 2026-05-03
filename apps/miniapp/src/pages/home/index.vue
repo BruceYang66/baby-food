@@ -7,6 +7,7 @@ import {
   getFamilyMembers,
   getHomeData,
   getKnowledgePageData,
+  getReminderItems,
   normalizeAppImageUrl,
   openProtectedPage,
   readAuthSession
@@ -15,10 +16,9 @@ import {
   homeDashboardDailyChange,
   homeDashboardModules,
   homeDashboardMonthlyFocusText,
-  homeDashboardRecommendations,
-  homeDashboardTodos
+  homeDashboardRecommendations
 } from '@/data/mock'
-import { getHomeReminderPreview } from '@/services/local-reminder'
+import { getHomeReminderPreview, hydrateReminderItems } from '@/services/local-reminder'
 
 type DashboardModule = (typeof homeDashboardModules)[number]
 type DashboardTodo = {
@@ -26,6 +26,7 @@ type DashboardTodo = {
   title: string
   timeLabel?: string
   route?: string
+  status: 'pending' | 'done'
 }
 type DashboardRecommendation = {
   id: string
@@ -41,12 +42,7 @@ const HOME_HERO_BACKDROP = 'https://lh3.googleusercontent.com/aida-public/AB6AXu
 const isLoggedIn = ref(false)
 const baby = ref<BabyProfile | null>(null)
 const familyFriendCount = ref(0)
-const dashboardTodos = ref<DashboardTodo[]>(homeDashboardTodos.map((item) => ({
-  id: item.id,
-  title: item.title,
-  timeLabel: item.timeLabel,
-  route: item.id === 'todo-vaccine' ? '/pages/vaccine/index' : '/pages/reminder/index'
-})))
+const dashboardTodos = ref<DashboardTodo[]>([])
 const homeRecommendations = ref<DashboardRecommendation[]>(homeDashboardRecommendations.map((item, index) => ({
   id: item.id,
   title: item.title,
@@ -180,29 +176,29 @@ async function loadHomeRecommendations() {
   }
 }
 
-function loadDashboardTodos() {
-  const preview = getHomeReminderPreview(3)
+async function loadDashboardTodos() {
+  try {
+    const items = await getReminderItems()
+    hydrateReminderItems(items)
+    const preview = getHomeReminderPreview(3)
 
-  dashboardTodos.value = preview.length
-    ? preview.map((item) => ({
-        id: item.id,
-        title: item.title,
-        timeLabel: item.timeLabel,
-        route: item.route
-      }))
-    : homeDashboardTodos.map((item) => ({
-        id: item.id,
-        title: item.title,
-        timeLabel: item.timeLabel,
-        route: item.id === 'todo-vaccine' ? '/pages/vaccine/index' : '/pages/reminder/index'
-      }))
+    dashboardTodos.value = preview.map((item) => ({
+      id: item.id,
+      title: item.title,
+      timeLabel: item.timeLabel,
+      route: item.route,
+      status: item.status
+    }))
+  } catch {
+    dashboardTodos.value = []
+  }
 }
 
 async function loadHome() {
   const session = readAuthSession()
   isLoggedIn.value = !!session?.token
   baby.value = session?.babyProfile ?? null
-  loadDashboardTodos()
+  await loadDashboardTodos()
 
   if (!isLoggedIn.value) {
     familyFriendCount.value = 0
@@ -474,12 +470,15 @@ onShareTimeline(() => ({
         </view>
 
         <view class="todo-list">
-          <view v-for="todo in dashboardTodos" :key="todo.id" class="todo-item" @tap="openTodo(todo)">
+          <view v-for="todo in dashboardTodos" :key="todo.id" class="todo-item" :class="{ done: todo.status === 'done' }" @tap="openTodo(todo)">
             <view class="todo-main">
-              <view class="todo-radio" />
-              <text class="todo-item-title">{{ todo.title }}</text>
+              <view class="todo-radio" :class="{ done: todo.status === 'done' }" />
+              <text class="todo-item-title" :class="{ done: todo.status === 'done' }">{{ todo.title }}</text>
             </view>
-            <text class="todo-item-time">{{ todo.timeLabel }}</text>
+            <view class="todo-item-side">
+              <text v-if="todo.status === 'done'" class="todo-item-status">已办</text>
+              <text class="todo-item-time" :class="{ done: todo.status === 'done' }">{{ todo.timeLabel }}</text>
+            </view>
           </view>
         </view>
 
@@ -512,9 +511,9 @@ onShareTimeline(() => ({
         </scroll-view>
       </view>
 
-      <view class="home-fab" @tap="openFab">
+      <!-- <view class="home-fab" @tap="openFab">
         <text class="home-fab-icon">＋</text>
-      </view>
+      </view> -->
     </view>
 
     <AppTabBar active="home" />
@@ -1183,6 +1182,10 @@ onShareTimeline(() => ({
   background: rgba(247, 239, 230, 0.48);
 }
 
+.todo-item.done {
+  background: rgba(239, 242, 244, 0.88);
+}
+
 .todo-main {
   display: flex;
   align-items: center;
@@ -1208,6 +1211,32 @@ onShareTimeline(() => ({
   flex-shrink: 0;
   font-size: 22rpx;
   color: var(--mini-text-muted);
+}
+
+.todo-item-side {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.todo-item-status {
+  padding: 4rpx 12rpx;
+  border-radius: 999rpx;
+  background: rgba(44, 105, 86, 0.12);
+  color: var(--mini-secondary-deep);
+  font-size: 18rpx;
+  font-weight: 700;
+}
+
+.todo-radio.done {
+  background: rgba(44, 105, 86, 0.18);
+  border-color: rgba(44, 105, 86, 0.48);
+}
+
+.todo-item-title.done,
+.todo-item-time.done {
+  color: rgba(107, 98, 91, 0.56);
+  text-decoration: line-through;
 }
 
 .todo-add {

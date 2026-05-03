@@ -348,6 +348,12 @@ export interface FeedingJournalMonthStats {
   maxTotalCount: number
 }
 
+export interface SaveFeedingJournalEntryPayload extends Omit<FeedingJournalEntry, 'id' | 'createdAt' | 'updatedAt'> {}
+
+export interface FeedingJournalListResponse {
+  items: FeedingJournalEntry[]
+}
+
 export interface BatchRecipeSummaryPayload {
   recipeIds: string[]
 }
@@ -708,15 +714,22 @@ export interface GrowthChartPoint {
 export interface GrowthChartDataset {
   metric: GrowthMetricType
   unit: string
+  minAgeMonths: number
+  maxAgeMonths: number
   minValue: number
   maxValue: number
   points: GrowthChartPoint[]
   bands: GrowthReferenceBandPoint[]
 }
 
+export interface GrowthRecordsResponse {
+  items: GrowthRecord[]
+}
+
 export type ReminderRepeatType = 'once' | 'daily' | 'alternate-day' | 'weekly' | 'monthly'
 export type ReminderStatus = 'pending' | 'done'
 export type ReminderCategory = 'supplement' | 'vaccine' | 'growth' | 'feeding' | 'outing' | 'custom'
+export type ReminderSource = 'local' | 'manual' | 'system'
 
 export interface ReminderItem {
   id: string
@@ -726,14 +739,34 @@ export interface ReminderItem {
   repeatType: ReminderRepeatType
   status: ReminderStatus
   category: ReminderCategory
+  customCategoryLabel?: string
   note?: string
   completedAt?: string
-  source?: 'local' | 'system'
+  source?: ReminderSource
 }
 
 export interface ReminderGroup {
   label: string
   items: ReminderItem[]
+}
+
+export interface SaveReminderPayload {
+  title: string
+  date: string
+  time?: string
+  repeatType: ReminderRepeatType
+  category: ReminderCategory
+  customCategoryLabel?: string
+  note?: string
+  source?: ReminderSource
+}
+
+export interface ReminderListResponse {
+  items: ReminderItem[]
+}
+
+export interface MarkRemindersDonePayload {
+  ids: string[]
 }
 
 export type WheelCategory = 'vegetable' | 'protein' | 'egg' | 'grain' | 'fruit' | 'mixed' | 'finger' | 'soup'
@@ -749,4 +782,28 @@ export interface WheelCandidate {
   nutritionTags: string[]
   filterTags: string[]
   route?: string
+}
+
+export interface CreateWheelHistoryPayload {
+  candidate: WheelCandidate
+  selectedFilters?: string[]
+}
+
+export interface WheelHistoryItem {
+  id: string
+  candidateId: string
+  title: string
+  category: WheelCategory
+  icon: string
+  ageLabel: string
+  ingredients: string[]
+  steps: string[]
+  nutritionTags: string[]
+  filterTags: string[]
+  selectedFilters: string[]
+  generatedAt: string
+}
+
+export interface WheelHistoryResponse {
+  items: WheelHistoryItem[]
 }

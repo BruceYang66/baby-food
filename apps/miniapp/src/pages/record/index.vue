@@ -13,7 +13,15 @@ import type {
 } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
-import { ensureProtectedPageAccess, getPlanPageData, readAuthSession } from '@/services/api'
+import {
+  createFeedingJournalEntry,
+  ensureProtectedPageAccess,
+  getFeedingJournalEntries,
+  getPlanPageData,
+  readAuthSession,
+  removeFeedingJournalEntry,
+  updateFeedingJournalEntry
+} from '@/services/api'
 import {
   getFeedingAllStats,
   getFeedingMonthStats,
@@ -21,10 +29,8 @@ import {
   getFeedingScopeSummary,
   getFeedingTimelineGroups,
   getFeedingWeekStats,
-  removeFeedingEntry,
-  saveFeedingEntry
+  hydrateFeedingEntries
 } from '@/services/local-feeding-record'
-import { markReminderItemsDone } from '@/services/local-reminder'
 
 type TimelineItem = FeedingJournalEntry & {
   icon: string
@@ -340,15 +346,29 @@ function buildSegments(points: ChartPoint[], color: string) {
   })
 }
 
-function refreshPageData() {
-  dataVersion.value += 1
+async function refreshPageData() {
   session.value = readAuthSession()
+
+  if (!session.value?.token) {
+    hydrateFeedingEntries([])
+    dataVersion.value += 1
+    return
+  }
+
+  try {
+    const items = await getFeedingJournalEntries()
+    hydrateFeedingEntries(items)
+    dataVersion.value += 1
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '记录加载失败', icon: 'none' })
+  }
 }
 
 async function loadTodayPlanTitles() {
   try {
     const data = await getPlanPageData()
-    todayPlanTitles.value = Array.from(new Set((data.todayMealPlan?.entries || []).map((entry) => entry.title).filter(Boolean)))
+    const titles = data.todayMealPlan?.isSaved ? data.todayMealPlan.entries : []
+    todayPlanTitles.value = Array.from(new Set(titles.map((entry) => entry.title).filter(Boolean)))
   } catch {
     todayPlanTitles.value = []
   }
@@ -531,12 +551,16 @@ async function handleDeleteEntry(id: string) {
     return
   }
 
-  removeFeedingEntry(id)
-  refreshPageData()
-  uni.showToast({ title: '已删除', icon: 'success' })
+  try {
+    await removeFeedingJournalEntry(id)
+    await refreshPageData()
+    uni.showToast({ title: '已删除', icon: 'success' })
 
-  if (editingEntryId.value === id) {
-    closeComposer()
+    if (editingEntryId.value === id) {
+      closeComposer()
+    }
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '删除失败', icon: 'none' })
   }
 }
 
@@ -777,13 +801,14 @@ async function saveRecord() {
   try {
     const isEditing = Boolean(editingEntryId.value)
     const payload = buildSavePayload()
-    saveFeedingEntry(payload, editingEntryId.value || undefined)
 
-    if (pendingReminderIds.value.length) {
-      markReminderItemsDone(pendingReminderIds.value)
+    if (editingEntryId.value) {
+      await updateFeedingJournalEntry(editingEntryId.value, payload)
+    } else {
+      await createFeedingJournalEntry(payload)
     }
 
-    refreshPageData()
+    await refreshPageData()
     closeComposer()
     uni.showToast({ title: isEditing ? '已更新' : '记录成功', icon: 'success' })
   } catch (error) {
@@ -838,7 +863,7 @@ onShow(async () => {
   }
 
   await loadTodayPlanTitles()
-  refreshPageData()
+  await refreshPageData()
 
   if (shouldAutoOpenComposer.value) {
     openComposer(pendingEntryType.value)
@@ -1018,7 +1043,7 @@ onShareTimeline(() => ({
       <text class="record-fab-icon">＋</text>
     </view>
 
-    <DatePickerModal :show="showDatePicker" title="选择锚点日期" @close="showDatePicker = false" @confirm="handleDateConfirm" />
+    <DatePickerModal :show="showDatePicker" :value="selectedDate" title="选择锚点日期" label="锚点日期" @close="showDatePicker = false" @confirm="handleDateConfirm" />
 
     <view v-if="showFilterSheet" class="filter-sheet-mask" @tap="closeFilterSheet">
       <view class="filter-sheet" @tap.stop>

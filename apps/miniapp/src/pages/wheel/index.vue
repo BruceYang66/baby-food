@@ -1,11 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import type { RecipeDetail, WheelCandidate, WheelCategory } from '@baby-food/shared-types'
+import type { DailyMealPlan, MealSlot, RecipeDetail, SaveMealPlanPayload, WheelCandidate, WheelCategory } from '@baby-food/shared-types'
 import { onShow } from '@dcloudio/uni-app'
 import { recipeDetail as mockRecipeDetail } from '@/data/mock'
 import { wheelCategoryMeta } from '@/data/wheel'
-import { openProtectedPage, readAuthSession } from '@/services/api'
-import { getWheelCandidates, getWheelFilterTags, pushWheelHistory, readWheelHistory, spinWheel } from '@/services/local-wheel'
+import { createWheelHistory, ensureProtectedPageAccess, getPlanPageData, getWheelHistory, openProtectedPage, readAuthSession, saveMealPlan } from '@/services/api'
+import { getWheelCandidates, getWheelFilterTags, spinWheel } from '@/services/local-wheel'
 
 const PREVIEW_STORAGE_KEY = 'adminRecipePreview'
 
@@ -25,6 +25,7 @@ const filterTags = getWheelFilterTags()
 const selectedFilter = ref<(typeof filterTags)[number]>('全部')
 const selectedCategory = ref<WheelCategory | 'all'>('all')
 const spinning = ref(false)
+const addingToPlan = ref(false)
 const rotation = ref(0)
 const resultCandidate = ref<WheelCandidate | null>(null)
 const displayCandidate = ref<WheelCandidate | null>(null)
@@ -96,15 +97,151 @@ function buildPreviewRecipe(candidate: WheelCandidate): RecipeDetail {
   }
 }
 
+function getMealSlotLabel(slot: MealSlot) {
+  if (slot === 'breakfast') return '早餐'
+  if (slot === 'lunch') return '午餐'
+  if (slot === 'dinner') return '晚餐'
+  return '加餐'
+}
+
+function resolveTargetEntryIndex(plan: DailyMealPlan) {
+  const dinnerIndex = plan.entries.findIndex((item) => item.slot === 'dinner')
+  return dinnerIndex >= 0 ? dinnerIndex : plan.entries.length - 1
+}
+
+function buildSavePayload(plan: DailyMealPlan, candidate: WheelCandidate): SaveMealPlanPayload {
+  const targetIndex = resolveTargetEntryIndex(plan)
+
+  return {
+    title: '已保存辅食计划',
+    dateLabel: plan.dateLabel,
+    planDate: plan.planDate,
+    nutritionScore: plan.nutritionScore,
+    waterSuggestion: plan.waterSuggestion,
+    entries: plan.entries.map((entry, index) => {
+      if (index !== targetIndex) {
+        return {
+          recipeId: entry.recipeId,
+          customRecipeId: entry.customRecipeId,
+          isCustom: entry.isCustom,
+          slot: entry.slot,
+          time: entry.time,
+          title: entry.title,
+          focus: entry.focus,
+          image: entry.image,
+          tags: entry.tags
+        }
+      }
+
+      return {
+        slot: entry.slot,
+        time: entry.time,
+        title: candidate.title,
+        focus: candidate.nutritionTags[0] ?? '转盘推荐',
+        image: mockRecipeDetail.image,
+        tags: candidate.nutritionTags,
+        isCustom: true
+      }
+    })
+  }
+}
+
+function confirmReplace(slot: MealSlot, currentTitle: string, nextTitle: string) {
+  return new Promise<boolean>((resolve) => {
+    uni.showModal({
+      title: '替换今日计划',
+      content: `今日${getMealSlotLabel(slot)}当前是“${currentTitle}”，是否替换为“${nextTitle}”？`,
+      confirmText: '替换',
+      cancelText: '取消',
+      success: (res) => resolve(Boolean(res.confirm)),
+      fail: () => resolve(false)
+    })
+  })
+}
+
+async function addToTodayPlan() {
+  const candidate = resultCandidate.value
+
+  if (!candidate || addingToPlan.value) {
+    return
+  }
+
+  if (!ensureProtectedPageAccess()) {
+    return
+  }
+
+  addingToPlan.value = true
+
+  try {
+    const { todayMealPlan } = await getPlanPageData()
+
+    if (todayMealPlan.entries.some((entry) => entry.title === candidate.title)) {
+      uni.showToast({ title: '今日计划已包含这道辅食', icon: 'none' })
+      return
+    }
+
+    const targetIndex = resolveTargetEntryIndex(todayMealPlan)
+    const targetEntry = todayMealPlan.entries[targetIndex]
+
+    if (!targetEntry) {
+      throw new Error('今日计划暂不可用，请稍后重试')
+    }
+
+    if (targetEntry.feedingRecord?.status) {
+      uni.showToast({ title: '该餐次已记录喂养，请到计划页调整', icon: 'none' })
+      return
+    }
+
+    if (todayMealPlan.isSaved && targetEntry.title && targetEntry.title !== candidate.title) {
+      const confirmed = await confirmReplace(targetEntry.slot, targetEntry.title, candidate.title)
+      if (!confirmed) {
+        return
+      }
+    }
+
+    await saveMealPlan(buildSavePayload(todayMealPlan, candidate))
+    resultCandidate.value = null
+    uni.showToast({ title: '已加入今日计划', icon: 'success' })
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '加入失败，请重试',
+      icon: 'none'
+    })
+  } finally {
+    addingToPlan.value = false
+  }
+}
+
 function openCandidateDetail(candidate: WheelCandidate) {
   uni.setStorageSync(PREVIEW_STORAGE_KEY, buildPreviewRecipe(candidate))
   resultCandidate.value = null
   openProtectedPage('/pages/recipe-detail/index?preview=admin')
 }
 
-function refreshHistory() {
-  history.value = readWheelHistory()
+async function refreshHistory() {
   session.value = readAuthSession()
+
+  if (!session.value?.token) {
+    history.value = []
+    return
+  }
+
+  try {
+    const items = await getWheelHistory(6)
+    history.value = items.map((item) => ({
+      id: item.candidateId,
+      title: item.title,
+      category: item.category,
+      icon: item.icon,
+      ageLabel: item.ageLabel,
+      ingredients: item.ingredients,
+      steps: item.steps,
+      nutritionTags: item.nutritionTags,
+      filterTags: item.filterTags
+    }))
+  } catch {
+    history.value = []
+  }
 }
 
 function goBack() {
@@ -133,24 +270,28 @@ function startSpin() {
     spinning.value = false
     displayCandidate.value = result.candidate
     resultCandidate.value = result.candidate
-    history.value = pushWheelHistory(result.candidate)
+    history.value = [result.candidate, ...history.value.filter((item) => item.id !== result.candidate.id)].slice(0, 6)
+
+    void createWheelHistory({
+      candidate: result.candidate,
+      selectedFilters: selectedFilter.value === '全部' ? [] : [selectedFilter.value]
+    }).then(() => refreshHistory()).catch(() => undefined)
   }, 3200)
 }
 
-function openPlan() {
-  resultCandidate.value = null
-  openProtectedPage('/pages/generate/index')
-}
-
 onShow(() => {
-  refreshHistory()
+  void refreshHistory()
 })
 </script>
 
 <template>
   <view class="page-shell wheel-page">
     <view class="wheel-nav" :style="navStyle">
-      <view class="wheel-nav-side" @tap="goBack">‹</view>
+      <view class="wheel-nav-side" @tap="goBack">
+        <view class="wheel-nav-back-btn">
+          <text class="wheel-nav-back-icon">‹</text>
+        </view>
+      </view>
       <text class="wheel-nav-title">今天吃什么？</text>
       <view class="wheel-nav-favorite" @tap="showFavoriteToast">♡</view>
     </view>
@@ -190,7 +331,7 @@ onShow(() => {
       </view>
     </view>
 
-    <view class="category-scroll-wrap lower-categories">
+    <!-- <view class="category-scroll-wrap lower-categories">
       <scroll-view scroll-x class="category-scroll" show-scrollbar="false">
         <view class="category-row">
           <view class="category-chip" :class="{ active: selectedCategory === 'all' }" @tap="selectedCategory = 'all'">全部分类</view>
@@ -205,7 +346,7 @@ onShow(() => {
           </view>
         </view>
       </scroll-view>
-    </view>
+    </view> -->
 
     <scroll-view scroll-x class="filter-scroll" show-scrollbar="false">
       <view class="filter-row">
@@ -283,7 +424,7 @@ onShow(() => {
           <view class="result-btn primary" @tap="openCandidateDetail(resultCandidate)">查看食谱详情</view>
           <view class="result-btn secondary" @tap="startSpin">再转一次</view>
         </view>
-        <view class="result-link" @tap="openPlan">加入今日食谱</view>
+        <view class="result-link" :class="{ disabled: addingToPlan }" @tap="addToTodayPlan">{{ addingToPlan ? '加入中...' : '加入今日食谱' }}</view>
       </view>
     </view>
   </view>
@@ -296,27 +437,46 @@ onShow(() => {
 
 .wheel-nav {
   display: grid;
-  grid-template-columns: 72rpx 1fr 72rpx;
+  grid-template-columns: 88rpx 1fr 88rpx;
   align-items: center;
   gap: 12rpx;
 }
 
-.wheel-nav-side,
+.wheel-nav-side {
+  display: flex;
+  align-items: center;
+  width: 88rpx;
+  min-height: 88rpx;
+  color: var(--mini-primary-deep);
+}
+
+.wheel-nav-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.wheel-nav-back-icon {
+  margin-top: -4rpx;
+  font-size: 48rpx;
+  line-height: 1;
+  color: var(--mini-primary-deep);
+}
+
 .wheel-nav-favorite {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 88rpx;
+  min-height: 88rpx;
   font-size: 44rpx;
   line-height: 1;
   color: var(--mini-text);
-}
-
-.wheel-nav-title {
-  text-align: center;
-  font-size: 32rpx;
-  font-weight: 700;
-  color: var(--mini-text);
-}
-
-.wheel-nav-favorite {
-  text-align: right;
 }
 
 .wheel-banner {
@@ -812,5 +972,9 @@ onShow(() => {
   text-align: center;
   font-size: 24rpx;
   color: #4980d6;
+}
+
+.result-link.disabled {
+  opacity: 0.55;
 }
 </style>

@@ -52,6 +52,52 @@ enum FeedingRecordStatus {
   @@map("feeding_record_status")
 }
 
+enum ReminderRepeatType {
+  once
+  daily
+  alternate_day @map("alternate-day")
+  weekly
+  monthly
+
+  @@map("reminder_repeat_type")
+}
+
+enum ReminderStatus {
+  pending
+  done
+
+  @@map("reminder_status")
+}
+
+enum ReminderCategory {
+  supplement
+  vaccine
+  growth
+  feeding
+  outing
+  custom
+
+  @@map("reminder_category")
+}
+
+enum FeedingJournalType {
+  breast
+  formula
+  bottle_breast @map("bottle-breast")
+  sleep
+  diaper
+  pump
+  solid
+  bath
+  play
+  swim
+  water
+  supplement
+  other
+
+  @@map("feeding_journal_type")
+}
+
 enum VaccineCategory {
   free
   optional
@@ -91,6 +137,7 @@ model User {
   receivedInvites   BabyInvite[]            @relation("BabyInviteRecipient")
   favorites         UserFavorite[]
   knowledgeFavorites UserKnowledgeFavorite[]
+  wheelGenerationHistories WheelGenerationHistory[]
 
   @@map("users")
 }
@@ -111,6 +158,9 @@ model Baby {
   vaccineRecords     VaccineRecord[]
   members            BabyMember[]
   invites            BabyInvite[]
+  growthRecords      GrowthRecord[]
+  reminders          BabyReminder[]
+  feedingJournalEntries FeedingJournalEntry[]
   user               User            @relation(fields: [userId], references: [id])
 
   @@map("babies")
@@ -291,6 +341,87 @@ model FeedingRecord {
   @@unique([mealPlanItemId])
   @@index([mealPlanId])
   @@map("feeding_records")
+}
+
+model WheelGenerationHistory {
+  id                String   @id @default(cuid())
+  userId            String   @map("user_id")
+  candidateId       String   @map("candidate_id")
+  title             String
+  category          String
+  icon              String
+  ageLabel          String   @map("age_label")
+  ingredientsJson   String   @default("[]") @map("ingredients_json")
+  stepsJson         String   @default("[]") @map("steps_json")
+  nutritionTagsJson String   @default("[]") @map("nutrition_tags_json")
+  filterTagsJson    String   @default("[]") @map("filter_tags_json")
+  selectedFiltersJson String @default("[]") @map("selected_filters_json")
+  generatedAt       DateTime @default(now()) @map("generated_at")
+  user              User     @relation(fields: [userId], references: [id])
+
+  @@index([userId, generatedAt])
+  @@map("wheel_generation_histories")
+}
+
+model GrowthRecord {
+  id                  String   @id @default(cuid())
+  babyId              String   @map("baby_id")
+  measuredAt          DateTime @map("measured_at") @db.Date
+  heightCm            Float?   @map("height_cm")
+  weightKg            Float?   @map("weight_kg")
+  headCircumferenceCm Float?   @map("head_circumference_cm")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+  baby                Baby     @relation(fields: [babyId], references: [id])
+
+  @@index([babyId, measuredAt])
+  @@map("growth_records")
+}
+
+model BabyReminder {
+  id                  String             @id @default(cuid())
+  babyId              String             @map("baby_id")
+  title               String
+  reminderDate        DateTime           @map("reminder_date") @db.Date
+  reminderTime        String?            @map("reminder_time")
+  repeatType          ReminderRepeatType @map("repeat_type")
+  status              ReminderStatus     @default(pending)
+  category            ReminderCategory
+  customCategoryLabel String?            @map("custom_category_label")
+  note                String?
+  completedAt         DateTime?          @map("completed_at")
+  source              String?            @default("manual")
+  createdAt           DateTime           @default(now()) @map("created_at")
+  updatedAt           DateTime           @updatedAt @map("updated_at")
+  baby                Baby               @relation(fields: [babyId], references: [id])
+
+  @@index([babyId, reminderDate, reminderTime])
+  @@index([babyId, status, reminderDate])
+  @@map("baby_reminders")
+}
+
+model FeedingJournalEntry {
+  id                    String             @id @default(cuid())
+  babyId                String             @map("baby_id")
+  entryDate             DateTime           @map("entry_date") @db.Date
+  entryTime             String             @map("entry_time")
+  type                  FeedingJournalType
+  title                 String
+  description           String
+  amountValue           Float?             @map("amount_value")
+  amountUnit            String?            @map("amount_unit")
+  note                  String?
+  tagsJson              String             @default("[]") @map("tags_json")
+  source                String             @default("manual")
+  sourceReminderIdsJson String             @default("[]") @map("source_reminder_ids_json")
+  detailJson            String             @default("{}") @map("detail_json")
+  createdAt             DateTime           @default(now()) @map("created_at")
+  updatedAt             DateTime           @updatedAt @map("updated_at")
+  baby                  Baby               @relation(fields: [babyId], references: [id])
+
+  @@index([babyId, entryDate, entryTime])
+  @@index([babyId, type, entryDate])
+  @@map("feeding_journal_entries")
 }
 
 model GuideStage {

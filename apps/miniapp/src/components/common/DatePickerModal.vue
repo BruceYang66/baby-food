@@ -1,13 +1,17 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 
 interface Props {
   show: boolean
   title?: string
+  value?: string
+  label?: string
+  end?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  title: '选择接种日期'
+  title: '选择日期',
+  label: '选择日期'
 })
 
 const emit = defineEmits<{
@@ -16,7 +20,17 @@ const emit = defineEmits<{
 }>()
 
 const today = new Date().toISOString().split('T')[0]
-const selectedDate = ref(today)
+const selectedDate = ref(props.value || today)
+
+watch(
+  () => [props.show, props.value] as const,
+  ([show, value]) => {
+    if (show) {
+      selectedDate.value = value || today
+    }
+  },
+  { immediate: true }
+)
 
 function handleClose() {
   emit('close')
@@ -57,9 +71,9 @@ function handleConfirm() {
         </view>
 
         <view class="picker-wrap">
-          <picker mode="date" :value="selectedDate" :end="today" @change="handleDateChange">
+          <picker mode="date" :value="selectedDate" :end="end || today" @change="handleDateChange">
             <view class="picker-display">
-              <text class="picker-label">接种日期</text>
+              <text class="picker-label">{{ label }}</text>
               <text class="picker-value">{{ selectedDate }}</text>
               <text class="picker-arrow">›</text>
             </view>

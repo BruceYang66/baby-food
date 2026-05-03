@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import BackToTopButton from '@/components/common/BackToTopButton.vue'
 import ImageUploader from '@/components/common/ImageUploader.vue'
 import SectionEditor from '@/components/knowledge/SectionEditor.vue'
 import { getKnowledgeDetail, createKnowledge, updateKnowledge, type KnowledgeArticleDetail } from '@/services/api'
@@ -213,4 +214,5 @@ onMounted(async () => {
       </section>
     </div>
   </div>
+  <BackToTopButton />
 </template>

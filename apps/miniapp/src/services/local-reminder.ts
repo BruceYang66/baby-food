@@ -1,7 +1,8 @@
 import type { HomeTodoItem, ReminderGroup, ReminderItem, ReminderRepeatType } from '@baby-food/shared-types'
-import { buildSeedReminders, reminderCategoryMeta, reminderRepeatOptions } from '@/data/reminder'
+import { reminderCategoryMeta, reminderRepeatOptions } from '@/data/reminder'
 
 const STORAGE_KEY = 'miniapp-reminders-v1'
+let inMemoryReminders: ReminderItem[] | null = null
 
 type ReminderFilterKey = 'all' | 'today' | 'pending' | 'done'
 
@@ -13,23 +14,32 @@ function formatYmd(date: Date) {
 }
 
 function getStoredReminders() {
+  if (inMemoryReminders) {
+    return inMemoryReminders.slice()
+  }
+
   const value = uni.getStorageSync(STORAGE_KEY)
   return Array.isArray(value) ? value.filter((item): item is ReminderItem => typeof item?.id === 'string') : []
 }
 
 function writeReminders(items: ReminderItem[]) {
-  uni.setStorageSync(STORAGE_KEY, items)
+  const next = items.slice()
+  inMemoryReminders = next
+  uni.setStorageSync(STORAGE_KEY, next)
 }
 
 function ensureReminders() {
   const current = getStoredReminders()
-  if (current.length) {
-    return current
-  }
+  return current.sort(compareReminder)
+}
 
-  const seeded = buildSeedReminders()
-  writeReminders(seeded)
-  return seeded
+export function hydrateReminderItems(items: ReminderItem[]) {
+  inMemoryReminders = items.slice().sort(compareReminder)
+  return inMemoryReminders
+}
+
+export function clearHydratedReminderItems() {
+  inMemoryReminders = null
 }
 
 function compareReminder(left: ReminderItem, right: ReminderItem) {
@@ -78,6 +88,7 @@ export function saveReminder(input: Omit<ReminderItem, 'id' | 'status' | 'comple
     repeatType: input.repeatType,
     status: input.status || 'pending',
     category: input.category,
+    customCategoryLabel: input.customCategoryLabel,
     note: input.note,
     completedAt: input.status === 'done' ? formatYmd(new Date()) : undefined,
     source: input.source || 'local'
@@ -186,6 +197,12 @@ export function getReminderCategoryMeta(category: ReminderItem['category']) {
   return reminderCategoryMeta.find((item) => item.key === category) || reminderCategoryMeta[0]
 }
 
+export function getReminderCategoryLabel(item: ReminderItem) {
+  return item.category === 'custom'
+    ? item.customCategoryLabel?.trim() || getReminderCategoryMeta(item.category).label
+    : getReminderCategoryMeta(item.category).label
+}
+
 export function getReminderRepeatLabel(repeatType: ReminderRepeatType) {
   return formatRepeatLabel(repeatType)
 }
@@ -199,21 +216,40 @@ export function getReminderRepeatOptions() {
 }
 
 export function getHomeReminderPreview(limit = 3): HomeTodoItem[] {
-  return readReminderItems()
-    .filter((item) => item.status === 'pending')
+  const items = readReminderItems()
+
+  if (!items.length) {
+    return [{
+      id: 'todo-empty',
+      title: '今天还没有提醒事项',
+      description: '点击下方“添加提醒”即可开始记录待办',
+      timeLabel: '待办',
+      status: 'pending',
+      route: '/pages/reminder/edit'
+    }]
+  }
+
+  return items
+    .slice()
+    .sort((left, right) => {
+      if (left.status !== right.status) {
+        return left.status === 'pending' ? -1 : 1
+      }
+      return compareReminder(left, right)
+    })
     .slice(0, limit)
     .map((item) => ({
       id: item.id,
       title: item.title,
-      description: `${getReminderCategoryMeta(item.category).label} · ${formatRepeatLabel(item.repeatType)}`,
+      description: `${getReminderCategoryLabel(item)} · ${formatRepeatLabel(item.repeatType)}`,
       timeLabel: item.time ? `${item.date.slice(5).replace('-', '/')} ${item.time}` : item.date.slice(5).replace('-', '/'),
-      status: 'pending',
+      status: item.status,
       route: item.category === 'vaccine'
         ? '/pages/vaccine/index'
         : item.category === 'supplement'
           ? `/pages/record/index?type=supplement&sourceReminderId=${encodeURIComponent(item.id)}`
           : item.category === 'feeding'
-            ? `/pages/record/index?type=feeding&sourceReminderId=${encodeURIComponent(item.id)}`
+            ? `/pages/record/index?type=solid&sourceReminderId=${encodeURIComponent(item.id)}`
             : '/pages/reminder/index'
     }))
 }

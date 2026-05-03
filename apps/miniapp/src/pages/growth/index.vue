@@ -4,14 +4,14 @@ import { onLoad, onShow } from '@dcloudio/uni-app'
 import type { GrowthStandardKey, GrowthTabKey } from '@baby-food/shared-types'
 import GrowthStandardSheet from '@/components/growth/GrowthStandardSheet.vue'
 import GrowthTrendChart from '@/components/growth/GrowthTrendChart.vue'
-import { readAuthSession } from '@/services/api'
+import { deleteGrowthRecordEntry, getGrowthRecords, readAuthSession } from '@/services/api'
 import {
-  deleteGrowthRecord,
   getGrowthChartDataset,
   getGrowthListItems,
   getGrowthMetricMeta,
   getGrowthSourceText,
-  getGrowthStandardOptions
+  getGrowthStandardOptions,
+  hydrateGrowthRecords
 } from '@/services/local-growth'
 
 const tabs: Array<{ key: GrowthTabKey; label: string }> = [
@@ -75,9 +75,22 @@ const currentStandardLabel = computed(() => {
   return option ? `${option.label} (${option.ageRangeLabel})` : ''
 })
 
-function refreshPage() {
+async function refreshPage() {
   session.value = readAuthSession()
-  version.value += 1
+
+  if (!session.value?.token) {
+    hydrateGrowthRecords([])
+    version.value += 1
+    return
+  }
+
+  try {
+    const items = await getGrowthRecords()
+    hydrateGrowthRecords(items)
+    version.value += 1
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '生长记录加载失败', icon: 'none' })
+  }
 }
 
 function goBack() {
@@ -128,7 +141,7 @@ function formatMetricValue(value: number | null) {
 }
 
 function openSourceInfo() {
-  uni.showToast({ title: '当前为本地示例数据，后续可替换为精确标准表', icon: 'none' })
+  uni.navigateTo({ url: '/pages/growth/explainer' })
 }
 
 function openRecordActions(recordId: string) {
@@ -146,14 +159,18 @@ function openRecordActions(recordId: string) {
           content: '确定删除这条记录吗？',
           confirmText: '删除',
           confirmColor: '#d95a85',
-          success: (modalResult) => {
+          success: async (modalResult) => {
             if (!modalResult.confirm) {
               return
             }
 
-            deleteGrowthRecord(recordId, birthDate.value)
-            uni.showToast({ title: '已删除', icon: 'success' })
-            refreshPage()
+            try {
+              await deleteGrowthRecordEntry(recordId)
+              uni.showToast({ title: '已删除', icon: 'success' })
+              await refreshPage()
+            } catch (error) {
+              uni.showToast({ title: error instanceof Error ? error.message : '删除失败', icon: 'none' })
+            }
           }
         })
       }
@@ -169,14 +186,18 @@ onLoad((options) => {
 })
 
 onShow(() => {
-  refreshPage()
+  void refreshPage()
 })
 </script>
 
 <template>
   <view class="page-shell growth-page">
     <view class="growth-nav" :style="navStyle">
-      <view class="growth-nav-side" @tap="goBack">‹</view>
+      <view class="growth-nav-side" @tap="goBack">
+        <view class="growth-nav-back-btn">
+          <text class="growth-nav-back-icon">‹</text>
+        </view>
+      </view>
       <text class="growth-nav-title">身高体重记录</text>
       <view class="growth-nav-side placeholder" />
     </view>
@@ -268,16 +289,36 @@ onShow(() => {
 
 .growth-nav {
   display: grid;
-  grid-template-columns: 72rpx 1fr 72rpx;
+  grid-template-columns: 88rpx 1fr 88rpx;
   align-items: center;
   gap: 12rpx;
   margin-bottom: 20rpx;
 }
 
 .growth-nav-side {
+  display: flex;
+  align-items: center;
+  width: 88rpx;
+  min-height: 88rpx;
+  color: var(--mini-primary-deep);
+}
+
+.growth-nav-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 64rpx;
+  height: 64rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.08);
+}
+
+.growth-nav-back-icon {
+  margin-top: -4rpx;
   font-size: 48rpx;
   line-height: 1;
-  color: var(--mini-text);
+  color: var(--mini-primary-deep);
 }
 
 .growth-nav-side.placeholder {

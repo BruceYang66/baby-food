@@ -90,10 +90,14 @@ async function onlineSafeInitDatabase() {
 
 async function resetDatabase() {
   await client.query(`
-    DROP TABLE IF EXISTS user_knowledge_favorites, knowledge_article_sections, knowledge_articles, vaccine_records, vaccine_schedules, user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
+    DROP TABLE IF EXISTS user_knowledge_favorites, knowledge_article_sections, knowledge_articles, vaccine_records, vaccine_schedules, user_feedback, user_favorites, recipe_versions, recipe_reviews, symptom_food_rules, symptom_guides, guide_food_rules, guide_stages, feeding_journal_entries, baby_reminders, growth_records, wheel_generation_histories, feeding_records, meal_plan_items, custom_recipes, meal_plans, recipe_steps, recipe_ingredients, recipe_tags, import_jobs, system_settings, baby_invites, baby_members, baby_allergens, babies, recipes, users CASCADE;
     DROP TYPE IF EXISTS knowledge_content_type CASCADE;
     DROP TYPE IF EXISTS vaccine_record_status CASCADE;
     DROP TYPE IF EXISTS vaccine_category CASCADE;
+    DROP TYPE IF EXISTS feeding_journal_type CASCADE;
+    DROP TYPE IF EXISTS reminder_category CASCADE;
+    DROP TYPE IF EXISTS reminder_status CASCADE;
+    DROP TYPE IF EXISTS reminder_repeat_type CASCADE;
     DROP TYPE IF EXISTS content_status CASCADE;
     DROP TYPE IF EXISTS review_status CASCADE;
     DROP TYPE IF EXISTS feeding_record_status CASCADE;

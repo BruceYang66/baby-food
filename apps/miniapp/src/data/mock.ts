@@ -362,6 +362,24 @@ export const homeDashboardDailyChange = '我的独立意识越来越强啦，总
 export const homeDashboardMonthlyFocusText = '继续保持规律进餐，逐步丰富食材种类，并鼓励宝宝练习自主进食。'
 
 export const homeDashboardModules = [
+    {
+    key: 'record',
+    title: '喂养记录',
+    icon: '📝',
+    route: '/pages/record/index',
+    implemented: true,
+    tone: 'pink',
+    shape: 'shape-1'
+  },
+  {
+    key: 'growth',
+    title: '记身高体重',
+    icon: '📏',
+    route: '/pages/growth/index?tab=list',
+    implemented: true,
+    tone: 'green',
+    shape: 'shape-3'
+  },
   {
     key: 'feeding-hub',
     title: '宝宝辅食',
@@ -390,15 +408,6 @@ export const homeDashboardModules = [
     shape: 'shape-2'
   },
   {
-    key: 'taboo',
-    title: '生病忌口',
-    icon: '🚫',
-    route: '/pages/taboo/index',
-    implemented: true,
-    tone: 'rose',
-    shape: 'shape-1'
-  },
-  {
     key: 'guide',
     title: '饮食指南',
     icon: '🥣',
@@ -408,6 +417,15 @@ export const homeDashboardModules = [
     shape: 'shape-2'
   },
   {
+    key: 'taboo',
+    title: '生病忌口',
+    icon: '🚫',
+    route: '/pages/taboo/index',
+    implemented: true,
+    tone: 'rose',
+    shape: 'shape-1'
+  },
+  {
     key: 'wheel',
     title: '辅食转盘',
     icon: '🎡',
@@ -415,24 +433,6 @@ export const homeDashboardModules = [
     implemented: true,
     tone: 'purple',
     shape: 'shape-1'
-  },
-  {
-    key: 'record',
-    title: '喂养记录',
-    icon: '📝',
-    route: '/pages/record/index',
-    implemented: true,
-    tone: 'pink',
-    shape: 'shape-1'
-  },
-  {
-    key: 'growth',
-    title: '身高体重',
-    icon: '📏',
-    route: '/pages/growth/index?tab=list',
-    implemented: true,
-    tone: 'green',
-    shape: 'shape-3'
   },
   {
     key: 'favorite',

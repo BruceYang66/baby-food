@@ -3,13 +3,14 @@ import { computed, ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import { useBackToTop } from '@/composables/useBackToTop'
+import { getReminderItems, markReminderItemsDone, toggleReminderDoneStatus } from '@/services/api'
 import {
+  getReminderCategoryLabel,
   getReminderCategoryMeta,
   getReminderGroups,
   getReminderRepeatLabel,
   getReminderStats,
-  markReminderItemsDone,
-  toggleReminderDone
+  hydrateReminderItems
 } from '@/services/local-reminder'
 
 type ReminderFilterKey = 'all' | 'today' | 'pending' | 'done'
@@ -43,8 +44,13 @@ const visiblePendingIds = computed(() =>
 )
 const canMarkAllDone = computed(() => visiblePendingIds.value.length > 0 && filter.value !== 'done')
 
-function refreshPage() {
-  version.value += 1
+async function refreshPage() {
+  try {
+    hydrateReminderItems(await getReminderItems())
+    version.value += 1
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '提醒加载失败', icon: 'none' })
+  }
 }
 
 function goBack() {
@@ -60,23 +66,31 @@ function goEdit(id?: string) {
   uni.navigateTo({ url: `/pages/reminder/edit${query}` })
 }
 
-function handleToggle(id: string) {
-  toggleReminderDone(id)
-  refreshPage()
+async function handleToggle(id: string) {
+  try {
+    await toggleReminderDoneStatus(id)
+    await refreshPage()
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '更新失败', icon: 'none' })
+  }
 }
 
-function handleMarkAllDone() {
+async function handleMarkAllDone() {
   if (!visiblePendingIds.value.length) {
     return
   }
 
-  markReminderItemsDone(visiblePendingIds.value)
-  uni.showToast({ title: '已批量标记完成', icon: 'success' })
-  refreshPage()
+  try {
+    await markReminderItemsDone({ ids: visiblePendingIds.value })
+    uni.showToast({ title: '已批量标记完成', icon: 'success' })
+    await refreshPage()
+  } catch (error) {
+    uni.showToast({ title: error instanceof Error ? error.message : '操作失败', icon: 'none' })
+  }
 }
 
 onShow(() => {
-  refreshPage()
+  void refreshPage()
 })
 </script>
 
@@ -126,7 +140,7 @@ onShow(() => {
                   <view class="reminder-card-top">
                     <view class="reminder-category-chip" :class="[getReminderCategoryMeta(item.category).accent, { done: item.status === 'done' }]">
                       <text class="reminder-category-icon">{{ getReminderCategoryMeta(item.category).icon }}</text>
-                      <text class="reminder-category-text">{{ getReminderCategoryMeta(item.category).label }}</text>
+                      <text class="reminder-category-text">{{ getReminderCategoryLabel(item) }}</text>
                     </view>
                     <text class="reminder-card-time" :class="{ done: item.status === 'done' }">{{ item.time || '--:--' }}</text>
                   </view>

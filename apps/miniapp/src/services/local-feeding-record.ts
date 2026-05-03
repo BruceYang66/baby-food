@@ -26,6 +26,7 @@ const ALL_RECORD_TYPES: FeedingJournalType[] = [
   'supplement',
   'other'
 ]
+let inMemoryEntries: FeedingJournalEntry[] | null = []
 
 function pad(value: number) {
   return `${value}`.padStart(2, '0')
@@ -176,6 +177,10 @@ function normalizeStoredEntry(raw: unknown): FeedingJournalEntry | null {
 }
 
 function getStoredEntries() {
+  if (inMemoryEntries) {
+    return inMemoryEntries.slice()
+  }
+
   const stored = uni.getStorageSync(STORAGE_KEY)
   return Array.isArray(stored)
     ? stored.map(normalizeStoredEntry).filter((item): item is FeedingJournalEntry => Boolean(item))
@@ -183,7 +188,9 @@ function getStoredEntries() {
 }
 
 function writeEntries(items: FeedingJournalEntry[]) {
-  uni.setStorageSync(STORAGE_KEY, sortAscending(items))
+  const next = sortAscending(items)
+  inMemoryEntries = next
+  uni.setStorageSync(STORAGE_KEY, next)
 }
 
 function getMilkMl(entry: FeedingJournalEntry) {
@@ -329,6 +336,15 @@ export function getFeedingRecordDateLabel(dateValue: string) {
 
   const date = parseYmd(dateValue)
   return `${date.getMonth() + 1}月${date.getDate()}日`
+}
+
+export function hydrateFeedingEntries(items: FeedingJournalEntry[]) {
+  inMemoryEntries = sortAscending(items)
+  return inMemoryEntries
+}
+
+export function clearHydratedFeedingEntries() {
+  inMemoryEntries = null
 }
 
 export function readFeedingEntries() {

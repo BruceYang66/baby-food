@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, getCurrentInstance, nextTick, onMounted, ref } from 'vue'
 import type { GrowthChartDataset, GrowthRangeKey } from '@baby-food/shared-types'
 
 const props = defineProps<{
@@ -14,13 +14,42 @@ const emit = defineEmits<{
 }>()
 
 const padding = {
-  top: 24,
-  right: 44,
-  bottom: 56,
+  top: 28,
+  right: 32,
+  bottom: 64,
   left: 56
 }
-const drawHeight = 260
+const drawHeight = 336
 const minimumInnerWidth = 320
+const shellWidth = ref(0)
+const scrollLeft = ref(0)
+const instance = getCurrentInstance()
+
+function measureShellWidth() {
+  nextTick(() => {
+    if (!instance?.proxy) {
+      return
+    }
+
+    uni.createSelectorQuery()
+      .in(instance.proxy)
+      .select('.trend-chart-shell')
+      .boundingClientRect((rect) => {
+        if (rect && typeof rect.width === 'number') {
+          shellWidth.value = rect.width
+        }
+      })
+      .exec()
+  })
+}
+
+function handleScroll(event: { detail: { scrollLeft?: number } }) {
+  scrollLeft.value = event.detail.scrollLeft || 0
+}
+
+onMounted(() => {
+  measureShellWidth()
+})
 
 function formatMonthLabel(month: number) {
   if (month === 0) {
@@ -42,30 +71,21 @@ function formatMonthLabel(month: number) {
   return `${month}个月`
 }
 
-const domain = computed(() => {
-  const currentAge = Math.max(1, props.currentAgeMonths)
-
-  if (props.rangeKey === 'threeYear') {
-    return {
-      min: 0,
-      max: 36
-    }
+function formatAgeBadge(months: number) {
+  const roundedMonths = Math.max(0, Math.round(months))
+  if (roundedMonths < 12) {
+    return `${roundedMonths}月`
   }
 
-  if (props.rangeKey === 'oneYear') {
-    const max = Math.max(12, Math.ceil(currentAge))
-    return {
-      min: Math.max(0, max - 11),
-      max
-    }
-  }
+  const years = Math.floor(roundedMonths / 12)
+  const remainingMonths = roundedMonths % 12
+  return remainingMonths === 0 ? `${years}岁` : `${years}岁${remainingMonths}月`
+}
 
-  const max = Math.max(5, Math.ceil(currentAge))
-  return {
-    min: Math.max(0, max - 5),
-    max
-  }
-})
+const domain = computed(() => ({
+  min: props.dataset.minAgeMonths,
+  max: props.dataset.maxAgeMonths
+}))
 
 function getX(ageMonths: number) {
   const range = Math.max(domain.value.max - domain.value.min, 1)
@@ -207,22 +227,64 @@ const lineSegments = computed(() => {
 })
 
 const resolvedActivePoint = computed(() => pointPositions.value.find((item) => item.id === props.activePointId) || pointPositions.value[pointPositions.value.length - 1] || null)
+const todayWithinRange = computed(() => props.currentAgeMonths >= domain.value.min && props.currentAgeMonths <= domain.value.max)
+const todayAxisX = computed(() => getX(Math.min(Math.max(props.currentAgeMonths, domain.value.min), domain.value.max)))
+const todayBadgeLabel = computed(() => (todayWithinRange.value ? '今天' : `今天·${formatAgeBadge(props.currentAgeMonths)}`))
+const todayBadgeWidth = computed(() => (todayWithinRange.value ? 56 : 118))
 const todayAxisStyle = computed(() => ({
-  left: `${getX(Math.min(Math.max(props.currentAgeMonths, domain.value.min), domain.value.max))}px`,
+  left: `${todayAxisX.value}px`,
   top: `${padding.top}px`,
   height: `${drawHeight}px`
 }))
 const todayBadgeStyle = computed(() => {
-  const axisX = getX(Math.min(Math.max(props.currentAgeMonths, domain.value.min), domain.value.max))
-  const left = Math.min(Math.max(axisX + 10, padding.left + 6), canvasWidth.value - 64)
-  const top = padding.top + drawHeight - 40
+  const left = Math.min(Math.max(todayAxisX.value + 10, padding.left + 6), canvasWidth.value - todayBadgeWidth.value)
+  const top = padding.top + drawHeight - 42
 
   return {
     left: `${left}px`,
     top: `${top}px`
   }
 })
-const rightReference = computed(() => bandColumns.value[bandColumns.value.length - 1] || null)
+const referenceAnchorX = computed(() => {
+  const fallbackWidth = padding.left + innerWidth.value + padding.right
+  const viewportWidth = shellWidth.value || fallbackWidth
+  return Math.min(
+    Math.max(scrollLeft.value + viewportWidth - padding.right - 12, padding.left),
+    padding.left + innerWidth.value
+  )
+})
+const visibleReference = computed(() => {
+  const points = bandGuidePoints.value
+  if (!points.length) {
+    return null
+  }
+
+  const anchorX = referenceAnchorX.value
+  if (anchorX <= points[0].x) {
+    return points[0]
+  }
+
+  for (let index = 0; index < points.length - 1; index += 1) {
+    const current = points[index]
+    const next = points[index + 1]
+    if (anchorX <= next.x) {
+      const ratio = (anchorX - current.x) / Math.max(next.x - current.x, 0.001)
+      return {
+        x: anchorX,
+        p3Y: current.p3Y + (next.p3Y - current.p3Y) * ratio,
+        p50Y: current.p50Y + (next.p50Y - current.p50Y) * ratio,
+        p97Y: current.p97Y + (next.p97Y - current.p97Y) * ratio
+      }
+    }
+  }
+
+  return points[points.length - 1]
+})
+const emptyHintStyle = computed(() => ({
+  left: `${padding.left + 10}px`,
+  width: `${innerWidth.value - 20}px`,
+  top: `${padding.top + drawHeight / 2 - 24}px`
+}))
 const tooltipStyle = computed(() => {
   if (!resolvedActivePoint.value) {
     return {}
@@ -241,7 +303,7 @@ const tooltipStyle = computed(() => {
 
 <template>
   <view class="trend-chart-shell">
-    <scroll-view scroll-x class="trend-scroll" show-scrollbar="false">
+    <scroll-view scroll-x class="trend-scroll" show-scrollbar="false" @scroll="handleScroll">
       <view class="trend-canvas" :style="{ width: `${canvasWidth}px`, height: `${canvasHeight}px` }">
         <view v-for="line in yGrid" :key="line.id" class="grid-line" :style="{ top: `${line.y}px` }">
           <text class="grid-label" :style="{ top: `${line.y - 10}px` }">{{ line.label }}</text>
@@ -297,8 +359,10 @@ const tooltipStyle = computed(() => {
           }"
         />
 
-        <view class="today-axis" :style="todayAxisStyle" />
-        <view class="today-badge" :style="todayBadgeStyle">今天</view>
+        <view class="today-axis" :class="{ clipped: !todayWithinRange }" :style="todayAxisStyle" />
+        <view class="today-badge" :class="{ clipped: !todayWithinRange }" :style="todayBadgeStyle">{{ todayBadgeLabel }}</view>
+
+        <view v-if="!pointPositions.length" class="trend-empty-hint" :style="emptyHintStyle">该阶段暂无记录，继续记录后可看到个人曲线</view>
 
         <view
           v-for="segment in lineSegments"
@@ -328,21 +392,17 @@ const tooltipStyle = computed(() => {
           <text class="tooltip-percentile">百分位 {{ resolvedActivePoint.percentile }}%</text>
         </view>
 
-        <view v-if="rightReference" class="reference-tag top" :style="{ top: `${rightReference.top - 10}px` }">97%</view>
-        <view v-if="rightReference" class="reference-tag mid" :style="{ top: `${rightReference.p50Y - 10}px` }">50%</view>
-        <view
-          v-if="rightReference"
-          class="reference-tag bottom"
-          :style="{ top: `${rightReference.top + rightReference.height - 10}px` }"
-        >
-          3%
-        </view>
-
         <view v-for="tick in xTicks" :key="`label-${tick.age}`" class="x-label" :style="{ left: `${tick.x - 28}px` }">
           {{ tick.label }}
         </view>
       </view>
     </scroll-view>
+
+    <view v-if="visibleReference" class="reference-overlay">
+      <view class="reference-tag top" :style="{ top: `${visibleReference.p97Y - 12}px` }">97%</view>
+      <view class="reference-tag mid" :style="{ top: `${visibleReference.p50Y - 12}px` }">50%</view>
+      <view class="reference-tag bottom" :style="{ top: `${visibleReference.p3Y - 12}px` }">3%</view>
+    </view>
   </view>
 </template>
 
@@ -362,7 +422,7 @@ const tooltipStyle = computed(() => {
 .grid-line {
   position: absolute;
   left: 56px;
-  right: 44px;
+  right: 32px;
   height: 0;
   border-top: 1px dashed rgba(132, 147, 138, 0.16);
 }
@@ -386,18 +446,41 @@ const tooltipStyle = computed(() => {
   position: absolute;
   z-index: 2;
   width: 0;
-  border-left: 2rpx solid rgba(170, 170, 176, 0.72);
+  border-left: 3rpx solid rgba(96, 104, 122, 0.92);
+  box-shadow: 0 0 0 1rpx rgba(255, 255, 255, 0.18);
+}
+
+.today-axis.clipped {
+  border-left-style: dashed;
 }
 
 .today-badge {
   position: absolute;
-  z-index: 3;
-  padding: 8rpx 14rpx;
-  border-radius: 14rpx;
-  background: rgba(123, 123, 128, 0.92);
+  z-index: 4;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, #6b7280, #525866);
   color: #fff;
   font-size: 20rpx;
   line-height: 1;
+  box-shadow: 0 10rpx 20rpx rgba(82, 88, 102, 0.18);
+}
+
+.today-badge.clipped {
+  background: linear-gradient(135deg, #7b7f88, #636873);
+}
+
+.trend-empty-hint {
+  position: absolute;
+  z-index: 2;
+  padding: 16rpx 20rpx;
+  border-radius: 18rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 10rpx 22rpx rgba(29, 27, 25, 0.06);
+  text-align: center;
+  font-size: 22rpx;
+  line-height: 1.6;
+  color: #847d77;
 }
 
 .band-column {
@@ -414,11 +497,12 @@ const tooltipStyle = computed(() => {
 
 .band-guide.top,
 .band-guide.bottom {
-  background: rgba(114, 187, 136, 0.26);
+  background: rgba(114, 187, 136, 0.3);
 }
 
 .band-guide.mid {
-  background: rgba(114, 187, 136, 0.18);
+  height: 3rpx;
+  background: rgba(90, 173, 116, 0.44);
 }
 
 .trend-segment {
@@ -479,19 +563,40 @@ const tooltipStyle = computed(() => {
   color: #746d67;
 }
 
+.reference-overlay {
+  position: absolute;
+  top: 0;
+  right: 8px;
+  bottom: 0;
+  width: 64px;
+  pointer-events: none;
+}
+
 .reference-tag {
   position: absolute;
   right: 0;
-  font-size: 11px;
-  color: #72bb88;
+  min-width: 52rpx;
+  padding: 6rpx 10rpx;
+  border-radius: 999rpx;
+  font-size: 18rpx;
+  line-height: 1;
+  font-weight: 700;
+  text-align: center;
+}
+
+.reference-tag.top {
+  background: rgba(245, 166, 192, 0.18);
+  color: #bf4f79;
 }
 
 .reference-tag.mid {
-  color: #61a778;
+  background: rgba(114, 187, 136, 0.18);
+  color: #4d8e61;
 }
 
 .reference-tag.bottom {
-  color: #4f9d68;
+  background: rgba(90, 135, 227, 0.14);
+  color: #5076c6;
 }
 
 .x-label {
