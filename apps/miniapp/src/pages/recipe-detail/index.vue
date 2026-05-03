@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { RecipeDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import RecipeMetaGrid from '@/components/recipe/RecipeMetaGrid.vue'
 import RecipeSteps from '@/components/recipe/RecipeSteps.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import { getRecipeDetailData, normalizeAppImageUrl, openProtectedPage, readFavoriteRecipeIds, addFavorite, removeFavorite } from '@/services/api'
 
 const PENDING_RECIPE_KEY = 'pendingPlanRecipe'
@@ -15,6 +17,7 @@ const recipe = ref<RecipeDetail>()
 const loading = ref(false)
 const favoriteIds = ref<string[]>([])
 const isPreview = ref(false)
+const { showBackToTop, handlePageScroll, scrollPageToTop } = useBackToTop()
 
 function goRecipe(id: string) {
   uni.navigateTo({ url: `/pages/recipe-detail/index?id=${id}` })
@@ -62,6 +65,10 @@ onLoad((options) => {
   }
 
   uni.showToast({ title: '缺少食谱编号', icon: 'none' })
+})
+
+onPageScroll(({ scrollTop }) => {
+  handlePageScroll(scrollTop)
 })
 
 async function toggleFavorite() {
@@ -186,6 +193,8 @@ function addToPlan() {
         </view>
       </view>
     </view>
+
+    <BackToTopFab :visible="showBackToTop" extra-bottom="160rpx" @tap="scrollPageToTop" />
 
     <view v-if="!isPreview" class="fixed-bottom-actions">
       <view class="bottom-mini-btn" @tap="toggleFavorite">{{ favoriteIds.includes(recipe.id) ? '已收藏' : '收藏' }}</view>

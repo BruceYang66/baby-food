@@ -640,6 +640,23 @@ export function acceptFamilyInvite(inviteCode: string) {
   })
 }
 
+export function leaveFamily(babyId?: string) {
+  return request<AuthState>('/app/family/leave', {
+    method: 'POST',
+    data: babyId ? { babyId } : undefined
+  }).then((data) => {
+    updateStoredAuthState(data)
+    return data
+  })
+}
+
+export function removeFamilyMember(memberId: string, babyId?: string) {
+  return request<FamilyMembersResponse>(`/app/family/members/${encodeURIComponent(memberId)}/remove`, {
+    method: 'POST',
+    data: babyId ? { babyId } : undefined
+  })
+}
+
 // 将本地临时路径上传到服务器，返回永久 URL
 export function uploadAvatar(tempFilePath: string): Promise<string> {
   return new Promise((resolve, reject) => {

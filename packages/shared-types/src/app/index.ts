@@ -300,6 +300,9 @@ export interface FamilyMember {
   avatarUrl: string
   role: FamilyRole
   joinedAt?: string
+  relationshipLabel?: string
+  lastActiveAt?: string
+  loginCount?: number
   isCurrentUser?: boolean
   isOwner?: boolean
 }
@@ -314,11 +317,13 @@ export interface FamilyInvite {
   invitedByName: string
   expiresAt: string
   createdAt?: string
+  relationshipLabel?: string
 }
 
 export interface CreateFamilyInvitePayload {
   babyId?: string
   role: FamilyRole
+  relationshipLabel?: string
 }
 
 export interface CreateFamilyInviteResponse {

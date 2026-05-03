@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { onShow } from '@dcloudio/uni-app'
+import { onPageScroll, onShow } from '@dcloudio/uni-app'
 import type { DailyMealPlan, HistoryMealPlan, SaveMealPlanPayload, WeeklyMealPlanDay } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AppTabBar from '@/components/common/AppTabBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import MealTimeline from '@/components/meal/MealTimeline.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import { ensureProtectedPageAccess, getPlanPageData, openProtectedPage, saveFeedingRecord, saveMealPlan } from '@/services/api'
 
 const activeTab = ref<'today' | 'week' | 'history'>('today')
@@ -12,6 +14,7 @@ const todayPlan = ref<DailyMealPlan>()
 const history = ref<HistoryMealPlan[]>([])
 const weeklyPlans = ref<WeeklyMealPlanDay[]>([])
 const loading = ref(false)
+const { showBackToTop, handlePageScroll, scrollPageToTop } = useBackToTop()
 
 function getLocalDateKey(date = new Date()) {
   const year = date.getFullYear()
@@ -125,6 +128,9 @@ const expandedDate = ref<string | null>(null)
 
 onMounted(loadPlanPage)
 onShow(loadPlanPage)
+onPageScroll(({ scrollTop }) => {
+  handlePageScroll(scrollTop)
+})
 
 // 历史计划按 planDate 建立 Map，方便月历查找
 const historyMap = computed(() => {
@@ -408,6 +414,7 @@ const todayKey = getLocalDateKey()
       </view>
     </view>
 
+    <BackToTopFab :visible="showBackToTop" extra-bottom="132rpx" @tap="scrollPageToTop" />
     <AppTabBar active="feeding" />
   </view>
 </template>

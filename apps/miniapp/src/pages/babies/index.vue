@@ -44,11 +44,6 @@ async function handleActivate(b: BabyProfile) {
 }
 
 function editBaby(b: BabyProfile) {
-  if (b.role === 'viewer') {
-    uni.showToast({ title: '只读成员暂不能编辑宝宝档案', icon: 'none' })
-    return
-  }
-
   uni.navigateTo({ url: `/pages/baby-form/index?id=${b.id}` })
 }
 
@@ -124,9 +119,9 @@ function addBaby() {
               <text class="family-icon">🏠</text>
               <text class="family-label">家庭</text>
             </view>
-            <view class="edit-btn" :class="{ disabled: b.role === 'viewer' }" @tap.stop="editBaby(b)">
+            <view class="edit-btn" :class="{ readonly: !b.isOwner }" @tap.stop="editBaby(b)">
               <text class="edit-icon">✎</text>
-              <text class="edit-label">编辑</text>
+              <text class="edit-label">{{ b.isOwner ? '编辑' : '查看' }}</text>
             </view>
           </view>
         </view>
@@ -348,8 +343,8 @@ function addBaby() {
   color: var(--mini-text-muted);
 }
 
-.edit-btn.disabled {
-  opacity: 0.5;
+.edit-btn.readonly {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 /* 添加宝宝行 */

@@ -62,7 +62,9 @@ import {
   getUserFavoriteIds,
   getUserFeedbackHistory,
   getVaccinePageData,
+  leaveFamily,
   addUserFavorite,
+  removeFamilyMember,
   removeUserFavorite,
   listBabyProfiles,
   saveVaccineRecord,
@@ -91,6 +93,11 @@ type BabyProfilePayload = {
 type FamilyInvitePayload = {
   babyId?: string
   role?: 'owner' | 'editor' | 'viewer'
+  relationshipLabel?: string
+}
+
+type FamilyMutationPayload = {
+  babyId?: string
 }
 
 type WechatSessionResponse = {
@@ -212,6 +219,12 @@ function getStatusCode(error: unknown) {
     || error.message === '疫苗接种状态不正确'
     || error.message === '接种日期格式不正确'
     || error.message === '缺少 scheduleId'
+    || error.message === '关系标签最多 12 个字'
+    || error.message === '拥有者不能退出亲友团'
+    || error.message === '未找到可退出的亲友关系'
+    || error.message === '未找到可移除的亲友成员'
+    || error.message === '不能移除拥有者'
+    || error.message === '不能移除自己，请使用退出功能'
   ) {
     return 400
   }
@@ -638,6 +651,27 @@ app.post('/api/app/family/invites/accept', requireAppAuth, async (req, res) => {
     res.json({ ok: true, data: await acceptFamilyInvite(getAppUserId(req), inviteCode) })
   } catch (error) {
     sendError(res, error, '家庭邀请接受失败')
+  }
+})
+
+app.post('/api/app/family/leave', requireAppAuth, async (req, res) => {
+  try {
+    const payload = (req.body ?? {}) as FamilyMutationPayload
+    res.json({ ok: true, data: await leaveFamily(getAppUserId(req), payload.babyId) })
+  } catch (error) {
+    sendError(res, error, '退出亲友团失败')
+  }
+})
+
+app.post('/api/app/family/members/:memberId/remove', requireAppAuth, async (req, res) => {
+  try {
+    const payload = (req.body ?? {}) as FamilyMutationPayload
+    res.json({
+      ok: true,
+      data: await removeFamilyMember(getAppUserId(req), getRouteParam(req.params.memberId), payload.babyId)
+    })
+  } catch (error) {
+    sendError(res, error, '剔除亲友成员失败')
   }
 })
 

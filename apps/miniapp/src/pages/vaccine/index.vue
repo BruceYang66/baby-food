@@ -4,7 +4,9 @@ import { onShow, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { VaccinePageData, VaccineRecordItem } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import AppTabBar from '@/components/common/AppTabBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import DatePickerModal from '@/components/common/DatePickerModal.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import { readAuthSession, getVaccinePageData, saveVaccineRecord } from '@/services/api'
 
 type TabKey = 'timeline' | 'records' | 'tips'
@@ -15,6 +17,7 @@ const loading = ref(false)
 const activeTab = ref<TabKey>('timeline')
 const showDatePicker = ref(false)
 const currentVaccineItem = ref<VaccineRecordItem | null>(null)
+const { showBackToTop, scrollViewTop, handleScrollViewScroll, scrollScrollViewToTop } = useBackToTop()
 
 // 按月龄排序时间轴组
 const sortedTimelineGroups = computed(() => {
@@ -59,6 +62,10 @@ const completedItems = computed(() => allItems.value.filter((item) => item.statu
 
 function switchTab(tab: TabKey) {
   activeTab.value = tab
+}
+
+function handleScrollContentScroll(event: { detail: { scrollTop: number } }) {
+  handleScrollViewScroll(event.detail.scrollTop)
 }
 
 function getCategoryLabel(item: VaccineRecordItem) {
@@ -309,7 +316,14 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
     </view>
 
     <!-- 可滚动内容区域 -->
-    <scroll-view class="scroll-content" scroll-y :show-scrollbar="false">
+    <scroll-view
+      class="scroll-content"
+      scroll-y
+      :scroll-top="scrollViewTop"
+      scroll-with-animation
+      :show-scrollbar="false"
+      @scroll="handleScrollContentScroll"
+    >
       <!-- 时间轴视图 -->
       <view v-if="activeTab === 'timeline' && pageData" class="timeline-view">
         <view class="timeline-line"></view>
@@ -393,6 +407,7 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
       </view>
     </scroll-view>
 
+    <BackToTopFab :visible="showBackToTop" extra-bottom="132rpx" @tap="scrollScrollViewToTop" />
     <AppTabBar active="vaccine" />
 
     <DatePickerModal

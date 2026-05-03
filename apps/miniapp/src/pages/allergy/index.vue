@@ -5,6 +5,7 @@ import { readAuthSession, updateBabyProfile } from '@/services/api'
 
 const session = readAuthSession()
 const babyId = session?.babyProfile?.id ?? ''
+const isOwner = session?.babyProfile?.isOwner === true
 const allergens = ref<string[]>([...(session?.babyProfile?.allergens ?? [])])
 const newAllergen = ref('')
 const saving = ref(false)
@@ -15,6 +16,10 @@ const hasChanged = computed(() => {
 })
 
 function addAllergen() {
+  if (!isOwner) {
+    return
+  }
+
   const value = newAllergen.value.trim()
   if (!value) return
   if (allergens.value.includes(value)) {
@@ -26,10 +31,19 @@ function addAllergen() {
 }
 
 function removeAllergen(item: string) {
+  if (!isOwner) {
+    return
+  }
+
   allergens.value = allergens.value.filter((a) => a !== item)
 }
 
 async function saveChanges() {
+  if (!isOwner) {
+    uni.showToast({ title: '当前亲友仅可查看过敏信息', icon: 'none' })
+    return
+  }
+
   if (!babyId) {
     uni.showToast({ title: '未找到宝宝档案', icon: 'none' })
     return
@@ -64,12 +78,12 @@ async function saveChanges() {
       <view v-if="allergens.length" class="pill-row">
         <view v-for="item in allergens" :key="item" class="pill">
           <text class="pill-text">{{ item }}</text>
-          <text class="pill-del" @tap="removeAllergen(item)">×</text>
+          <text v-if="isOwner" class="pill-del" @tap="removeAllergen(item)">×</text>
         </view>
       </view>
-      <text v-else class="allergy-empty">还没有记录过敏原，可在下方添加。</text>
+      <text v-else class="allergy-empty">{{ isOwner ? '还没有记录过敏原，可在下方添加。' : '当前还没有记录过敏原。' }}</text>
 
-      <view class="add-row">
+      <view v-if="isOwner" class="add-row">
         <input
           v-model="newAllergen"
           class="add-input"
@@ -80,9 +94,12 @@ async function saveChanges() {
         />
         <view class="add-btn" @tap="addAllergen">添加</view>
       </view>
+      <view v-else class="readonly-tip soft-card">
+        <text class="readonly-text">当前为亲友查看模式，仅宝宝创建者可以修改过敏信息。</text>
+      </view>
     </view>
 
-    <view v-if="hasChanged" class="save-bar">
+    <view v-if="isOwner && hasChanged" class="save-bar">
       <view class="save-btn" @tap="saveChanges">{{ saving ? '保存中...' : '保存修改' }}</view>
     </view>
   </view>
@@ -163,6 +180,18 @@ async function saveChanges() {
   font-weight: 700;
   display: flex;
   align-items: center;
+}
+
+.readonly-tip {
+  margin-top: 24rpx;
+  padding: 24rpx;
+}
+
+.readonly-text {
+  display: block;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: var(--mini-text-muted);
 }
 
 .save-bar {

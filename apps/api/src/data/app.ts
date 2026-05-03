@@ -1049,13 +1049,26 @@ async function getActiveBabyId(userId: string) {
   }
 }
 
-async function setActiveBabyId(userId: string, babyId: string) {
+async function setActiveBabyId(userId: string, babyId: string | null) {
   try {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await prisma.user.update({ where: { id: userId }, data: { activeBabyId: babyId } as any })
   } catch {
     await prisma.$executeRaw`UPDATE users SET active_baby_id = ${babyId} WHERE id = ${userId}`
   }
+}
+
+async function syncUserActiveBabyAfterAccessChange(userId: string) {
+  const [activeBabyId, accessRecords] = await Promise.all([
+    getActiveBabyId(userId),
+    getBabyAccessRecords(userId)
+  ])
+
+  if (activeBabyId && accessRecords.some((record) => record.baby.id === activeBabyId)) {
+    return
+  }
+
+  await setActiveBabyId(userId, accessRecords[0]?.baby.id ?? null)
 }
 
 async function ensureBabyMembership(userId: string, babyId: string, options: { role?: 'owner' | 'editor' | 'viewer'; displayName?: string | null } = {}) {
@@ -2798,10 +2811,25 @@ function createInviteCode() {
   return randomBytes(4).toString('hex').toUpperCase()
 }
 
+function normalizeRelationshipLabel(value?: string | null) {
+  const label = value?.trim()
+
+  if (!label) {
+    return null
+  }
+
+  if (label.length > 12) {
+    throw new Error('关系标签最多 12 个字')
+  }
+
+  return label
+}
+
 function formatFamilyMember(member: {
   id: string
   userId: string
   role: 'owner' | 'collaborator' | 'caregiver' | 'viewer'
+  displayName?: string | null
   createdAt: Date
   user: { id: string; nickname: string; avatarUrl: string | null }
 }) {
@@ -2812,6 +2840,7 @@ function formatFamilyMember(member: {
     avatarUrl: member.user.avatarUrl ?? '',
     role: toFamilyRole(member.role),
     joinedAt: member.createdAt.toISOString(),
+    relationshipLabel: member.displayName ?? undefined,
     isOwner: member.role === 'owner'
   }
 }
@@ -2822,6 +2851,7 @@ function formatFamilyInvite(invite: {
   inviteCode: string
   role: 'owner' | 'collaborator' | 'caregiver' | 'viewer'
   status: 'pending' | 'accepted' | 'declined' | 'revoked' | 'expired'
+  inviteeNickname?: string | null
   expiresAt: Date | null
   createdAt: Date
   inviterUserId: string
@@ -2836,7 +2866,8 @@ function formatFamilyInvite(invite: {
     invitedByUserId: invite.inviterUserId,
     invitedByName: invite.inviterUser.nickname,
     expiresAt: (invite.expiresAt ?? addDays(getToday(), 7)).toISOString(),
-    createdAt: invite.createdAt.toISOString()
+    createdAt: invite.createdAt.toISOString(),
+    relationshipLabel: invite.inviteeNickname ?? undefined
   }
 }
 
@@ -2881,24 +2912,54 @@ export async function getFamilyMembers(userId: string, babyId?: string) {
     ]
   })
 
+  const activityRows = members.length
+    ? await prisma.userLoginLog.groupBy({
+        by: ['userId'],
+        where: {
+          userId: {
+            in: members.map((member) => member.userId)
+          }
+        },
+        _max: { loginAt: true },
+        _count: { _all: true }
+      })
+    : []
+
+  const activityMap = new Map(activityRows.map((row) => [
+    row.userId,
+    {
+      lastActiveAt: row._max.loginAt?.toISOString(),
+      loginCount: row._count._all
+    }
+  ]))
+
   return {
     baby: formatBabyProfile(baby),
-    members: members.map((member) => ({
-      ...formatFamilyMember(member),
-      isCurrentUser: member.userId === userId
-    }))
+    members: members.map((member) => {
+      const activity = activityMap.get(member.userId)
+
+      return {
+        ...formatFamilyMember(member),
+        lastActiveAt: activity?.lastActiveAt,
+        loginCount: activity?.loginCount,
+        isCurrentUser: member.userId === userId
+      }
+    })
   }
 }
 
 export async function createFamilyInvite(userId: string, payload: {
   babyId?: string
   role?: 'owner' | 'editor' | 'viewer'
+  relationshipLabel?: string
 }) {
   const baby = await ensureOwnerBaby(userId, payload.babyId)
+  const relationshipLabel = normalizeRelationshipLabel(payload.relationshipLabel)
   const invite = await prisma.babyInvite.create({
     data: {
       babyId: baby.id,
       inviterUserId: userId,
+      inviteeNickname: relationshipLabel,
       role: payload.role === 'viewer' ? 'viewer' : payload.role === 'owner' ? 'owner' : 'collaborator',
       status: 'pending',
       inviteCode: createInviteCode(),
@@ -2985,6 +3046,55 @@ export async function acceptFamilyInvite(userId: string, inviteCode: string) {
   })
 
   return getFamilyMembers(userId, invite.babyId)
+}
+
+export async function leaveFamily(userId: string, babyId?: string) {
+  const baby = await ensureAccessibleBaby(userId, babyId)
+
+  if (baby.isOwner || baby.accessRole === 'owner' || baby.userId === userId) {
+    throw new Error('拥有者不能退出亲友团')
+  }
+
+  const membership = await prisma.babyMember.findFirst({
+    where: {
+      babyId: baby.id,
+      userId
+    }
+  })
+
+  if (!membership) {
+    throw new Error('未找到可退出的亲友关系')
+  }
+
+  await prisma.babyMember.delete({ where: { id: membership.id } })
+  await syncUserActiveBabyAfterAccessChange(userId)
+  return getAppAuthState(userId)
+}
+
+export async function removeFamilyMember(ownerUserId: string, memberId: string, babyId?: string) {
+  const baby = await ensureOwnerBaby(ownerUserId, babyId)
+  const member = await prisma.babyMember.findFirst({
+    where: {
+      id: memberId,
+      babyId: baby.id
+    }
+  })
+
+  if (!member) {
+    throw new Error('未找到可移除的亲友成员')
+  }
+
+  if (member.userId === ownerUserId) {
+    throw new Error('不能移除自己，请使用退出功能')
+  }
+
+  if (member.role === 'owner') {
+    throw new Error('不能移除拥有者')
+  }
+
+  await prisma.babyMember.delete({ where: { id: member.id } })
+  await syncUserActiveBabyAfterAccessChange(member.userId)
+  return getFamilyMembers(ownerUserId, baby.id)
 }
 
 function buildGuideStage(stage: {

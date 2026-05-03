@@ -12,12 +12,25 @@ page {
   --mini-text-muted: #6B625B;
   --mini-danger: #D66A6A;
   --mini-warning: #F2CF72;
+  --mini-family-bg: #0C0C0D;
+  --mini-family-surface: #232224;
+  --mini-family-surface-soft: #2E2C2F;
+  --mini-family-surface-strong: #161517;
+  --mini-family-text: #F7F2EC;
+  --mini-family-text-muted: rgba(247, 242, 236, 0.72);
+  --mini-family-border: rgba(255, 255, 255, 0.08);
+  --mini-family-accent: #FF4F93;
+  --mini-family-accent-deep: #C81D62;
   --mini-radius-sm: 16rpx;
   --mini-radius-md: 24rpx;
   --mini-radius-lg: 36rpx;
   --mini-radius-pill: 999rpx;
   --mini-shadow-soft: 0 18rpx 48rpx rgba(138, 81, 8, 0.10);
   --mini-shadow-card: 0 12rpx 28rpx rgba(89, 63, 39, 0.08);
+  --mini-floating-edge: 24rpx;
+  --mini-floating-bottom: 28rpx;
+  --mini-floating-size: 88rpx;
+  --mini-floating-z: 30;
 }
 
 view,

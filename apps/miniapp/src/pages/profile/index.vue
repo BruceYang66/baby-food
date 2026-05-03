@@ -36,7 +36,8 @@ const publicMenus = [
   }
 ]
 
-const canEditActiveBaby = computed(() => activeBaby.value?.role !== 'viewer')
+const canEditActiveBaby = computed(() => activeBaby.value?.isOwner === true)
+const activeBabyActionLabel = computed(() => canEditActiveBaby.value ? '编辑' : '查看')
 const displayUserAvatar = computed(() => currentUser.value?.avatarUrl || DEFAULT_USER_AVATAR)
 const displayUserNickname = computed(() => currentUser.value?.nickname || '新朋友')
 const activeBabyRoleLabel = computed(() => {
@@ -116,11 +117,6 @@ function openUserProfileEditor() {
 
 function openActiveBabyEditor() {
   if (!activeBaby.value) {
-    return
-  }
-
-  if (!canEditActiveBaby.value) {
-    uni.showToast({ title: '当前为只读成员，暂不能编辑宝宝档案', icon: 'none' })
     return
   }
 
@@ -282,7 +278,7 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
         </view>
         <view class="hero-edit-btn" :class="{ disabled: !canEditActiveBaby }" @tap.stop="openActiveBabyEditor">
           <text class="hero-edit-icon">✎</text>
-          <text class="hero-edit-label">编辑</text>
+          <text class="hero-edit-label">{{ activeBabyActionLabel }}</text>
         </view>
       </view>
 

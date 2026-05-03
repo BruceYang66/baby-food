@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { getGuideData, readAuthSession, wechatLogin } from '@/services/api'
-import loginCover from './cover-illustration.png'
 
 const heroTitle = ref('科学辅食，悦享成长')
 const heroDesc = ref('为宝宝量身定制每一餐，开启健康饮食第一步。')
@@ -88,13 +87,12 @@ function guestEnter() {
     <view class="hero-wrap">
       <view class="hero-glow mint"></view>
       <view class="hero-glow peach"></view>
-      <view class="hero-card">
-        <image
-          class="hero-image"
-          :src="loginCover"
-          mode="aspectFit"
-        />
-      </view>
+      <image
+        class="hero-image"
+        src="https://images.unsplash.com/photo-1516627145497-ae6968895b74?auto=format&fit=crop&w=900&q=80"
+        mode="aspectFill"
+      />
+      <view class="hero-badge">🌿</view>
     </view>
 
     <view class="intro-block">
@@ -189,19 +187,10 @@ function guestEnter() {
   justify-content: center;
 }
 
-.hero-card {
-  width: 100%;
-  height: 100%;
-  padding: 24rpx;
-  border-radius: 48rpx;
-  background: rgba(255,255,255,0.92);
-  box-shadow: 0 20rpx 60rpx rgba(76, 63, 52, 0.08);
-}
-
 .hero-image {
   width: 100%;
   height: 100%;
-  border-radius: 32rpx;
+  border-radius: 48rpx;
 }
 
 .hero-glow {
@@ -225,6 +214,19 @@ function guestEnter() {
   width: 220rpx;
   height: 220rpx;
   background: rgba(255, 179, 102, 0.5);
+}
+
+.hero-badge {
+  position: absolute;
+  right: 24rpx;
+  bottom: 24rpx;
+  width: 88rpx;
+  height: 88rpx;
+  border-radius: 28rpx;
+  background: rgba(255,255,255,0.9);
+  text-align: center;
+  line-height: 88rpx;
+  font-size: 40rpx;
 }
 
 .intro-block {

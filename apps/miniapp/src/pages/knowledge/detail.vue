@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onLoad, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll, onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
 import type { KnowledgeArticleDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import { getKnowledgeArticleDetail, normalizeAppImageUrl } from '@/services/api'
 
 const PREVIEW_STORAGE_KEY = 'adminKnowledgePreview'
@@ -11,6 +13,7 @@ const articleId = ref('')
 const article = ref<KnowledgeArticleDetail>()
 const loading = ref(false)
 const isPreview = ref(false)
+const { showBackToTop, handlePageScroll, scrollPageToTop } = useBackToTop()
 
 function resolveSectionImages(section: NonNullable<KnowledgeArticleDetail['sections']>[number]) {
   if (section.imageItems && section.imageItems.length > 0) {
@@ -84,6 +87,10 @@ function handleBack() {
     })
   }
 }
+
+onPageScroll(({ scrollTop }) => {
+  handlePageScroll(scrollTop)
+})
 
 onLoad((options) => {
   if (options?.preview === 'admin' && readPreviewArticle()) {
@@ -197,6 +204,8 @@ onShareTimeline(() => ({
     <view v-if="loading" class="loading-state">
       <text class="loading-text">加载中...</text>
     </view>
+
+    <BackToTopFab :visible="showBackToTop" @tap="scrollPageToTop" />
   </view>
 </template>
 
