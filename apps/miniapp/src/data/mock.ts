@@ -356,3 +356,137 @@ export const wechatEntries: WechatEntry[] = [
   { key: 'desktop', title: '添加到我的小程序', icon: '➕' },
   { key: 'share', title: '分享小程序', icon: '🔗' }
 ]
+
+export const homeDashboardDailyChange = '我的独立意识越来越强啦，总是想要自己来完成一些事情，比如穿衣服时，我会说“我自己来”。'
+
+export const homeDashboardMonthlyFocusText = '继续保持规律进餐，逐步丰富食材种类，并鼓励宝宝练习自主进食。'
+
+export const homeDashboardModules = [
+  {
+    key: 'feeding-hub',
+    title: '宝宝辅食',
+    icon: '🍲',
+    route: '/pages/feeding/index',
+    implemented: true,
+    tone: 'orange',
+    shape: 'shape-4'
+  },
+  {
+    key: 'vaccine',
+    title: '疫苗接种',
+    icon: '💉',
+    route: '/pages/vaccine/index',
+    implemented: true,
+    tone: 'teal',
+    shape: 'shape-3'
+  },
+  {
+    key: 'knowledge',
+    title: '干货百科',
+    icon: '📘',
+    route: '/pages/knowledge/index',
+    implemented: true,
+    tone: 'blue',
+    shape: 'shape-2'
+  },
+  {
+    key: 'taboo',
+    title: '生病忌口',
+    icon: '🚫',
+    route: '/pages/taboo/index',
+    implemented: true,
+    tone: 'rose',
+    shape: 'shape-1'
+  },
+  {
+    key: 'guide',
+    title: '饮食指南',
+    icon: '🥣',
+    route: '/pages/guide/index',
+    implemented: true,
+    tone: 'amber',
+    shape: 'shape-2'
+  },
+  {
+    key: 'wheel',
+    title: '辅食转盘',
+    icon: '🎡',
+    implemented: false,
+    tone: 'purple',
+    shape: 'shape-1'
+  },
+  {
+    key: 'record',
+    title: '喂养记录',
+    icon: '📝',
+    implemented: false,
+    tone: 'pink',
+    shape: 'shape-1'
+  },
+  {
+    key: 'growth',
+    title: '身高体重',
+    icon: '📏',
+    implemented: false,
+    tone: 'green',
+    shape: 'shape-3'
+  },
+  {
+    key: 'favorite',
+    title: '我的收藏',
+    icon: '🔖',
+    route: '/pages/favorites/index',
+    implemented: true,
+    tone: 'indigo',
+    shape: 'shape-4'
+  },
+  {
+    key: 'feedback',
+    title: '反馈中心',
+    icon: '💬',
+    route: '/pages/help/index',
+    implemented: true,
+    tone: 'slate',
+    shape: 'shape-3'
+  }
+] as const
+
+export const homeDashboardTodos = [
+  {
+    id: 'todo-ad',
+    title: '服用 AD 滴剂',
+    timeLabel: '09:00',
+    status: 'pending'
+  },
+  {
+    id: 'todo-vaccine',
+    title: '接种五联疫苗（第四剂）',
+    timeLabel: '5月15日',
+    status: 'pending'
+  }
+] as const
+
+export const homeDashboardRecommendations = [
+  {
+    id: 'rec-help',
+    title: '宝宝办证全攻略：从出生证到社保',
+    tag: '干货',
+    badge: 'NEW',
+    image: recipeDetail.heroImage,
+    route: '/pages/help/index'
+  },
+  {
+    id: 'rec-knowledge',
+    title: '夏季宝宝开胃辅食：5款高颜值面点',
+    tag: '食谱',
+    image: featuredRecipes[2].image,
+    route: '/pages/knowledge/index'
+  },
+  {
+    id: 'rec-list',
+    title: '一周不重样搭配思路，做饭更省心',
+    tag: '推荐',
+    image: featuredRecipes[1].image,
+    route: '/pages/recipe-list/index'
+  }
+] as const

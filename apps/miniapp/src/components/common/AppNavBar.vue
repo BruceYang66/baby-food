@@ -8,6 +8,7 @@ const props = defineProps<{
   rightText?: string
   showBack?: boolean
   reserveLeftSpace?: boolean
+  silentBackFallback?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -48,11 +49,13 @@ function handleBack() {
     uni.navigateBack({
       delta: 1,
       fail: () => {
-        // 如果返回失败，尝试跳转到首页
+        if (props.silentBackFallback) {
+          return
+        }
+
         uni.switchTab({
           url: '/pages/home/index',
           fail: () => {
-            // 如果 switchTab 也失败，使用 reLaunch
             uni.reLaunch({ url: '/pages/home/index' })
           }
         })
@@ -61,7 +64,10 @@ function handleBack() {
     return
   }
 
-  // 如果只有一个页面，跳转到首页
+  if (props.silentBackFallback) {
+    return
+  }
+
   uni.switchTab({
     url: '/pages/home/index',
     fail: () => {

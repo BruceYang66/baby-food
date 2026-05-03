@@ -106,7 +106,7 @@ onShareTimeline(() => ({ title: '宝宝干货百科' }))
 
 <template>
   <view class="page-shell knowledge-page">
-    <AppNavBar title="干货百科" subtitle="月龄喂养、病期忌口与经验入口" />
+    <AppNavBar title="干货百科" subtitle="月龄喂养、病期忌口与经验入口" :show-back="true" :silent-back-fallback="true" />
 
     <view class="search-box">
       <view class="search-input-wrapper">

@@ -1,22 +1,49 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { onShareAppMessage, onShareTimeline } from '@dcloudio/uni-app'
-import type { BabyProfile, HomeFeature, HomeShortcut, IngredientHighlight } from '@baby-food/shared-types'
+import { computed, ref } from 'vue'
+import { onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
+import type { BabyProfile } from '@baby-food/shared-types'
 import AppTabBar from '@/components/common/AppTabBar.vue'
-import { readAuthSession, getHomeData, openProtectedPage } from '@/services/api'
+import {
+  getFamilyMembers,
+  getHomeData,
+  getKnowledgePageData,
+  normalizeAppImageUrl,
+  openProtectedPage,
+  readAuthSession
+} from '@/services/api'
+import {
+  homeDashboardDailyChange,
+  homeDashboardModules,
+  homeDashboardMonthlyFocusText,
+  homeDashboardRecommendations,
+  homeDashboardTodos
+} from '@/data/mock'
 
-const SAVED_PLAN_KEY = 'savedGeneratePlan'
-const RESTORE_SAVED_PLAN_KEY = 'restoreSavedPlan'
-const PREFERRED_INGREDIENT_KEY = 'preferredIngredient'
+type DashboardModule = (typeof homeDashboardModules)[number]
+type DashboardTodo = (typeof homeDashboardTodos)[number]
+type DashboardRecommendation = {
+  id: string
+  title: string
+  tag?: string
+  badge?: string
+  image: string
+  route: string
+}
+
+const HOME_HERO_BACKDROP = 'https://lh3.googleusercontent.com/aida-public/AB6AXuCHmXfJcO59h61fGz9hA8pX97XG7-Xf8n8xS-L7P0G4-o9M-v3-R3X8-r6_f-yG'
 
 const isLoggedIn = ref(false)
-const baby = ref<BabyProfile>()
-const features = ref<HomeFeature[]>([])
-const shortcuts = ref<HomeShortcut[]>([])
-const ingredients = ref<IngredientHighlight[]>([])
-const hasAnyPlan = ref(true)
+const baby = ref<BabyProfile | null>(null)
+const familyFriendCount = ref(0)
+const homeRecommendations = ref<DashboardRecommendation[]>(homeDashboardRecommendations.map((item, index) => ({
+  id: item.id,
+  title: item.title,
+  tag: item.tag,
+  badge: item.badge ?? (index === 0 ? '最新' : undefined),
+  image: normalizeAppImageUrl(item.image),
+  route: item.route
+})))
 
-// 公开功能列表（不需要登录）
 const publicFeatures = [
   {
     key: 'guide',
@@ -64,24 +91,111 @@ const pageStyle = computed(() => ({
   paddingTop: `${getStatusBarHeight() + 12}px`
 }))
 
-onMounted(async () => {
+const heroAvatar = computed(() => {
+  if (!baby.value?.avatar) {
+    return ''
+  }
+
+  return normalizeAppImageUrl(baby.value.avatar)
+})
+
+const heroBackdrop = computed(() => heroAvatar.value || HOME_HERO_BACKDROP)
+const displayBabyName = computed(() => baby.value?.nickname || '米米')
+const displayBabyAge = computed(() => baby.value?.monthAgeLabel || '')
+const displayBabyStage = computed(() => baby.value?.stageLabel || '')
+const monthlyFocusLabel = computed(() => baby.value?.monthAgeLabel || '当前阶段')
+const familyPillText = computed(() => {
+  if (familyFriendCount.value > 0) {
+    return `${familyFriendCount.value}位亲友`
+  }
+
+  return '邀请亲友'
+})
+const todayLabel = computed(() => {
+  const now = new Date()
+  return `今日 ${now.getMonth() + 1}月${now.getDate()}日`
+})
+
+async function loadFamilyFriendCount(babyId?: string) {
+  if (!babyId) {
+    familyFriendCount.value = 0
+    return
+  }
+
+  try {
+    const data = await getFamilyMembers(babyId)
+    familyFriendCount.value = Math.max(0, data.members?.length ?? 0)
+  } catch {
+    familyFriendCount.value = 0
+  }
+}
+
+async function loadHomeRecommendations() {
+  try {
+    const data = await getKnowledgePageData()
+    const latestArticles = data.articles.slice(0, 3)
+
+    if (!latestArticles.length) {
+      return
+    }
+
+    homeRecommendations.value = latestArticles.map((article, index) => ({
+      id: article.id,
+      title: article.title,
+      tag: article.categoryLabel || article.tags[0] || '干货',
+      badge: index === 0 ? '最新' : undefined,
+      image: normalizeAppImageUrl(article.image || ''),
+      route: `/pages/knowledge/detail?id=${article.id}`
+    }))
+  } catch {
+    homeRecommendations.value = homeDashboardRecommendations.map((item, index) => ({
+      id: item.id,
+      title: item.title,
+      tag: item.tag,
+      badge: item.badge ?? (index === 0 ? '最新' : undefined),
+      image: normalizeAppImageUrl(item.image),
+      route: item.route
+    }))
+  }
+}
+
+async function loadHome() {
   const session = readAuthSession()
   isLoggedIn.value = !!session?.token
+  baby.value = session?.babyProfile ?? null
 
-  if (isLoggedIn.value) {
-    try {
-      const data = await getHomeData()
-      baby.value = data.babyProfile
-      features.value = data.homeFeatures
-      shortcuts.value = data.homeShortcuts
-      ingredients.value = data.ingredientHighlights
-      hasAnyPlan.value = (data as any).hasAnyPlan !== false
-    } catch (error) {
-      console.error('Failed to load home data:', error)
-      // 加载失败时显示公开内容
-      isLoggedIn.value = false
-    }
+  if (!isLoggedIn.value) {
+    familyFriendCount.value = 0
+    void loadHomeRecommendations()
+    return
   }
+
+  try {
+    const data = await getHomeData()
+    baby.value = data.babyProfile
+    await Promise.all([
+      loadFamilyFriendCount(data.babyProfile?.id),
+      loadHomeRecommendations()
+    ])
+  } catch (error) {
+    console.error('Failed to load home data:', error)
+
+    if (baby.value?.id) {
+      await Promise.all([
+        loadFamilyFriendCount(baby.value.id),
+        loadHomeRecommendations()
+      ])
+      return
+    }
+
+    isLoggedIn.value = false
+    familyFriendCount.value = 0
+    void loadHomeRecommendations()
+  }
+}
+
+onShow(() => {
+  void loadHome()
 })
 
 function goLogin() {
@@ -90,67 +204,76 @@ function goLogin() {
 
 function go(url: string) {
   const routeBase = url.split('?')[0]
+  const publicPages = [
+    '/pages/guide/index',
+    '/pages/taboo/index',
+    '/pages/vaccine/index',
+    '/pages/knowledge/index',
+    '/pages/knowledge/detail',
+    '/pages/help/index'
+  ]
 
-  // 公开页面直接跳转
-  const publicPages = ['/pages/guide/index', '/pages/taboo/index', '/pages/vaccine/index', '/pages/knowledge/index']
   if (publicPages.includes(routeBase)) {
     uni.navigateTo({ url })
     return
   }
 
-  // 需要登录的页面
   openProtectedPage(url)
 }
 
-function goMessage() {
-  openProtectedPage('/pages/message/index')
+function goFamily() {
+  openProtectedPage('/pages/family/index')
 }
 
-function goIngredient(name: string) {
-  uni.setStorageSync(PREFERRED_INGREDIENT_KEY, name)
-
-  if (!openProtectedPage('/pages/generate/index')) {
-    uni.removeStorageSync(PREFERRED_INGREDIENT_KEY)
-  }
-}
-
-function goShortcut(shortcut: HomeShortcut) {
-  if (shortcut.actionKey === 'recent-plan') {
-    if (shortcut.planPreview) {
-      uni.setStorageSync(SAVED_PLAN_KEY, {
-        savedAt: new Date().toISOString(),
-        babyProfile: baby.value,
-        todayMealPlan: shortcut.planPreview,
-        mealCount: shortcut.planPreview.entries.some((entry) => entry.slot === 'snack') ? '3餐+点心' : shortcut.planPreview.entries.length <= 2 ? '2餐' : '3餐',
-        goals: []
-      })
-      uni.setStorageSync(RESTORE_SAVED_PLAN_KEY, true)
-
-      if (!openProtectedPage('/pages/generate/index')) {
-        uni.removeStorageSync(RESTORE_SAVED_PLAN_KEY)
-        uni.removeStorageSync(SAVED_PLAN_KEY)
-      }
-    } else {
-      uni.showToast({ title: '暂无最近计划', icon: 'none' })
-    }
+function goEditBaby() {
+  if (baby.value?.id) {
+    uni.navigateTo({ url: `/pages/baby-form/index?id=${baby.value.id}` })
     return
   }
 
-  if (shortcut.actionKey === 'favorites') {
-    openProtectedPage('/pages/favorites/index')
+  uni.navigateTo({ url: '/pages/baby-form/index?new=1' })
+}
+
+function showComingSoon(title = '功能建设中') {
+  uni.showToast({ title, icon: 'none' })
+}
+
+function openModule(module: DashboardModule) {
+  if (!module.implemented || !module.route) {
+    showComingSoon('功能建设中')
     return
   }
 
-  if (shortcut.actionKey === 'message') {
-    openProtectedPage('/pages/message/index')
-  }
+  go(module.route)
 }
 
-function shareApp() {
-  uni.showShareMenu({
-    menus: ['shareAppMessage', 'shareTimeline']
-  })
-  uni.showToast({ title: '点击右上角 ··· 分享', icon: 'none', duration: 1500 })
+function openDailyChange() {
+  showComingSoon('成长解读建设中')
+}
+
+function openMonthlyFocus() {
+  go('/pages/guide/index')
+}
+
+function openTodo(todo: DashboardTodo) {
+  if (todo.id === 'todo-vaccine') {
+    go('/pages/vaccine/index')
+    return
+  }
+
+  go('/pages/message/index')
+}
+
+function addReminder() {
+  showComingSoon('提醒功能建设中')
+}
+
+function openRecommendation(item: DashboardRecommendation) {
+  go(item.route)
+}
+
+function openFab() {
+  go('/pages/generate/index')
 }
 
 onShareAppMessage(() => ({
@@ -161,12 +284,10 @@ onShareAppMessage(() => ({
 onShareTimeline(() => ({
   title: '养娃小管家 - 科学喂养，健康成长'
 }))
-
 </script>
 
 <template>
   <view class="page-shell home-page" :style="pageStyle">
-    <!-- 未登录状态 -->
     <view v-if="!isLoggedIn" class="guest-view">
       <view class="topbar">
         <view class="app-title">
@@ -190,7 +311,7 @@ onShareTimeline(() => ({
         <text class="section-subtitle">无需登录即可浏览</text>
       </view>
 
-      <view class="feature-grid">
+      <view class="feature-grid guest-feature-grid">
         <view
           v-for="feature in publicFeatures"
           :key="feature.key"
@@ -216,86 +337,128 @@ onShareTimeline(() => ({
       </view>
     </view>
 
-    <!-- 已登录状态 -->
     <view v-else class="logged-view">
-      <view class="topbar">
-        <view class="user-box" v-if="baby">
-          <view class="avatar-wrap">
-            <image v-if="baby.avatar && baby.avatar.startsWith('https://')" class="avatar" :src="baby.avatar" mode="aspectFill" />
-            <view v-else class="avatar-fallback">{{ baby.nickname[0] }}</view>
-          </view>
-          <view>
-            <text class="baby-name">{{ baby.nickname }}</text>
-            <text class="baby-meta">{{ baby.monthAgeLabel }} · {{ baby.stageLabel }}</text>
-          </view>
-        </view>
-        <view class="topbar-actions">
-          <view class="notify" @tap="goMessage">🔔</view>
-          <view class="share-btn" @tap="shareApp">📤</view>
-        </view>
-      </view>
+      <view class="dashboard-hero">
+        <image class="dashboard-hero-bg" :src="heroBackdrop" mode="aspectFill" />
+        <view class="dashboard-hero-overlay" />
+        <view class="hero-deco hero-deco-left" />
+        <view class="hero-deco hero-deco-right" />
 
-      <!-- 首次用户引导卡（无任何历史计划时显示） -->
-      <view v-if="!hasAnyPlan" class="first-guide-card">
-        <view class="first-guide-inner">
-          <text class="first-guide-emoji">🌱</text>
-          <view>
-            <text class="first-guide-title">生成第一周辅食计划</text>
-            <text class="first-guide-desc">根据宝宝月龄智能推荐食材与餐次安排，一键开始</text>
+        <view class="dashboard-hero-topbar">
+          <view class="dashboard-hero-title-wrap">
+            <text class="dashboard-hero-topname">{{ displayBabyName }}</text>
+            <view class="dashboard-hero-topline" />
           </view>
         </view>
-        <view class="first-guide-btn" @tap="go('/pages/generate/index')">立即生成 →</view>
-      </view>
 
-      <view class="hero-card" v-else>
-        <view>
-          <text class="hero-label">今日食谱</text>
-          <text class="hero-title">根据宝宝成长阶段，生成今天的科学辅食安排</text>
-        </view>
-        <view class="hero-button" @tap="go('/pages/generate/index')">🍚 生成今日辅食</view>
-        <view class="hero-decor">🌾</view>
-      </view>
-
-      <view class="feature-grid">
-        <view
-          v-for="feature in features"
-          :key="feature.key"
-          class="feature-card"
-          :class="feature.accent"
-          @tap="go(feature.route)"
-        >
-          <text class="feature-icon">{{ feature.icon }}</text>
-          <text class="feature-title">{{ feature.title }}</text>
-          <text class="feature-subtitle">{{ feature.subtitle }}</text>
-        </view>
-      </view>
-
-      <view class="section" v-if="shortcuts.length > 0">
-        <text class="section-title">快捷操作</text>
-        <view class="shortcut-list">
-          <view v-for="item in shortcuts" :key="item.title" class="shortcut-card card" @tap="goShortcut(item)">
-            <text class="shortcut-icon">{{ item.icon }}</text>
-            <view>
-              <text class="shortcut-title">{{ item.title }}</text>
-              <text class="shortcut-desc">{{ item.description }}</text>
+        <view class="dashboard-hero-profile">
+          <view class="hero-profile-main">
+            <view class="hero-avatar-wrap">
+              <image v-if="heroAvatar" class="hero-avatar" :src="heroAvatar" mode="aspectFill" />
+              <view v-else class="hero-avatar-fallback">{{ displayBabyName[0] }}</view>
+            </view>
+            <view class="hero-profile-copy">
+              <text class="hero-name">{{ displayBabyName }}</text>
+              <view v-if="displayBabyAge || displayBabyStage" class="hero-meta-row">
+                <text class="hero-meta">
+                  {{ displayBabyAge }}<text v-if="displayBabyStage" class="hero-meta stage"> · {{ displayBabyStage }}</text>
+                </text>
+                <view class="hero-edit-badge" @tap.stop="goEditBaby">
+                  <text class="hero-edit-icon">✎</text>
+                </view>
+              </view>
             </view>
           </view>
+
+          <view class="family-pill" @tap="goFamily">
+            <text class="family-pill-heart">❤</text>
+            <text class="family-pill-text">{{ familyPillText }}</text>
+            <text class="family-pill-arrow">›</text>
+          </view>
         </view>
       </view>
 
-      <view class="section" v-if="ingredients.length > 0">
-        <view class="section-row">
-          <text class="section-title">本周推荐食材</text>
-          <text class="section-link" @tap="go('/pages/recipe-list/index')">查看更多</text>
+      <view class="daily-change-card" @tap="openDailyChange">
+        <text class="daily-change-label">宝宝今日变化：</text>
+        <text class="daily-change-text">{{ homeDashboardDailyChange }}</text>
+        <text class="daily-change-arrow">›</text>
+      </view>
+
+      <view class="monthly-card card">
+        <view class="monthly-head">
+          <text class="monthly-head-icon">✦</text>
+          <text class="monthly-head-title">本月发育重点</text>
         </view>
-        <scroll-view scroll-x class="ingredients-scroll" show-scrollbar="false">
-          <view class="ingredients-row">
-            <view v-for="item in ingredients" :key="item.id" class="ingredient-card" @tap="goIngredient(item.name)">
-              <image class="ingredient-image" :src="item.image" mode="aspectFill" />
-              <text class="ingredient-name">{{ item.name }}</text>
+        <text class="monthly-desc">
+          <text class="monthly-age">{{ monthlyFocusLabel }}：</text>{{ homeDashboardMonthlyFocusText }}
+        </text>
+        <view class="monthly-link" @tap="openMonthlyFocus">查看完整指南 →</view>
+      </view>
+
+      <view class="module-grid">
+        <view
+          v-for="module in homeDashboardModules"
+          :key="module.key"
+          class="module-item"
+          @tap="openModule(module)"
+        >
+          <view class="module-icon-wrap" :class="[module.tone, module.shape]">
+            <text class="module-icon">{{ module.icon }}</text>
+          </view>
+          <text class="module-title">{{ module.title }}</text>
+        </view>
+      </view>
+
+      <view class="todo-card card">
+        <view class="todo-head">
+          <view class="todo-title-row">
+            <text class="todo-badge">待办</text>
+            <text class="todo-title">提醒事项</text>
+          </view>
+          <text class="todo-date">{{ todayLabel }}</text>
+        </view>
+
+        <view class="todo-list">
+          <view v-for="todo in homeDashboardTodos" :key="todo.id" class="todo-item" @tap="openTodo(todo)">
+            <view class="todo-main">
+              <view class="todo-radio" />
+              <text class="todo-item-title">{{ todo.title }}</text>
+            </view>
+            <text class="todo-item-time">{{ todo.timeLabel }}</text>
+          </view>
+        </view>
+
+        <view class="todo-add" @tap="addReminder">
+          <text class="todo-add-plus">＋</text>
+          <text class="todo-add-text">添加提醒</text>
+        </view>
+      </view>
+
+      <view class="recommend-section">
+        <text class="recommend-heading">热门推荐</text>
+        <scroll-view scroll-x class="recommend-scroll" show-scrollbar="false">
+          <view class="recommend-row">
+            <view
+              v-for="item in homeRecommendations"
+              :key="item.id"
+              class="recommend-card"
+              @tap="openRecommendation(item)"
+            >
+              <image class="recommend-image" :src="item.image" mode="aspectFill" />
+              <view class="recommend-overlay">
+                <view class="recommend-tags">
+                  <text v-if="item.badge" class="recommend-badge">{{ item.badge }}</text>
+                  <text v-if="item.tag" class="recommend-tag">{{ item.tag }}</text>
+                </view>
+                <text class="recommend-title">{{ item.title }}</text>
+              </view>
             </view>
           </view>
         </scroll-view>
+      </view>
+
+      <view class="home-fab" @tap="openFab">
+        <text class="home-fab-icon">＋</text>
       </view>
     </view>
 
@@ -305,6 +468,8 @@ onShareTimeline(() => ({
 
 <style scoped lang="scss">
 .home-page {
+  position: relative;
+  padding-bottom: 240rpx;
 }
 
 .guest-view,
@@ -351,7 +516,7 @@ onShareTimeline(() => ({
   align-items: center;
   padding: 48rpx 32rpx;
   border-radius: 36rpx;
-  background: linear-gradient(135deg, rgba(255,179,102,0.25), rgba(255,255,255,0.9));
+  background: linear-gradient(135deg, rgba(255, 179, 102, 0.25), rgba(255, 255, 255, 0.9));
   box-shadow: var(--mini-shadow-soft);
   text-align: center;
 }
@@ -408,6 +573,10 @@ onShareTimeline(() => ({
   color: var(--mini-text-muted);
 }
 
+.guest-feature-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .login-prompt-card {
   margin-top: 36rpx;
   padding: 32rpx;
@@ -447,175 +616,8 @@ onShareTimeline(() => ({
   font-weight: 700;
 }
 
-.user-box {
-  display: flex;
-  align-items: center;
-  gap: 18rpx;
-}
-
-.avatar-wrap {
-  flex-shrink: 0;
-}
-
-.avatar {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 999rpx;
-  border: 4rpx solid rgba(255, 179, 102, 0.35);
-  display: block;
-}
-
-.avatar-fallback {
-  width: 88rpx;
-  height: 88rpx;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
-  border: 4rpx solid rgba(255, 179, 102, 0.35);
-  color: #fff;
-  font-size: 36rpx;
-  font-weight: 700;
-  text-align: center;
-  line-height: 88rpx;
-}
-
-.baby-name {
-  display: block;
-  font-size: 34rpx;
-  font-weight: 700;
-  color: var(--mini-primary-deep);
-}
-
-.baby-meta {
-  display: block;
-  margin-top: 6rpx;
-  font-size: 22rpx;
-  color: var(--mini-text-muted);
-}
-
-.notify {
-  width: 76rpx;
-  height: 76rpx;
-  border-radius: 999rpx;
-  background: rgba(255,255,255,0.7);
-  text-align: center;
-  line-height: 76rpx;
-  font-size: 30rpx;
-}
-
-.topbar-actions {
-  display: flex;
-  gap: 16rpx;
-  align-items: center;
-}
-
-.share-btn {
-  width: 76rpx;
-  height: 76rpx;
-  border-radius: 999rpx;
-  background: rgba(255,255,255,0.7);
-  text-align: center;
-  line-height: 76rpx;
-  font-size: 30rpx;
-}
-
-.first-guide-card {
-  border-radius: 36rpx;
-  background: linear-gradient(135deg, rgba(168, 230, 207, 0.4), rgba(255, 255, 255, 0.95));
-  box-shadow: var(--mini-shadow-soft);
-  padding: 32rpx;
-  overflow: hidden;
-}
-
-.first-guide-inner {
-  display: flex;
-  align-items: center;
-  gap: 22rpx;
-  margin-bottom: 24rpx;
-}
-
-.first-guide-emoji {
-  font-size: 56rpx;
-  flex-shrink: 0;
-}
-
-.first-guide-title {
-  display: block;
-  font-size: 34rpx;
-  font-weight: 700;
-  color: var(--mini-text);
-}
-
-.first-guide-desc {
-  display: block;
-  margin-top: 10rpx;
-  font-size: 24rpx;
-  line-height: 1.6;
-  color: var(--mini-text-muted);
-}
-
-.first-guide-btn {
-  display: block;
-  padding: 22rpx 0;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, var(--mini-secondary-deep), #3db886);
-  text-align: center;
-  color: #fff;
-  font-size: 28rpx;
-  font-weight: 700;
-}
-
-.hero-card {
-  position: relative;
-  overflow: hidden;
-  padding: 34rpx;
-  border-radius: 36rpx;
-  background: linear-gradient(135deg, rgba(255,179,102,0.35), rgba(255,255,255,0.9));
-  box-shadow: var(--mini-shadow-soft);
-}
-
-.hero-label {
-  display: inline-flex;
-  padding: 10rpx 20rpx;
-  border-radius: 999rpx;
-  background: rgba(255,255,255,0.6);
-  font-size: 22rpx;
-  font-weight: 700;
-  color: var(--mini-primary-deep);
-}
-
-.hero-title {
-  display: block;
-  width: 78%;
-  margin-top: 18rpx;
-  font-size: 40rpx;
-  line-height: 1.45;
-  font-weight: 700;
-  color: var(--mini-text);
-}
-
-.hero-button {
-  width: 360rpx;
-  margin-top: 26rpx;
-  padding: 24rpx 0;
-  border-radius: 999rpx;
-  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
-  text-align: center;
-  color: #fff;
-  font-size: 28rpx;
-  font-weight: 700;
-}
-
-.hero-decor {
-  position: absolute;
-  right: -10rpx;
-  bottom: -24rpx;
-  font-size: 140rpx;
-  opacity: 0.16;
-}
-
 .feature-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 22rpx;
   margin-top: 28rpx;
 }
@@ -624,7 +626,7 @@ onShareTimeline(() => ({
   min-height: 232rpx;
   padding: 26rpx;
   border-radius: 32rpx;
-  background: rgba(255,255,255,0.85);
+  background: rgba(255, 255, 255, 0.85);
   box-shadow: var(--mini-shadow-card);
 }
 
@@ -657,80 +659,581 @@ onShareTimeline(() => ({
   color: var(--mini-text-muted);
 }
 
-.section-row {
+.logged-view {
+  position: relative;
+}
+
+.dashboard-hero {
+  position: relative;
+  overflow: hidden;
+  min-height: 250rpx;
+  padding: 18rpx 24rpx 36rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(180deg, rgba(251, 246, 241, 0.22) 0%, rgba(225, 207, 191, 0.22) 100%);
+  box-shadow: var(--mini-shadow-soft);
+}
+
+.dashboard-hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.95;
+  transform: scale(1.04);
+  filter: blur(2rpx) saturate(0.92);
+}
+
+.dashboard-hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(96, 73, 56, 0.14) 0%, rgba(89, 68, 53, 0.24) 100%);
+}
+
+.hero-deco {
+  position: absolute;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.12);
+  filter: blur(6rpx);
+}
+
+.hero-deco-left {
+  width: 120rpx;
+  height: 120rpx;
+  left: -34rpx;
+  top: 106rpx;
+}
+
+.hero-deco-right {
+  width: 112rpx;
+  height: 112rpx;
+  right: -20rpx;
+  top: 74rpx;
+}
+
+.dashboard-hero-topbar,
+.dashboard-hero-profile {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-hero-topbar {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  justify-content: center;
 }
 
-.section-link {
-  font-size: 22rpx;
-  color: var(--mini-secondary-deep);
-  font-weight: 600;
-}
-
-.shortcut-list {
+.dashboard-hero-title-wrap {
   display: flex;
   flex-direction: column;
-  gap: 18rpx;
-  margin-top: 16rpx;
-}
-
-.shortcut-card {
-  display: flex;
-  gap: 18rpx;
   align-items: center;
-  padding: 24rpx;
+  gap: 10rpx;
 }
 
-.shortcut-icon {
-  width: 72rpx;
-  height: 72rpx;
-  border-radius: 24rpx;
-  background: rgba(255,179,102,0.16);
+.dashboard-hero-topname {
+  color: #fff;
+  font-size: 27rpx;
+  font-weight: 700;
+  letter-spacing: 2rpx;
+}
+
+.dashboard-hero-topline {
+  width: 42rpx;
+  height: 6rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.dashboard-hero-profile {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18rpx;
+  margin-top: 92rpx;
+}
+
+.hero-profile-main {
+  display: flex;
+  align-items: center;
+  gap: 18rpx;
+  min-width: 0;
+}
+
+.hero-avatar-wrap {
+  flex-shrink: 0;
+}
+
+.hero-avatar,
+.hero-avatar-fallback {
+  width: 82rpx;
+  height: 82rpx;
+  border-radius: 999rpx;
+  border: 4rpx solid rgba(255, 255, 255, 0.64);
+  box-shadow: 0 8rpx 18rpx rgba(0, 0, 0, 0.14);
+}
+
+.hero-avatar-fallback {
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  color: #fff;
+  font-size: 34rpx;
+  font-weight: 700;
   text-align: center;
-  line-height: 72rpx;
-  font-size: 30rpx;
+  line-height: 74rpx;
 }
 
-.shortcut-title {
+.hero-profile-copy {
+  min-width: 0;
+}
+
+.hero-name {
   display: block;
+  font-size: 36rpx;
+  line-height: 1.2;
+  font-weight: 700;
+  color: #fff;
+}
+
+.hero-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8rpx;
+  margin-top: 8rpx;
+}
+
+.hero-meta {
+  font-size: 24rpx;
+  line-height: 1.5;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.hero-meta.stage {
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.hero-edit-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34rpx;
+  height: 34rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1rpx solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6rpx 12rpx rgba(0, 0, 0, 0.08);
+  backdrop-filter: blur(10rpx);
+}
+
+.hero-edit-icon {
+  color: rgba(255, 255, 255, 0.98);
+  font-size: 18rpx;
+  line-height: 1;
+}
+
+.family-pill {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  padding: 14rpx 18rpx;
+  border-radius: 999rpx;
+  background: rgba(255, 239, 246, 0.95);
+  box-shadow: 0 10rpx 18rpx rgba(217, 90, 133, 0.12);
+}
+
+.family-pill-heart,
+.family-pill-text,
+.family-pill-arrow {
+  color: #d9688d;
+}
+
+.family-pill-heart,
+.family-pill-arrow {
+  font-size: 20rpx;
+}
+
+.family-pill-text {
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.daily-change-card {
+  position: relative;
+  z-index: 2;
+  margin: -8rpx 14rpx 0;
+  padding: 22rpx 24rpx 20rpx;
+  border-radius: 24rpx;
+  background: #fff1e8;
+  box-shadow: 0 8rpx 18rpx rgba(176, 47, 0, 0.06);
+}
+
+.daily-change-label,
+.daily-change-text,
+.daily-change-arrow {
+  font-size: 22rpx;
+  line-height: 1.8;
+}
+
+.daily-change-label {
+  color: #b02f00;
+  font-weight: 700;
+}
+
+.daily-change-text {
+  color: #524438;
+}
+
+.daily-change-arrow {
+  color: #b02f00;
+  margin-left: 8rpx;
+}
+
+.monthly-card {
+  margin-top: 18rpx;
+  padding: 30rpx;
+  border-radius: 28rpx;
+}
+
+.monthly-head {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.monthly-head-icon,
+.monthly-head-title,
+.monthly-link,
+.monthly-age {
+  color: var(--mini-secondary-deep);
+}
+
+.monthly-head-icon {
+  font-size: 22rpx;
+}
+
+.monthly-head-title {
   font-size: 28rpx;
   font-weight: 700;
 }
 
-.shortcut-desc {
+.monthly-desc {
   display: block;
-  margin-top: 8rpx;
+  margin-top: 22rpx;
+  padding-top: 2rpx;
+  font-size: 24rpx;
+  line-height: 1.8;
+  color: var(--mini-text-muted);
+}
+
+.monthly-age {
+  font-weight: 700;
+}
+
+.monthly-link {
+  display: inline-flex;
+  margin-top: 24rpx;
+  padding-top: 24rpx;
+  border-top: 2rpx solid rgba(44, 105, 86, 0.12);
+  font-size: 22rpx;
+  font-weight: 700;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 28rpx 10rpx;
+  margin-top: 34rpx;
+  padding: 8rpx 4rpx 2rpx;
+}
+
+.module-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.module-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 82rpx;
+  height: 82rpx;
+  transition: transform 0.18s ease;
+}
+
+.module-item:active .module-icon-wrap {
+  transform: scale(0.94);
+}
+
+.module-icon {
+  font-size: 34rpx;
+}
+
+.module-title {
+  text-align: center;
+  font-size: 24rpx;
+  line-height: 1.4;
+  font-weight: 500;
+  color: var(--mini-text-muted);
+}
+
+.shape-1 {
+  border-radius: 50% 50% 30% 70% / 46% 56% 44% 54%;
+}
+
+.shape-2 {
+  border-radius: 58% 42% 54% 46% / 44% 56% 44% 56%;
+}
+
+.shape-3 {
+  border-radius: 44% 56% 46% 54% / 58% 40% 60% 42%;
+}
+
+.shape-4 {
+  border-radius: 42% 58% 58% 42% / 62% 34% 66% 38%;
+}
+
+.orange {
+  background: #ffedd8;
+}
+
+.teal {
+  background: #dff7f1;
+}
+
+.blue {
+  background: #e2edff;
+}
+
+.rose {
+  background: #fde5ea;
+}
+
+.amber {
+  background: #fff1d5;
+}
+
+.purple {
+  background: #f1e6ff;
+}
+
+.pink {
+  background: #ffe4f4;
+}
+
+.green {
+  background: #def6dd;
+}
+
+.indigo {
+  background: #e5e8ff;
+}
+
+.slate {
+  background: #eff2f4;
+}
+
+.todo-card {
+  margin-top: 34rpx;
+  padding: 26rpx 24rpx;
+  border-radius: 28rpx;
+}
+
+.todo-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12rpx;
+}
+
+.todo-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.todo-badge {
+  padding: 6rpx 16rpx;
+  border-radius: 999rpx;
+  background: var(--mini-danger);
+  color: #fff;
+  font-size: 18rpx;
+  font-weight: 700;
+}
+
+.todo-title {
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.todo-date {
+  font-size: 20rpx;
+  color: var(--mini-text-muted);
+}
+
+.todo-list {
+  margin-top: 22rpx;
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18rpx;
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: rgba(247, 239, 230, 0.48);
+}
+
+.todo-main {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  min-width: 0;
+}
+
+.todo-radio {
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 999rpx;
+  border: 3rpx solid rgba(44, 105, 86, 0.35);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.todo-item-title {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: var(--mini-text);
+}
+
+.todo-item-time {
+  flex-shrink: 0;
   font-size: 22rpx;
   color: var(--mini-text-muted);
 }
 
-.ingredients-scroll {
+.todo-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8rpx;
+  height: 88rpx;
+  margin-top: 20rpx;
+  border-radius: 999rpx;
+  border: 2rpx dashed rgba(138, 81, 8, 0.18);
+  color: var(--mini-text-muted);
+}
+
+.todo-add-plus,
+.todo-add-text {
+  font-size: 24rpx;
+}
+
+.recommend-section {
+  margin-top: 34rpx;
+}
+
+.recommend-heading {
+  display: block;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.recommend-scroll {
   margin-top: 18rpx;
   white-space: nowrap;
 }
 
-.ingredients-row {
+.recommend-row {
   display: flex;
-  gap: 18rpx;
+  gap: 24rpx;
+  padding-right: 24rpx;
 }
 
-.ingredient-card {
-  width: 214rpx;
-}
-
-.ingredient-image {
-  width: 214rpx;
-  height: 268rpx;
+.recommend-card {
+  position: relative;
+  width: 332rpx;
+  height: 220rpx;
+  overflow: hidden;
+  flex-shrink: 0;
   border-radius: 28rpx;
+  box-shadow: var(--mini-shadow-card);
 }
 
-.ingredient-name {
-  display: block;
-  margin-top: 14rpx;
-  text-align: center;
-  font-size: 24rpx;
+.recommend-image {
+  width: 100%;
+  height: 100%;
+}
+
+.recommend-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 22rpx;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 20%, rgba(0, 0, 0, 0.68) 100%);
+}
+
+.recommend-tags {
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+  margin-bottom: 10rpx;
+}
+
+.recommend-badge,
+.recommend-tag {
+  padding: 4rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: 18rpx;
   font-weight: 700;
+}
+
+.recommend-badge {
+  background: #00a96b;
+  color: #fff;
+}
+
+.recommend-tag {
+  background: rgba(255, 255, 255, 0.24);
+  color: #fff;
+}
+
+.recommend-title {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  font-size: 24rpx;
+  line-height: 1.5;
+  font-weight: 700;
+  color: #fff;
+}
+
+.home-fab {
+  position: fixed;
+  right: 32rpx;
+  bottom: 174rpx;
+  z-index: calc(var(--mini-floating-z) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 92rpx;
+  height: 92rpx;
+  border-radius: 999rpx;
+  background: linear-gradient(135deg, var(--mini-secondary-deep), #48b06c);
+  box-shadow: 0 16rpx 32rpx rgba(44, 105, 86, 0.22);
+}
+
+.home-fab-icon {
+  color: #fff;
+  font-size: 48rpx;
+  line-height: 1;
 }
 </style>
