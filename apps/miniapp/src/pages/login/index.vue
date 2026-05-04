@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { getGuideData, readAuthSession, wechatLogin } from '@/services/api'
+import { getGuideData, readAuthSession, redirectAfterLogin, wechatLogin } from '@/services/api'
 
 const heroTitle = ref('科学辅食，悦享成长')
 const heroDesc = ref('为宝宝量身定制每一餐，开启健康饮食第一步。')
@@ -27,11 +27,7 @@ function openPrivacyPolicy() {
 }
 
 function navigateAfterLogin(session: import('@baby-food/shared-types').AuthSession) {
-  if (!session.hasBaby) {
-    uni.reLaunch({ url: '/pages/baby-form/index' })
-  } else {
-    uni.reLaunch({ url: '/pages/home/index' })
-  }
+  redirectAfterLogin(session)
 }
 
 async function doWechatLogin() {

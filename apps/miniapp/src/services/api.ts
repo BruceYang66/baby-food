@@ -212,22 +212,18 @@ function getPostAuthRedirectUrl(session: Pick<AuthSession, 'hasBaby'>) {
   const redirectUrl = readPostLoginRedirect()
   const routeBase = redirectUrl ? getRouteBase(redirectUrl) : ''
 
-  if (redirectUrl && routeBase === FAMILY_PAGE) {
+  if (redirectUrl && (routeBase === FAMILY_PAGE || session.hasBaby)) {
     clearPostLoginRedirect()
     return redirectUrl
-  }
-
-  if (redirectUrl && session.hasBaby) {
-    clearPostLoginRedirect()
-    return redirectUrl
-  }
-
-  if (!session.hasBaby) {
-    return BABY_FORM_PAGE
   }
 
   clearPostLoginRedirect()
   return HOME_PAGE
+}
+
+export function redirectAfterLogin(session: Pick<AuthSession, 'hasBaby'>) {
+  const redirectUrl = getPostAuthRedirectUrl(session)
+  reLaunchIfNeeded(redirectUrl)
 }
 
 function reLaunchIfNeeded(url: string) {
@@ -378,16 +374,21 @@ export async function syncAppSession() {
 
     saveAuthSession(nextSession)
 
-    if (!nextSession.hasBaby && (isProtectedPage(currentPath) || currentBase === getRouteBase(LOGIN_PAGE) || !currentBase)) {
-      if (currentBase !== FAMILY_PAGE) {
+    if (!nextSession.hasBaby) {
+      if (isProtectedPage(currentPath) && currentBase !== FAMILY_PAGE) {
         redirectToBabyForm(undefined, getCurrentRouteUrl())
         return nextSession
       }
+
+      if (currentBase === getRouteBase(LOGIN_PAGE) || !currentBase) {
+        redirectAfterLogin(nextSession)
+      }
+
+      return nextSession
     }
 
-    if (nextSession.hasBaby && (currentBase === getRouteBase(LOGIN_PAGE) || currentBase === getRouteBase(BABY_FORM_PAGE) || !currentBase)) {
-      const redirectUrl = getPostAuthRedirectUrl(nextSession)
-      reLaunchIfNeeded(redirectUrl)
+    if (currentBase === getRouteBase(LOGIN_PAGE) || currentBase === getRouteBase(BABY_FORM_PAGE) || !currentBase) {
+      redirectAfterLogin(nextSession)
     }
 
     return nextSession

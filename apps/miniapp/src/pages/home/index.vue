@@ -99,6 +99,8 @@ const pageStyle = computed(() => ({
   paddingTop: `${getStatusBarHeight() + 12}px`
 }))
 
+const hasBabyProfile = computed(() => Boolean(baby.value?.id))
+
 const heroAvatar = computed(() => {
   if (!baby.value?.avatar) {
     return ''
@@ -196,13 +198,21 @@ async function loadDashboardTodos() {
 
 async function loadHome() {
   const session = readAuthSession()
-  isLoggedIn.value = !!session?.token
-  baby.value = session?.babyProfile ?? null
-  await loadDashboardTodos()
+  const hasToken = !!session?.token
+  const hasBaby = !!session?.hasBaby
 
-  if (!isLoggedIn.value) {
-    familyFriendCount.value = 0
-    void loadHomeRecommendations()
+  isLoggedIn.value = hasToken
+  baby.value = session?.babyProfile ?? null
+  familyFriendCount.value = 0
+  dashboardTodos.value = []
+
+  if (!hasToken) {
+    await loadHomeRecommendations()
+    return
+  }
+
+  if (!hasBaby) {
+    await loadHomeRecommendations()
     return
   }
 
@@ -210,23 +220,34 @@ async function loadHome() {
     const data = await getHomeData()
     baby.value = data.babyProfile
     await Promise.all([
+      loadDashboardTodos(),
       loadFamilyFriendCount(data.babyProfile?.id),
       loadHomeRecommendations()
     ])
   } catch (error) {
-    console.error('Failed to load home data:', error)
+    console.error('Failed to load home:', error)
+
+    const nextSession = readAuthSession()
+    isLoggedIn.value = !!nextSession?.token
+    baby.value = nextSession?.babyProfile ?? baby.value
+
+    if (!nextSession?.token) {
+      familyFriendCount.value = 0
+      await loadHomeRecommendations()
+      return
+    }
 
     if (baby.value?.id) {
       await Promise.all([
+        loadDashboardTodos(),
         loadFamilyFriendCount(baby.value.id),
         loadHomeRecommendations()
       ])
       return
     }
 
-    isLoggedIn.value = false
     familyFriendCount.value = 0
-    void loadHomeRecommendations()
+    await loadHomeRecommendations()
   }
 }
 
@@ -383,7 +404,7 @@ onShareTimeline(() => ({
     </view>
 
     <view v-else class="logged-view">
-      <view class="dashboard-hero" :class="{ 'custom-backdrop': heroHasCustomBackdrop }">
+      <view v-if="hasBabyProfile" class="dashboard-hero" :class="{ 'custom-backdrop': heroHasCustomBackdrop }">
         <image class="dashboard-hero-bg" :src="heroBackdrop" mode="aspectFill" />
         <view class="dashboard-hero-overlay" />
         <view class="hero-deco hero-deco-left" />
@@ -423,13 +444,24 @@ onShareTimeline(() => ({
         </view>
       </view>
 
-      <view class="daily-change-card" @tap="openDailyChange">
+      <view v-else class="setup-entry-card card">
+        <view class="setup-entry-copy">
+          <text class="setup-entry-title">先逛逛，宝宝档案稍后再完善</text>
+          <text class="setup-entry-desc">首页菜单已经开放；进入喂养、成长等宝宝相关功能时，再补充宝宝信息即可。</text>
+        </view>
+        <view class="setup-entry-actions">
+          <view class="setup-entry-btn primary" @tap="goEditBaby">完善宝宝档案</view>
+          <view class="setup-entry-btn secondary" @tap="goFamily">加入家庭/亲友团</view>
+        </view>
+      </view>
+
+      <view v-if="hasBabyProfile" class="daily-change-card" @tap="openDailyChange">
         <text class="daily-change-label">宝宝今日变化：</text>
         <text class="daily-change-text">{{ homeDashboardDailyChange }}</text>
         <text class="daily-change-arrow">›</text>
       </view>
 
-      <view class="monthly-card card">
+      <view v-if="hasBabyProfile" class="monthly-card card">
         <view class="monthly-head">
           <text class="monthly-head-icon">✦</text>
           <text class="monthly-head-title">本月发育重点</text>
@@ -454,7 +486,7 @@ onShareTimeline(() => ({
         </view>
       </view>
 
-      <view class="todo-card card">
+      <view v-if="hasBabyProfile" class="todo-card card">
         <view class="todo-head" @tap="openReminderList">
           <view class="todo-title-row">
             <text class="todo-badge">待办</text>
@@ -920,6 +952,60 @@ onShareTimeline(() => ({
 .family-pill-text {
   font-size: 20rpx;
   font-weight: 700;
+}
+
+.setup-entry-card {
+  margin-top: 12rpx;
+  padding: 32rpx 30rpx;
+  border-radius: 30rpx;
+  background: linear-gradient(135deg, rgba(255, 179, 102, 0.18), rgba(168, 230, 207, 0.2), rgba(255, 255, 255, 0.95));
+  box-shadow: var(--mini-shadow-soft);
+}
+
+.setup-entry-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 14rpx;
+}
+
+.setup-entry-title {
+  font-size: 34rpx;
+  line-height: 1.4;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.setup-entry-desc {
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: var(--mini-text-muted);
+}
+
+.setup-entry-actions {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 28rpx;
+}
+
+.setup-entry-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 88rpx;
+  border-radius: 999rpx;
+  font-size: 26rpx;
+  font-weight: 700;
+}
+
+.setup-entry-btn.primary {
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  color: #fff;
+}
+
+.setup-entry-btn.secondary {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--mini-secondary-deep);
 }
 
 .daily-change-card {
