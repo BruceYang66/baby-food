@@ -10,6 +10,7 @@ CREATE TYPE feeding_journal_type AS ENUM ('breast', 'formula', 'bottle-breast', 
 CREATE TYPE vaccine_category AS ENUM ('free', 'optional');
 CREATE TYPE vaccine_record_status AS ENUM ('pending', 'completed', 'optional');
 CREATE TYPE knowledge_content_type AS ENUM ('article', 'guide', 'taboo');
+CREATE TYPE cloud_album_visibility AS ENUM ('family', 'self');
 
 CREATE TABLE users (
   id TEXT PRIMARY KEY,
@@ -221,6 +222,44 @@ CREATE TABLE baby_reminders (
 CREATE INDEX idx_baby_reminders_baby_date_time ON baby_reminders(baby_id, reminder_date, reminder_time);
 CREATE INDEX idx_baby_reminders_baby_status_date ON baby_reminders(baby_id, status, reminder_date);
 
+CREATE TABLE baby_album_entries (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  author_user_id TEXT NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL DEFAULT '',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  is_milestone BOOLEAN NOT NULL DEFAULT FALSE,
+  visibility cloud_album_visibility NOT NULL DEFAULT 'family',
+  recorded_at TIMESTAMP NOT NULL,
+  recorded_date DATE NOT NULL,
+  month_key TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_baby_album_entries_baby_date_created ON baby_album_entries(baby_id, recorded_date, created_at DESC);
+CREATE INDEX idx_baby_album_entries_baby_month_key ON baby_album_entries(baby_id, month_key DESC);
+CREATE INDEX idx_baby_album_entries_author_created ON baby_album_entries(author_user_id, created_at DESC);
+
+CREATE TABLE baby_album_assets (
+  id TEXT PRIMARY KEY,
+  entry_id TEXT NOT NULL REFERENCES baby_album_entries(id) ON DELETE CASCADE,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  storage_key TEXT NOT NULL,
+  url TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  sort_order INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX idx_baby_album_assets_entry_sort_order ON baby_album_assets(entry_id, sort_order ASC);
+CREATE INDEX idx_baby_album_assets_baby_created ON baby_album_assets(baby_id, created_at DESC);
+
 CREATE TABLE feeding_journal_entries (
   id TEXT PRIMARY KEY,
   baby_id TEXT NOT NULL REFERENCES babies(id),
@@ -242,6 +281,21 @@ CREATE TABLE feeding_journal_entries (
 
 CREATE INDEX idx_feeding_journal_entries_baby_date_time ON feeding_journal_entries(baby_id, entry_date, entry_time);
 CREATE INDEX idx_feeding_journal_entries_baby_type_date ON feeding_journal_entries(baby_id, type, entry_date);
+
+CREATE TABLE growth_change_stages (
+  id TEXT PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL,
+  label TEXT NOT NULL,
+  start_week INTEGER NOT NULL,
+  end_week INTEGER,
+  overview_title TEXT NOT NULL,
+  overview_summary TEXT NOT NULL,
+  highlights_json TEXT NOT NULL DEFAULT '[]',
+  metrics_json TEXT NOT NULL DEFAULT '[]',
+  daily_items_json TEXT NOT NULL DEFAULT '[]',
+  source_note TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);
 
 CREATE TABLE guide_stages (
   id TEXT PRIMARY KEY,

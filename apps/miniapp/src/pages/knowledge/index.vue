@@ -177,7 +177,7 @@ onShareTimeline(() => ({ title: '宝宝干货百科' }))
     </view>
 
     <view class="fixed-bottom-actions knowledge-actions">
-      <view class="outline-button" @tap="openFavorites">查看收藏</view>
+      <view class="outline-button" @tap="openFavorites">我的收藏</view>
       <view class="primary-button" @tap="openGenerate">生成今日辅食</view>
     </view>
 

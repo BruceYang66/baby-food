@@ -1,7 +1,10 @@
 import { randomBytes } from 'node:crypto'
-import { formatAgeLabel, getCalendarAge, getFeedingStageLabel, getTodayDateOnly, type DateOnlyInput } from '../utils/age.js'
+import { Prisma } from '@prisma/client'
+import { formatAgeLabel, getCalendarAge, getFeedingStageLabel, getGuideStageKey, getTodayDateOnly, parseDateOnly, type DateOnlyInput } from '../utils/age.js'
 import { prisma } from '../db/prisma.js'
 import { parseKnowledgeSectionMedia } from './knowledgeSectionMedia.js'
+import { getGrowthChangeStage as getGrowthChangeStageFallback } from './growthChangeContent.js'
+import { applyGrowthChangeWeekVariant } from './growthChangeWeekVariant.js'
 
 const homeFeatures = [
   { key: 'generate', title: '生成今日辅食', subtitle: '根据月龄与需求一键生成', icon: '🍚', accent: 'primary', route: '/pages/generate/index' },
@@ -45,7 +48,7 @@ async function buildHomeShortcuts(babyId: string) {
   }
 
   shortcuts.push(
-    { title: '收藏有更新', description: '新增 3 道高铁食谱', icon: '♡', actionKey: 'favorites' as const },
+    { title: '云相册有更新', description: '今天新增 6 张成长照片', icon: '📷', actionKey: 'favorites' as const },
     { title: '温馨提示', description: '本周注意增加深绿叶菜摄入', icon: '☀︎', actionKey: 'message' as const }
   )
 
@@ -209,6 +212,131 @@ function parseJsonObject<T>(value?: string | null) {
   } catch {
     return undefined
   }
+}
+
+type GrowthChangeMetricItemRecord = {
+  title: string
+  value: string
+  note?: string
+}
+
+type GrowthChangeDailyItemRecord = {
+  title?: string
+  description: string
+}
+
+type GrowthChangeStageRecord = {
+  key: string
+  label: string
+  startWeek: number
+  endWeek: number | null
+  overviewTitle: string
+  overviewSummary: string
+  highlights: string[]
+  metricItems: GrowthChangeMetricItemRecord[]
+  dailyItems: GrowthChangeDailyItemRecord[]
+  sourceNote: string
+}
+
+function isGrowthChangeMetricItem(value: unknown): value is GrowthChangeMetricItemRecord {
+  return Boolean(value)
+    && typeof value === 'object'
+    && typeof (value as { title?: unknown }).title === 'string'
+    && typeof (value as { value?: unknown }).value === 'string'
+}
+
+function isGrowthChangeDailyItem(value: unknown): value is GrowthChangeDailyItemRecord {
+  return Boolean(value)
+    && typeof value === 'object'
+    && typeof (value as { description?: unknown }).description === 'string'
+}
+
+function parseGrowthChangeStageRow(row: {
+  key: string
+  label: string
+  start_week: number
+  end_week: number | null
+  overview_title: string
+  overview_summary: string
+  highlights_json: string | null
+  metrics_json: string | null
+  daily_items_json: string | null
+  source_note: string
+}) {
+  const metricItems = (() => {
+    try {
+      const parsed = JSON.parse(row.metrics_json || '[]')
+      return Array.isArray(parsed) ? parsed.filter(isGrowthChangeMetricItem) : []
+    } catch {
+      return []
+    }
+  })()
+
+  const dailyItems = (() => {
+    try {
+      const parsed = JSON.parse(row.daily_items_json || '[]')
+      return Array.isArray(parsed) ? parsed.filter(isGrowthChangeDailyItem) : []
+    } catch {
+      return []
+    }
+  })()
+
+  return {
+    key: row.key,
+    label: row.label,
+    startWeek: row.start_week,
+    endWeek: row.end_week,
+    overviewTitle: row.overview_title,
+    overviewSummary: row.overview_summary,
+    highlights: parseJsonStringArray(row.highlights_json),
+    metricItems,
+    dailyItems,
+    sourceNote: row.source_note
+  }
+}
+
+async function getGrowthChangeStageContent(weekNumber: number): Promise<GrowthChangeStageRecord> {
+  const normalizedWeek = Math.max(1, Math.floor(weekNumber))
+
+  try {
+    const rows = await prisma.$queryRaw<Array<{
+      key: string
+      label: string
+      start_week: number
+      end_week: number | null
+      overview_title: string
+      overview_summary: string
+      highlights_json: string | null
+      metrics_json: string | null
+      daily_items_json: string | null
+      source_note: string
+    }>>`
+      SELECT
+        key,
+        label,
+        start_week,
+        end_week,
+        overview_title,
+        overview_summary,
+        highlights_json,
+        metrics_json,
+        daily_items_json,
+        source_note
+      FROM growth_change_stages
+      WHERE start_week <= ${normalizedWeek}
+        AND (end_week IS NULL OR end_week >= ${normalizedWeek})
+      ORDER BY start_week DESC, sort_order DESC
+      LIMIT 1
+    `
+
+    const matchedRow = rows[0]
+    if (matchedRow) {
+      return applyGrowthChangeWeekVariant(parseGrowthChangeStageRow(matchedRow), normalizedWeek)
+    }
+  } catch {
+  }
+
+  return applyGrowthChangeWeekVariant(getGrowthChangeStageFallback(normalizedWeek), normalizedWeek)
 }
 
 const reminderRepeatTypeMap = {
@@ -908,6 +1036,13 @@ function formatTimeKey(date: Date) {
   const hours = String(date.getHours()).padStart(2, '0')
   const minutes = String(date.getMinutes()).padStart(2, '0')
   return `${hours}:${minutes}`
+}
+
+function formatLocalDateTimeKey(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}T${formatTimeKey(date)}:00`
 }
 
 function formatPlanDateLabel(date: Date, options: { isToday?: boolean } = {}) {
@@ -2138,13 +2273,120 @@ export async function setActiveBaby(userId: string, babyId: string) {
 export async function getHomePageData(userId: string) {
   const baby = await ensureCurrentBaby(userId)
   const anyPlan = await prisma.mealPlan.findFirst({ where: { babyId: baby.id } })
+  const [homeShortcuts, monthlyFocus, growthSnapshot] = await Promise.all([
+    buildHomeShortcuts(baby.id),
+    buildHomeMonthlyFocus(baby.birthDate),
+    buildHomeGrowthSnapshot(baby.birthDate)
+  ])
 
   return {
     babyProfile: formatBabyProfile(baby),
     homeFeatures,
-    homeShortcuts: await buildHomeShortcuts(baby.id),
+    homeShortcuts,
     ingredientHighlights,
-    hasAnyPlan: Boolean(anyPlan)
+    hasAnyPlan: Boolean(anyPlan),
+    growthSnapshot,
+    monthlyFocus
+  }
+}
+
+function getDateOnlyTimestamp(value: DateOnlyInput) {
+  const parsed = parseDateOnly(value)
+  return Date.UTC(parsed.year, parsed.month - 1, parsed.day)
+}
+
+function getWeekAge(birthDate: DateOnlyInput, referenceDate: DateOnlyInput = getTodayDateOnly()) {
+  const diffDays = Math.max(0, Math.floor((getDateOnlyTimestamp(referenceDate) - getDateOnlyTimestamp(birthDate)) / 86400000))
+  return Math.floor(diffDays / 7) + 1
+}
+
+function getWeekDateRange(birthDate: Date, weekNumber: number) {
+  const weekIndex = Math.max(1, Math.floor(weekNumber))
+  const parsedBirthDate = parseDateOnly(birthDate)
+  const birthDateOnly = createUtcDateOnly(parsedBirthDate.year, parsedBirthDate.month, parsedBirthDate.day)
+  const start = addDays(birthDateOnly, (weekIndex - 1) * 7)
+  const end = addDays(start, 6)
+  return { start, end }
+}
+
+function formatMonthDayLabel(date: Date) {
+  return `${date.getUTCMonth() + 1}月${date.getUTCDate()}日`
+}
+
+function formatWeekDateRangeLabel(start: Date, end: Date) {
+  return `${formatMonthDayLabel(start)}-${formatMonthDayLabel(end)}`
+}
+
+async function buildHomeGrowthSnapshot(birthDate: Date) {
+  const currentWeekNumber = getWeekAge(birthDate)
+  const stage = await getGrowthChangeStageContent(currentWeekNumber)
+  const currentDayIndex = Math.max(0, Math.floor((getDateOnlyTimestamp(getTodayDateOnly()) - getDateOnlyTimestamp(birthDate)) / 86400000)) % 7
+  const activeItem = stage.dailyItems[currentDayIndex] ?? stage.dailyItems[0]
+
+  return {
+    weekNumber: currentWeekNumber,
+    weekLabel: `第${currentWeekNumber}周`,
+    ageLabel: formatAgeLabel(birthDate),
+    summary: activeItem?.description ?? stage.overviewSummary
+  }
+}
+
+async function buildHomeMonthlyFocus(birthDate: Date) {
+  const stage = await getGuideStageData(getGuideStageKey(getMonthAge(birthDate)))
+  return {
+    stageKey: stage.key,
+    ageLabel: formatAgeLabel(birthDate),
+    stageLabel: stage.label,
+    title: stage.title,
+    summary: stage.feedingTips[0] ?? stage.description
+  }
+}
+
+function buildGrowthChangeTimeline(
+  birthDate: Date,
+  weekNumber: number,
+  currentWeekNumber: number,
+  stage: GrowthChangeStageRecord
+) {
+  const { start } = getWeekDateRange(birthDate, weekNumber)
+  const todayKey = formatDateKey(getToday())
+
+  return stage.dailyItems.map((item, index) => {
+    const date = addDays(start, index)
+    return {
+      date: formatDateKey(date),
+      dateLabel: formatMonthDayLabel(date),
+      ageLabel: formatAgeLabel(birthDate, date),
+      title: item.title,
+      description: item.description,
+      isToday: weekNumber === currentWeekNumber && formatDateKey(date) === todayKey
+    }
+  })
+}
+
+export async function getGrowthChangePageData(userId: string, requestedWeekNumber?: number) {
+  const baby = await ensureCurrentBaby(userId)
+  const currentWeekNumber = getWeekAge(baby.birthDate)
+  const weekNumber = typeof requestedWeekNumber === 'number' && Number.isFinite(requestedWeekNumber)
+    ? Math.max(1, Math.floor(requestedWeekNumber))
+    : currentWeekNumber
+  const stage = await getGrowthChangeStageContent(weekNumber)
+  const { start, end } = getWeekDateRange(baby.birthDate, weekNumber)
+  const displayDate = weekNumber === currentWeekNumber ? getTodayDateOnly() : formatDateKey(start)
+
+  return {
+    currentWeekNumber,
+    weekNumber,
+    weekLabel: `第${weekNumber}周`,
+    ageLabel: formatAgeLabel(baby.birthDate, displayDate),
+    stageLabel: stage.label,
+    dateRangeLabel: formatWeekDateRangeLabel(start, end),
+    overviewTitle: stage.overviewTitle,
+    overviewSummary: stage.overviewSummary,
+    highlights: stage.highlights,
+    metricItems: stage.metricItems,
+    timeline: buildGrowthChangeTimeline(baby.birthDate, weekNumber, currentWeekNumber, stage),
+    sourceNote: stage.sourceNote
   }
 }
 
@@ -3960,6 +4202,671 @@ export async function getFavoritesPageData(userId: string) {
   }
 }
 
+function createPrefixedId(prefix: string) {
+  return `${prefix}-${Date.now().toString(36)}-${randomBytes(4).toString('hex')}`
+}
+
+function formatMonthKey(date: Date) {
+  return formatDateKey(date).slice(0, 7)
+}
+
+function formatCloudAlbumDayLabel(date: Date, today = getToday()) {
+  if (formatDateKey(date) === formatDateKey(today)) {
+    return '今天'
+  }
+
+  return `${date.getUTCMonth() + 1}月${date.getUTCDate()}日`
+}
+
+function normalizeCloudAlbumTags(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return normalizeTags(
+    value
+      .filter((item): item is string => typeof item === 'string')
+      .map((item) => item.trim().slice(0, 12))
+      .filter(Boolean)
+      .slice(0, 8)
+  )
+}
+
+function normalizeCloudAlbumVisibility(value: unknown) {
+  if (value === 'family' || value === 'self') {
+    return value
+  }
+
+  throw new Error('云相册可见范围不正确')
+}
+
+function parseRecordedAtValue(value: unknown) {
+  if (typeof value !== 'string' || !value.trim()) {
+    throw new Error('相册记录时间格式不正确')
+  }
+
+  const recordedAt = new Date(value)
+  if (Number.isNaN(recordedAt.getTime())) {
+    throw new Error('相册记录时间格式不正确')
+  }
+
+  const [dateText] = value.split('T')
+  const recordedDate = parsePlanDate(dateText)
+  if (!recordedDate) {
+    throw new Error('相册记录时间格式不正确')
+  }
+
+  return {
+    recordedAt,
+    recordedDate,
+    monthKey: formatMonthKey(recordedDate)
+  }
+}
+
+async function ensureCloudAlbumEditor(userId: string, babyId?: string) {
+  const baby = await ensureAccessibleBaby(userId, babyId)
+
+  if (baby.accessRole === 'viewer' && !baby.isOwner) {
+    throw new Error('仅拥有者或协作者可管理云相册')
+  }
+
+  return baby
+}
+
+function formatCloudAlbumAssetRow(row: {
+  id: string
+  entryId: string
+  babyId: string
+  storageKey: string
+  url: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  width: number | null
+  height: number | null
+  sortOrder: number
+}) {
+  return {
+    id: row.id,
+    entryId: row.entryId,
+    babyId: row.babyId,
+    storageKey: row.storageKey,
+    url: row.url,
+    originalName: row.originalName,
+    mimeType: row.mimeType,
+    sizeBytes: row.sizeBytes,
+    sortOrder: row.sortOrder,
+    width: row.width,
+    height: row.height
+  }
+}
+
+function normalizeCloudAlbumRetainedAssetIds(value: unknown) {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return [
+    ...new Set(
+      value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter((item) => item.length > 0)
+    )
+  ]
+}
+
+async function getCloudAlbumAssetsMap(entryIds: string[]) {
+  if (!entryIds.length) {
+    return new Map<string, ReturnType<typeof formatCloudAlbumAssetRow>[]>()
+  }
+
+  const assetRows = await prisma.$queryRaw<Array<{
+    id: string
+    entryId: string
+    babyId: string
+    storageKey: string
+    url: string
+    originalName: string
+    mimeType: string
+    sizeBytes: number
+    width: number | null
+    height: number | null
+    sortOrder: number
+    createdAt: Date
+  }>>`
+    SELECT
+      id,
+      entry_id AS "entryId",
+      baby_id AS "babyId",
+      storage_key AS "storageKey",
+      url,
+      original_name AS "originalName",
+      mime_type AS "mimeType",
+      size_bytes AS "sizeBytes",
+      width,
+      height,
+      sort_order AS "sortOrder",
+      created_at AS "createdAt"
+    FROM baby_album_assets
+    WHERE entry_id IN (${Prisma.join(entryIds)})
+    ORDER BY sort_order ASC, created_at ASC
+  `
+
+  const assetMap = new Map<string, ReturnType<typeof formatCloudAlbumAssetRow>[]>()
+  assetRows.forEach((row) => {
+    const current = assetMap.get(row.entryId) ?? []
+    current.push(formatCloudAlbumAssetRow(row))
+    assetMap.set(row.entryId, current)
+  })
+
+  return assetMap
+}
+
+async function getCloudAlbumEntryContext(userId: string, entryId: string, options: { editable?: boolean } = {}) {
+  const rows = await prisma.$queryRaw<Array<{
+    entryId: string
+    babyId: string
+    babyNickname: string
+    authorUserId: string
+    monthKey: string
+    visibility: 'family' | 'self'
+  }>>`
+    SELECT
+      e.id AS "entryId",
+      e.baby_id AS "babyId",
+      b.nickname AS "babyNickname",
+      e.author_user_id AS "authorUserId",
+      e.month_key AS "monthKey",
+      e.visibility::text AS visibility
+    FROM baby_album_entries e
+    JOIN babies b ON b.id = e.baby_id
+    WHERE e.id = ${entryId}
+      AND e.deleted_at IS NULL
+    LIMIT 1
+  `
+
+  const row = rows[0]
+
+  if (!row) {
+    throw new Error('未找到对应云相册记录')
+  }
+
+  const baby = options.editable
+    ? await ensureCloudAlbumEditor(userId, row.babyId)
+    : await ensureAccessibleBaby(userId, row.babyId)
+
+  if (row.visibility === 'self' && row.authorUserId !== userId) {
+    throw new Error('未找到对应云相册记录')
+  }
+
+  return {
+    ...row,
+    baby
+  }
+}
+
+function buildCloudAlbumEntryDto(row: {
+  id: string
+  babyId: string
+  authorUserId: string
+  authorName: string
+  authorRoleLabel: string | null
+  content: string
+  tagsJson: string | null
+  isMilestone: boolean
+  visibility: 'family' | 'self'
+  recordedAt: Date
+  recordedDate: Date
+  monthKey: string
+  createdAt: Date
+}, assetMap: Map<string, ReturnType<typeof formatCloudAlbumAssetRow>[]>) {
+  return {
+    id: row.id,
+    babyId: row.babyId,
+    authorUserId: row.authorUserId,
+    authorName: row.authorName,
+    authorRoleLabel: row.authorRoleLabel?.trim() || row.authorName,
+    content: row.content,
+    tags: parseJsonStringArray(row.tagsJson),
+    isMilestone: row.isMilestone,
+    visibility: row.visibility,
+    recordedAt: formatLocalDateTimeKey(row.recordedAt),
+    recordedDate: formatDateKey(row.recordedDate),
+    monthKey: row.monthKey,
+    assets: assetMap.get(row.id) ?? [],
+    createdAt: row.createdAt.toISOString()
+  }
+}
+
+export async function createCloudAlbumEntry(userId: string, payload: {
+  content?: string
+  tags?: unknown
+  isMilestone?: boolean
+  visibility?: unknown
+  recordedAt?: unknown
+  assetCount?: unknown
+  babyId?: string
+}) {
+  const baby = await ensureCloudAlbumEditor(userId, payload.babyId)
+  const { recordedAt, recordedDate, monthKey } = parseRecordedAtValue(payload.recordedAt)
+  const assetCount = typeof payload.assetCount === 'number'
+    ? Math.trunc(payload.assetCount)
+    : typeof payload.assetCount === 'string'
+      ? Math.trunc(Number(payload.assetCount))
+      : 0
+
+  if (!Number.isFinite(assetCount) || assetCount < 1) {
+    throw new Error('请至少上传1张图片')
+  }
+
+  if (assetCount > 9) {
+    throw new Error('最多上传9张图片')
+  }
+
+  const entryId = createPrefixedId('album-entry')
+  const content = typeof payload.content === 'string' ? payload.content.trim().slice(0, 300) : ''
+  const tags = normalizeCloudAlbumTags(payload.tags)
+  const visibility = normalizeCloudAlbumVisibility(payload.visibility)
+
+  await prisma.$executeRaw`
+    INSERT INTO baby_album_entries (
+      id,
+      baby_id,
+      author_user_id,
+      content,
+      tags_json,
+      is_milestone,
+      visibility,
+      recorded_at,
+      recorded_date,
+      month_key,
+      created_at,
+      updated_at
+    )
+    VALUES (
+      ${entryId},
+      ${baby.id},
+      ${userId},
+      ${content},
+      ${JSON.stringify(tags)},
+      ${Boolean(payload.isMilestone)},
+      ${visibility}::cloud_album_visibility,
+      ${recordedAt},
+      ${recordedDate},
+      ${monthKey},
+      NOW(),
+      NOW()
+    )
+  `
+
+  return { entryId }
+}
+
+export async function getCloudAlbumEntryUploadContext(userId: string, entryId: string) {
+  const context = await getCloudAlbumEntryContext(userId, entryId, { editable: true })
+
+  return {
+    entryId: context.entryId,
+    babyId: context.babyId,
+    babyNickname: context.babyNickname,
+    authorUserId: context.authorUserId,
+    monthKey: context.monthKey
+  }
+}
+
+export async function getCloudAlbumEntryDetail(userId: string, entryId: string) {
+  const context = await getCloudAlbumEntryContext(userId, entryId)
+  const entryRows = await prisma.$queryRaw<Array<{
+    id: string
+    babyId: string
+    authorUserId: string
+    authorName: string
+    authorRoleLabel: string | null
+    content: string
+    tagsJson: string | null
+    isMilestone: boolean
+    visibility: 'family' | 'self'
+    recordedAt: Date
+    recordedDate: Date
+    monthKey: string
+    createdAt: Date
+  }>>`
+    SELECT
+      e.id,
+      e.baby_id AS "babyId",
+      e.author_user_id AS "authorUserId",
+      u.nickname AS "authorName",
+      COALESCE(NULLIF(CASE WHEN e.author_user_id = b.user_id THEN b.relationship_label ELSE bm.display_name END, ''), u.nickname) AS "authorRoleLabel",
+      e.content,
+      e.tags_json AS "tagsJson",
+      e.is_milestone AS "isMilestone",
+      e.visibility::text AS visibility,
+      e.recorded_at AS "recordedAt",
+      e.recorded_date AS "recordedDate",
+      e.month_key AS "monthKey",
+      e.created_at AS "createdAt"
+    FROM baby_album_entries e
+    JOIN babies b ON b.id = e.baby_id
+    JOIN users u ON u.id = e.author_user_id
+    LEFT JOIN baby_members bm ON bm.baby_id = e.baby_id AND bm.user_id = e.author_user_id
+    WHERE e.id = ${entryId}
+      AND e.deleted_at IS NULL
+    LIMIT 1
+  `
+
+  const row = entryRows[0]
+  if (!row) {
+    throw new Error('未找到对应云相册记录')
+  }
+
+  const assetMap = await getCloudAlbumAssetsMap([entryId])
+
+  return {
+    babyProfile: formatBabyProfile(context.baby),
+    entry: buildCloudAlbumEntryDto(row, assetMap)
+  }
+}
+
+export async function updateCloudAlbumEntry(userId: string, entryId: string, payload: {
+  content?: string
+  tags?: unknown
+  isMilestone?: boolean
+  visibility?: unknown
+  recordedAt?: unknown
+  retainedAssetIds?: unknown
+  newAssetCount?: unknown
+}) {
+  const context = await getCloudAlbumEntryContext(userId, entryId, { editable: true })
+  const { recordedAt, recordedDate, monthKey } = parseRecordedAtValue(payload.recordedAt)
+  const retainedAssetIds = normalizeCloudAlbumRetainedAssetIds(payload.retainedAssetIds)
+  const newAssetCount = typeof payload.newAssetCount === 'number'
+    ? Math.trunc(payload.newAssetCount)
+    : typeof payload.newAssetCount === 'string'
+      ? Math.trunc(Number(payload.newAssetCount))
+      : 0
+
+  if (!Number.isFinite(newAssetCount) || newAssetCount < 0) {
+    throw new Error('云相册图片数量不正确')
+  }
+
+  const currentAssets = await prisma.$queryRaw<Array<{
+    id: string
+    storageKey: string
+    sortOrder: number
+  }>>`
+    SELECT
+      id,
+      storage_key AS "storageKey",
+      sort_order AS "sortOrder"
+    FROM baby_album_assets
+    WHERE entry_id = ${entryId}
+    ORDER BY sort_order ASC, created_at ASC
+  `
+
+  const retainedSet = new Set(retainedAssetIds)
+  const keptAssets = currentAssets.filter((asset) => retainedSet.has(asset.id))
+  const removedAssets = currentAssets.filter((asset) => !retainedSet.has(asset.id))
+  const finalCount = keptAssets.length + newAssetCount
+
+  if (finalCount < 1) {
+    throw new Error('请至少保留1张图片')
+  }
+
+  if (finalCount > 9) {
+    throw new Error('最多上传9张图片')
+  }
+
+  const content = typeof payload.content === 'string' ? payload.content.trim().slice(0, 300) : ''
+  const tags = normalizeCloudAlbumTags(payload.tags)
+  const visibility = normalizeCloudAlbumVisibility(payload.visibility)
+
+  await prisma.$executeRaw`
+    UPDATE baby_album_entries
+    SET content = ${content},
+        tags_json = ${JSON.stringify(tags)},
+        is_milestone = ${Boolean(payload.isMilestone)},
+        visibility = ${visibility}::cloud_album_visibility,
+        recorded_at = ${recordedAt},
+        recorded_date = ${recordedDate},
+        month_key = ${monthKey},
+        updated_at = NOW()
+    WHERE id = ${entryId}
+      AND deleted_at IS NULL
+  `
+
+  if (removedAssets.length) {
+    await prisma.$executeRaw`
+      DELETE FROM baby_album_assets
+      WHERE id IN (${Prisma.join(removedAssets.map((asset) => asset.id))})
+    `
+  }
+
+  await Promise.all(keptAssets.map((asset, index) => prisma.$executeRaw`
+    UPDATE baby_album_assets
+    SET sort_order = ${index}
+    WHERE id = ${asset.id}
+  `))
+
+  return {
+    entryId: context.entryId,
+    removedStorageKeys: removedAssets.map((asset) => asset.storageKey)
+  }
+}
+
+export async function addCloudAlbumAsset(userId: string, entryId: string, payload: {
+  storageKey: string
+  url: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  sortOrder?: number
+  width?: number | null
+  height?: number | null
+}) {
+  const context = await getCloudAlbumEntryUploadContext(userId, entryId)
+  const countRows = await prisma.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*)::int AS count
+    FROM baby_album_assets
+    WHERE entry_id = ${entryId}
+  `
+  const currentCount = Number(countRows[0]?.count ?? 0)
+
+  if (currentCount >= 9) {
+    throw new Error('最多上传9张图片')
+  }
+
+  const assetId = createPrefixedId('album-asset')
+  const sortOrder = typeof payload.sortOrder === 'number' && Number.isFinite(payload.sortOrder)
+    ? Math.max(0, Math.trunc(payload.sortOrder))
+    : currentCount
+  const sizeBytes = Math.max(0, Math.trunc(payload.sizeBytes))
+  const width = typeof payload.width === 'number' && Number.isFinite(payload.width) ? Math.trunc(payload.width) : null
+  const height = typeof payload.height === 'number' && Number.isFinite(payload.height) ? Math.trunc(payload.height) : null
+
+  await prisma.$executeRaw`
+    INSERT INTO baby_album_assets (
+      id,
+      entry_id,
+      baby_id,
+      storage_key,
+      url,
+      original_name,
+      mime_type,
+      size_bytes,
+      width,
+      height,
+      sort_order,
+      created_at
+    )
+    VALUES (
+      ${assetId},
+      ${entryId},
+      ${context.babyId},
+      ${payload.storageKey},
+      ${payload.url},
+      ${payload.originalName.slice(0, 255)},
+      ${payload.mimeType.slice(0, 64)},
+      ${sizeBytes},
+      ${width},
+      ${height},
+      ${sortOrder},
+      NOW()
+    )
+  `
+
+  return formatCloudAlbumAssetRow({
+    id: assetId,
+    entryId,
+    babyId: context.babyId,
+    storageKey: payload.storageKey,
+    url: payload.url,
+    originalName: payload.originalName.slice(0, 255),
+    mimeType: payload.mimeType.slice(0, 64),
+    sizeBytes,
+    sortOrder,
+    width,
+    height
+  })
+}
+
+export async function deleteCloudAlbumEntry(userId: string, entryId: string) {
+  await getCloudAlbumEntryContext(userId, entryId, { editable: true })
+  const assetRows = await prisma.$queryRaw<Array<{ storageKey: string }>>`
+    SELECT storage_key AS "storageKey"
+    FROM baby_album_assets
+    WHERE entry_id = ${entryId}
+  `
+
+  await prisma.$executeRaw`DELETE FROM baby_album_assets WHERE entry_id = ${entryId}`
+  await prisma.$executeRaw`
+    UPDATE baby_album_entries
+    SET deleted_at = NOW(),
+        updated_at = NOW()
+    WHERE id = ${entryId}
+      AND deleted_at IS NULL
+  `
+
+  return {
+    entryId,
+    removedStorageKeys: assetRows.map((row) => row.storageKey)
+  }
+}
+
+export async function getCloudAlbumPageData(userId: string, babyId?: string) {
+  const baby = await ensureAccessibleBaby(userId, babyId)
+  const entryRows = await prisma.$queryRaw<Array<{
+    id: string
+    babyId: string
+    authorUserId: string
+    authorName: string
+    authorRoleLabel: string | null
+    content: string
+    tagsJson: string | null
+    isMilestone: boolean
+    visibility: 'family' | 'self'
+    recordedAt: Date
+    recordedDate: Date
+    monthKey: string
+    createdAt: Date
+  }>>`
+    SELECT
+      e.id,
+      e.baby_id AS "babyId",
+      e.author_user_id AS "authorUserId",
+      u.nickname AS "authorName",
+      COALESCE(NULLIF(CASE WHEN e.author_user_id = b.user_id THEN b.relationship_label ELSE bm.display_name END, ''), u.nickname) AS "authorRoleLabel",
+      e.content,
+      e.tags_json AS "tagsJson",
+      e.is_milestone AS "isMilestone",
+      e.visibility::text AS visibility,
+      e.recorded_at AS "recordedAt",
+      e.recorded_date AS "recordedDate",
+      e.month_key AS "monthKey",
+      e.created_at AS "createdAt"
+    FROM baby_album_entries e
+    JOIN babies b ON b.id = e.baby_id
+    JOIN users u ON u.id = e.author_user_id
+    LEFT JOIN baby_members bm ON bm.baby_id = e.baby_id AND bm.user_id = e.author_user_id
+    WHERE e.baby_id = ${baby.id}
+      AND e.deleted_at IS NULL
+      AND (e.visibility = 'family'::cloud_album_visibility OR e.author_user_id = ${userId})
+    ORDER BY e.recorded_date DESC, e.recorded_at DESC, e.created_at DESC
+  `
+
+  if (!entryRows.length) {
+    return {
+      babyProfile: formatBabyProfile(baby),
+      timelineGroups: [],
+      monthSummaries: [],
+      totalCount: 0
+    }
+  }
+
+  const entryIds = entryRows.map((row) => row.id)
+  const assetMap = await getCloudAlbumAssetsMap(entryIds)
+
+  const entries = entryRows
+    .map((row) => buildCloudAlbumEntryDto(row, assetMap))
+    .filter((entry) => entry.assets.length > 0)
+
+  const groupedEntries = new Map<string, typeof entries>()
+  entries.forEach((entry) => {
+    const current = groupedEntries.get(entry.recordedDate) ?? []
+    current.push(entry)
+    groupedEntries.set(entry.recordedDate, current)
+  })
+
+  const timelineGroups = Array.from(groupedEntries.entries()).map(([date, groupEntries]) => {
+    const groupDate = parsePlanDate(date) ?? getToday()
+    return {
+      date,
+      label: formatCloudAlbumDayLabel(groupDate),
+      ageLabel: formatAgeLabel(baby.birthDate, date),
+      count: groupEntries.reduce((total, entry) => total + entry.assets.length, 0),
+      entries: groupEntries
+    }
+  })
+
+  const monthMap = new Map<string, {
+    monthKey: string
+    year: number
+    month: number
+    count: number
+    milestoneCount: number
+    coverUrls: string[]
+  }>()
+  entries.forEach((entry) => {
+    const current = monthMap.get(entry.monthKey) ?? {
+      monthKey: entry.monthKey,
+      year: Number(entry.monthKey.slice(0, 4)),
+      month: Number(entry.monthKey.slice(5, 7)),
+      count: 0,
+      milestoneCount: 0,
+      coverUrls: []
+    }
+    current.count += entry.assets.length
+    if (entry.isMilestone) {
+      current.milestoneCount += 1
+    }
+    if (current.coverUrls.length < 4) {
+      entry.assets.forEach((asset) => {
+        if (current.coverUrls.length < 4) {
+          current.coverUrls.push(asset.url)
+        }
+      })
+    }
+    monthMap.set(entry.monthKey, current)
+  })
+
+  return {
+    babyProfile: formatBabyProfile(baby),
+    timelineGroups,
+    monthSummaries: Array.from(monthMap.values()).sort((a, b) => b.monthKey.localeCompare(a.monthKey)),
+    totalCount: entries.reduce((total, entry) => total + entry.assets.length, 0)
+  }
+}
+
 function toFamilyRole(role: 'owner' | 'collaborator' | 'caregiver' | 'viewer') {
   if (role === 'owner') {
     return 'owner' as const
@@ -4478,7 +5385,7 @@ export async function getProfilePageData(userId: string) {
   const profileMenus = [
     { key: 'baby', title: '宝宝档案', subtitle: hasBaby ? `当前：${baby?.nickname ?? ''} · ${baby?.allergens.length ?? 0} 项过敏原` : '添加宝宝昵称、生日与过敏原', icon: '👶' },
     { key: 'family', title: '家庭协作', subtitle: hasBaby ? baby?.isOwner ? '邀请家人共同查看计划与记录' : `当前身份：${baby?.accessRole === 'viewer' ? '只读成员' : baby?.accessRole === 'owner' ? '拥有者' : '协作成员'}` : '完善宝宝档案后邀请家人协作', icon: '🏠' },
-    { key: 'favorite', title: '我的收藏', subtitle: '保存喜欢的辅食与饮食指南', icon: '❤️' },
+    { key: 'favorite', title: '我的收藏', subtitle: '收藏常看的食谱和干货', icon: '⭐' },
     { key: 'history', title: '辅食计划', subtitle: '查看过往生成计划与查询记录', icon: '🕘' },
     { key: 'allergy', title: '过敏管理', subtitle: hasBaby ? `当前已记录 ${baby?.allergens.length ?? 0} 项过敏原` : '完善宝宝档案后管理过敏原', icon: '⚠️' },
     // { key: 'message', title: '消息通知', subtitle: '每日提醒与系统通知', icon: '🔔' },
@@ -4608,6 +5515,32 @@ export async function removeUserFavorite(userId: string, recipeId: string) {
     await (prisma as any).userFavorite.deleteMany({ where: { userId, recipeId } })
   } catch {
     await prisma.$executeRaw`DELETE FROM user_favorites WHERE user_id = ${userId} AND recipe_id = ${recipeId}`
+  }
+}
+
+export async function addUserKnowledgeFavorite(userId: string, articleId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).userKnowledgeFavorite.upsert({
+      where: { userId_articleId: { userId, articleId } },
+      update: {},
+      create: { userId, articleId }
+    })
+  } catch {
+    await prisma.$executeRaw`
+      INSERT INTO user_knowledge_favorites (id, user_id, article_id, created_at)
+      VALUES (concat('kfav-', extract(epoch from now())::text, '-', floor(random()*1000000)::text), ${userId}, ${articleId}, NOW())
+      ON CONFLICT (user_id, article_id) DO NOTHING
+    `
+  }
+}
+
+export async function removeUserKnowledgeFavorite(userId: string, articleId: string) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (prisma as any).userKnowledgeFavorite.deleteMany({ where: { userId, articleId } })
+  } catch {
+    await prisma.$executeRaw`DELETE FROM user_knowledge_favorites WHERE user_id = ${userId} AND article_id = ${articleId}`
   }
 }
 

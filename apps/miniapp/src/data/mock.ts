@@ -32,7 +32,7 @@ export const homeFeatures: HomeFeature[] = [
 
 export const homeShortcuts: HomeShortcut[] = [
   { title: '继续上次计划', description: '昨天已保存 3 餐安排', icon: '↩︎', actionKey: 'recent-plan', planPreview: todayMealPlan },
-  { title: '收藏有更新', description: '新增 3 道高铁食谱', icon: '♡', actionKey: 'favorites' },
+  { title: '云相册有更新', description: '今天新增 6 张成长照片', icon: '📷', actionKey: 'favorites' },
   { title: '温馨提示', description: '本周注意增加深绿叶菜摄入', icon: '☀︎', actionKey: 'message' }
 ]
 
@@ -343,7 +343,7 @@ export const recipeDetail: RecipeDetail = {
 
 export const profileMenus: ProfileMenuItem[] = [
   { key: 'baby', title: '宝宝档案', subtitle: '生日、月龄、阶段与身高体重', icon: '👶' },
-  { key: 'favorite', title: '我的收藏', subtitle: '保存喜欢的辅食与饮食指南', icon: '❤️' },
+  { key: 'favorite', title: '我的收藏', subtitle: '收藏常看的食谱和干货', icon: '⭐' },
   { key: 'history', title: '辅食计划', subtitle: '查看过往生成计划与查询记录', icon: '🕘' },
   { key: 'allergy', title: '过敏管理', subtitle: '统一维护过敏原与提醒', icon: '⚠️' },
   { key: 'message', title: '消息通知', subtitle: '每日提醒与系统通知', icon: '🔔' },
@@ -436,9 +436,9 @@ export const homeDashboardModules = [
   },
   {
     key: 'favorite',
-    title: '我的收藏',
-    icon: '🔖',
-    route: '/pages/favorites/index',
+    title: '云相册',
+    icon: '📷',
+    route: '/pages/cloud-album/index',
     implemented: true,
     tone: 'indigo',
     shape: 'shape-4'

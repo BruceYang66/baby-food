@@ -5,7 +5,13 @@ import type { KnowledgeArticleDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
 import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import { useBackToTop } from '@/composables/useBackToTop'
-import { getKnowledgeArticleDetail, normalizeAppImageUrl } from '@/services/api'
+import {
+  addKnowledgeFavorite,
+  ensureProtectedPageAccess,
+  getKnowledgeArticleDetail,
+  normalizeAppImageUrl,
+  removeKnowledgeFavorite
+} from '@/services/api'
 
 const PREVIEW_STORAGE_KEY = 'adminKnowledgePreview'
 
@@ -56,6 +62,37 @@ async function loadArticle() {
     })
   } finally {
     loading.value = false
+  }
+}
+
+async function toggleFavorite() {
+  if (!article.value || isPreview.value) {
+    return
+  }
+
+  if (!ensureProtectedPageAccess({ allowNoBaby: true })) {
+    return
+  }
+
+  const nextValue = !article.value.isFavorite
+  article.value = {
+    ...article.value,
+    isFavorite: nextValue
+  }
+
+  try {
+    if (nextValue) {
+      await addKnowledgeFavorite(article.value.id)
+    } else {
+      await removeKnowledgeFavorite(article.value.id)
+    }
+    uni.showToast({ title: nextValue ? '已收藏' : '已取消收藏', icon: 'success' })
+  } catch {
+    article.value = {
+      ...article.value,
+      isFavorite: !nextValue
+    }
+    uni.showToast({ title: '操作失败，请重试', icon: 'none' })
   }
 }
 
@@ -115,7 +152,13 @@ onShareTimeline(() => ({
 
 <template>
   <view class="page-shell detail-page">
-    <AppNavBar :title="isPreview ? '干货预览' : (article?.categoryLabel || '干货详情')" :show-back="true" @back="handleBack" />
+    <AppNavBar
+      :title="isPreview ? '干货预览' : (article?.categoryLabel || '干货详情')"
+      :show-back="true"
+      :right-text="isPreview ? '' : (article?.isFavorite ? '♥' : '♡')"
+      @back="handleBack"
+      @right="toggleFavorite"
+    />
 
     <view v-if="article" class="article-content">
       <view v-if="isPreview" class="preview-banner soft-card">
@@ -205,13 +248,17 @@ onShareTimeline(() => ({
       <text class="loading-text">加载中...</text>
     </view>
 
-    <BackToTopFab :visible="showBackToTop" @tap="scrollPageToTop" />
+    <view v-if="article && !isPreview" class="fixed-bottom-actions">
+      <view class="bottom-mini-btn primary" @tap="toggleFavorite">{{ article.isFavorite ? '已收藏' : '收藏' }}</view>
+    </view>
+
+    <BackToTopFab :visible="showBackToTop" extra-bottom="160rpx" @tap="scrollPageToTop" />
   </view>
 </template>
 
 <style scoped lang="scss">
 .detail-page {
-  padding-bottom: 80rpx;
+  padding-bottom: 220rpx;
 }
 
 .article-content {
@@ -449,5 +496,21 @@ onShareTimeline(() => ({
 .loading-text {
   font-size: 26rpx;
   color: var(--mini-text-muted);
+}
+
+.bottom-mini-btn {
+  flex: 1;
+  padding: 24rpx 0;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.88);
+  text-align: center;
+  font-size: 24rpx;
+  font-weight: 700;
+  color: var(--mini-text);
+}
+
+.bottom-mini-btn.primary {
+  background: linear-gradient(135deg, var(--mini-primary-deep), var(--mini-primary));
+  color: #fff;
 }
 </style>

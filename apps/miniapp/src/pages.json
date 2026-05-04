@@ -177,6 +177,18 @@
       }
     },
     {
+      "path": "pages/cloud-album/index",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/cloud-album/editor",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
       "path": "pages/message/index",
       "style": {
         "navigationStyle": "custom"
@@ -196,6 +208,12 @@
     },
     {
       "path": "pages/growth/explainer",
+      "style": {
+        "navigationStyle": "custom"
+      }
+    },
+    {
+      "path": "pages/growth/change/index",
       "style": {
         "navigationStyle": "custom"
       }

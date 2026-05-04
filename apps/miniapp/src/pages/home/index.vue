@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { onShareAppMessage, onShareTimeline, onShow } from '@dcloudio/uni-app'
-import type { BabyProfile } from '@baby-food/shared-types'
+import type { BabyProfile, HomeGrowthSnapshot, HomeMonthlyFocus } from '@baby-food/shared-types'
 import AppTabBar from '@/components/common/AppTabBar.vue'
 import {
   getFamilyMembers,
@@ -13,9 +13,7 @@ import {
   readAuthSession
 } from '@/services/api'
 import {
-  homeDashboardDailyChange,
   homeDashboardModules,
-  homeDashboardMonthlyFocusText,
   homeDashboardRecommendations
 } from '@/data/mock'
 import { getHomeReminderPreview, getReminderDateState, hydrateReminderItems } from '@/services/local-reminder'
@@ -43,6 +41,8 @@ const HOME_HERO_BACKDROP = 'https://lh3.googleusercontent.com/aida-public/AB6AXu
 
 const isLoggedIn = ref(false)
 const baby = ref<BabyProfile | null>(null)
+const homeGrowthSnapshot = ref<HomeGrowthSnapshot | null>(null)
+const homeMonthlyFocus = ref<HomeMonthlyFocus | null>(null)
 const familyFriendCount = ref(0)
 const dashboardTodos = ref<DashboardTodo[]>([])
 const homeRecommendations = ref<DashboardRecommendation[]>(homeDashboardRecommendations.map((item, index) => ({
@@ -124,7 +124,9 @@ const heroBackdrop = computed(() => heroBackgroundImage.value || heroAvatar.valu
 const displayBabyName = computed(() => baby.value?.nickname || '米米')
 const displayBabyAge = computed(() => baby.value?.monthAgeLabel || '')
 const displayBabyStage = computed(() => baby.value?.stageLabel || '')
-const monthlyFocusLabel = computed(() => baby.value?.monthAgeLabel || '当前阶段')
+const dailyChangeText = computed(() => homeGrowthSnapshot.value?.summary || '根据当前周龄生成成长观察提示')
+const monthlyFocusLabel = computed(() => homeMonthlyFocus.value?.ageLabel || baby.value?.monthAgeLabel || '当前阶段')
+const monthlyFocusText = computed(() => homeMonthlyFocus.value?.summary || '根据当前月龄生成喂养重点')
 
 function getTodoStateLabel(todo: DashboardTodo) {
   if (todo.status === 'done') {
@@ -220,6 +222,8 @@ async function loadHome() {
 
   isLoggedIn.value = hasToken
   baby.value = session?.babyProfile ?? null
+  homeGrowthSnapshot.value = null
+  homeMonthlyFocus.value = null
   familyFriendCount.value = 0
   dashboardTodos.value = []
 
@@ -236,6 +240,8 @@ async function loadHome() {
   try {
     const data = await getHomeData()
     baby.value = data.babyProfile
+    homeGrowthSnapshot.value = data.growthSnapshot ?? null
+    homeMonthlyFocus.value = data.monthlyFocus ?? null
     await Promise.all([
       loadDashboardTodos(),
       loadFamilyFriendCount(data.babyProfile?.id),
@@ -322,7 +328,8 @@ function openModule(module: DashboardModule) {
 }
 
 function openDailyChange() {
-  showComingSoon('成长解读建设中')
+  const query = homeGrowthSnapshot.value?.weekNumber ? `?weekNumber=${homeGrowthSnapshot.value.weekNumber}` : ''
+  go(`/pages/growth/change/index${query}`)
 }
 
 function openMonthlyFocus() {
@@ -474,7 +481,7 @@ onShareTimeline(() => ({
 
       <view v-if="hasBabyProfile" class="daily-change-card" @tap="openDailyChange">
         <text class="daily-change-label">宝宝今日变化：</text>
-        <text class="daily-change-text">{{ homeDashboardDailyChange }}</text>
+        <text class="daily-change-text">{{ dailyChangeText }}</text>
         <text class="daily-change-arrow">›</text>
       </view>
 
@@ -484,7 +491,7 @@ onShareTimeline(() => ({
           <text class="monthly-head-title">本月发育重点</text>
         </view>
         <text class="monthly-desc">
-          <text class="monthly-age">{{ monthlyFocusLabel }}：</text>{{ homeDashboardMonthlyFocusText }}
+          <text class="monthly-age">{{ monthlyFocusLabel }}：</text>{{ monthlyFocusText }}
         </text>
         <view class="monthly-link" @tap="openMonthlyFocus">查看完整指南 →</view>
       </view>

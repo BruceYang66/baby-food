@@ -128,3 +128,74 @@ BEGIN
       ON recipes(content_status, age_min_months, age_max_months);
   END IF;
 END $$;
+
+-- 4) cloud album enum + tables + indexes
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_type
+    WHERE typname = 'cloud_album_visibility'
+  ) THEN
+    CREATE TYPE cloud_album_visibility AS ENUM ('family', 'self');
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS baby_album_entries (
+  id TEXT PRIMARY KEY,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  author_user_id TEXT NOT NULL REFERENCES users(id),
+  content TEXT NOT NULL DEFAULT '',
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  is_milestone BOOLEAN NOT NULL DEFAULT FALSE,
+  visibility cloud_album_visibility NOT NULL DEFAULT 'family',
+  recorded_at TIMESTAMP NOT NULL,
+  recorded_date DATE NOT NULL,
+  month_key TEXT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_baby_album_entries_baby_date_created
+  ON baby_album_entries(baby_id, recorded_date, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_baby_album_entries_baby_month_key
+  ON baby_album_entries(baby_id, month_key DESC);
+CREATE INDEX IF NOT EXISTS idx_baby_album_entries_author_created
+  ON baby_album_entries(author_user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS baby_album_assets (
+  id TEXT PRIMARY KEY,
+  entry_id TEXT NOT NULL REFERENCES baby_album_entries(id) ON DELETE CASCADE,
+  baby_id TEXT NOT NULL REFERENCES babies(id),
+  storage_key TEXT NOT NULL,
+  url TEXT NOT NULL,
+  original_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL,
+  size_bytes INTEGER NOT NULL,
+  width INTEGER,
+  height INTEGER,
+  sort_order INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_baby_album_assets_entry_sort_order
+  ON baby_album_assets(entry_id, sort_order ASC);
+CREATE INDEX IF NOT EXISTS idx_baby_album_assets_baby_created
+  ON baby_album_assets(baby_id, created_at DESC);
+
+-- 5) growth change stages
+CREATE TABLE IF NOT EXISTS growth_change_stages (
+  id TEXT PRIMARY KEY,
+  key TEXT UNIQUE NOT NULL,
+  label TEXT NOT NULL,
+  start_week INTEGER NOT NULL,
+  end_week INTEGER,
+  overview_title TEXT NOT NULL,
+  overview_summary TEXT NOT NULL,
+  highlights_json TEXT NOT NULL DEFAULT '[]',
+  metrics_json TEXT NOT NULL DEFAULT '[]',
+  daily_items_json TEXT NOT NULL DEFAULT '[]',
+  source_note TEXT NOT NULL,
+  sort_order INTEGER NOT NULL DEFAULT 0
+);

@@ -136,7 +136,7 @@ function openMenu(menu: ProfileMenuItem) {
     openProtectedPage('/pages/plan/index', 'reLaunch')
     return
   }
-  if (menu.key === 'favorite') {
+  if (menu.key === 'favorite' || menu.key === 'album') {
     openProtectedPage('/pages/favorites/index')
     return
   }
@@ -220,7 +220,7 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
       <view class="login-card card">
         <view class="login-avatar">👤</view>
         <text class="login-title">登录后体验完整功能</text>
-        <text class="login-desc">生成个性化辅食计划、记录喂养历史、收藏喜欢的食谱</text>
+        <text class="login-desc">生成个性化辅食计划、记录喂养历史、沉淀常看收藏</text>
         <view class="login-btn" @tap="goLogin">立即登录</view>
       </view>
 
@@ -245,7 +245,7 @@ onShareTimeline(() => ({ title: '宝宝辅食生成器' }))
           <text class="tips-item">• 创建宝宝档案，记录成长信息</text>
           <text class="tips-item">• 生成个性化辅食计划</text>
           <text class="tips-item">• 记录每日喂养情况</text>
-          <text class="tips-item">• 收藏喜欢的食谱</text>
+          <text class="tips-item">• 收藏并缓存常看食谱</text>
           <text class="tips-item">• 家庭成员协同管理</text>
         </view>
       </view>

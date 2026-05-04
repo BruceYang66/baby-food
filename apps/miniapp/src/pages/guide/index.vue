@@ -7,7 +7,7 @@ import AgeStageTabs from '@/components/guide/AgeStageTabs.vue'
 import FoodRuleSection from '@/components/guide/FoodRuleSection.vue'
 import { getGuideData, openProtectedPage, readAuthSession } from '@/services/api'
 
-const STAGE_KEYS = ['4-6', '6-7', '8-9', '10-12', '12-18', '18-24']
+const STAGE_KEYS = ['1-3', '4-6', '6-7', '8-9', '10-12', '12-18', '18-24', '24-36']
 
 const stages = ref<GuideStage[]>([])
 const activeKey = ref('6-7')

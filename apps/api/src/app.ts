@@ -38,6 +38,13 @@ import {
   previewRecipeImport
 } from './data/imports.js'
 import {
+  getCloudAlbumEntryDetail,
+  updateCloudAlbumEntry,
+  createCloudAlbumEntry,
+  addCloudAlbumAsset,
+  getCloudAlbumEntryUploadContext,
+  getCloudAlbumPageData,
+  deleteCloudAlbumEntry,
   acceptFamilyInvite,
   createBabyProfile,
   createFamilyInvite,
@@ -51,6 +58,7 @@ import {
   getGeneratePageData,
   getGuideStageData,
   getHomePageData,
+  getGrowthChangePageData,
   getKnowledgeArticleDetailData,
   getKnowledgePageData,
   getMealPlanDetailData,
@@ -64,8 +72,10 @@ import {
   getVaccinePageData,
   leaveFamily,
   addUserFavorite,
+  addUserKnowledgeFavorite,
   removeFamilyMember,
   removeUserFavorite,
+  removeUserKnowledgeFavorite,
   listBabyProfiles,
   saveVaccineRecord,
   setActiveBaby,
@@ -206,6 +216,91 @@ const upload = multer({
   }
 })
 
+const albumUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|gif|webp/
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase())
+    const mimetype = allowedTypes.test(file.mimetype)
+
+    if (mimetype && extname) {
+      cb(null, true)
+    } else {
+      cb(new Error('云相册仅支持图片上传'))
+    }
+  }
+})
+
+function sanitizeAlbumSegment(value: string) {
+  const normalized = value
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, '_')
+    .replace(/\s+/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 24)
+
+  return normalized || '宝宝'
+}
+
+function resolveAlbumFileExtension(file: Express.Multer.File) {
+  const ext = path.extname(file.originalname).toLowerCase()
+  if (ext && ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(ext)) {
+    return ext
+  }
+
+  if (file.mimetype.includes('png')) {
+    return '.png'
+  }
+  if (file.mimetype.includes('gif')) {
+    return '.gif'
+  }
+  if (file.mimetype.includes('webp')) {
+    return '.webp'
+  }
+  return '.jpg'
+}
+
+async function removeUploadedStorageKeys(storageKeys: string[]) {
+  await Promise.all(storageKeys.map(async (storageKey) => {
+    if (!storageKey) {
+      return
+    }
+
+    const absolutePath = path.join(__dirname, '../uploads', storageKey)
+    try {
+      await fs.promises.unlink(absolutePath)
+    } catch {
+    }
+  }))
+}
+
+async function persistCloudAlbumFile(file: Express.Multer.File, options: {
+  babyNickname: string
+  babyId: string
+  entryId: string
+  monthKey: string
+  sortOrder: number
+}) {
+  const folder = `${sanitizeAlbumSegment(options.babyNickname)}_${options.babyId}`
+  const extension = resolveAlbumFileExtension(file)
+  const fileName = `${Date.now()}-${String(options.sortOrder + 1).padStart(2, '0')}${extension}`
+  const [year = 'unknown', month = '00'] = options.monthKey.split('-')
+  const storageKey = path.posix.join('albums', folder, year, month, options.entryId, fileName)
+
+  // 云相册必须按“宝宝名 + 宝宝ID/年月/条目ID”落到当前 API 服务器目录。
+  // 这里不复用通用 REMOTE_UPLOAD_URL 转发链路，否则目录规则无法保证，且多图时容易触发远端 nginx 413。
+  const absolutePath = path.join(__dirname, '../uploads', storageKey)
+  await fs.promises.mkdir(path.dirname(absolutePath), { recursive: true })
+  await fs.promises.writeFile(absolutePath, file.buffer)
+
+  return {
+    storageKey,
+    url: resolveUploadedImageUrl(`/uploads/${storageKey}`, env.uploadBaseUrl)
+  }
+}
+
 // 静态文件服务
 app.use('/uploads', express.static(path.join(__dirname, '../uploads')))
 
@@ -261,12 +356,23 @@ function getStatusCode(error: unknown) {
     || error.message === '喂养记录类型不正确'
     || error.message === '请填写记录标题'
     || error.message === '请填写记录说明'
+    || error.message === '相册记录时间格式不正确'
+    || error.message === '云相册可见范围不正确'
+    || error.message === '请至少上传1张图片'
+    || error.message === '最多上传9张图片'
+    || error.message === '请至少保留1张图片'
+    || error.message === '云相册图片数量不正确'
+    || error.message === '云相册仅支持图片上传'
   ) {
     return 400
   }
 
   if (error.message === '未找到当前登录用户') {
     return 401
+  }
+
+  if (error.message === '仅拥有者或协作者可管理云相册') {
+    return 403
   }
 
   if (
@@ -277,6 +383,7 @@ function getStatusCode(error: unknown) {
     || error.message === '未找到对应生长记录'
     || error.message === '未找到对应提醒'
     || error.message === '未找到对应喂养记录'
+    || error.message === '未找到对应云相册记录'
   ) {
     return 404
   }
@@ -726,6 +833,15 @@ app.get('/api/app/home', requireAppAuth, async (req, res) => {
   }
 })
 
+app.get('/api/app/growth/changes', requireAppAuth, async (req, res) => {
+  try {
+    const weekNumber = typeof req.query.weekNumber === 'string' ? Number.parseInt(req.query.weekNumber, 10) : undefined
+    res.json({ ok: true, data: await getGrowthChangePageData(getAppUserId(req), weekNumber) })
+  } catch (error) {
+    sendError(res, error, '成长变化读取失败')
+  }
+})
+
 app.get('/api/app/wheel/history', requireAppAuth, async (req, res) => {
   try {
     const limit = typeof req.query.limit === 'string' ? Number.parseInt(req.query.limit, 10) || 6 : 6
@@ -1127,6 +1243,24 @@ app.get('/api/app/knowledge/:id', async (req, res) => {
   }
 })
 
+app.post('/api/app/knowledge/:id/favorite', requireAppAuth, async (req, res) => {
+  try {
+    await addUserKnowledgeFavorite(getAppUserId(req), getRouteParam(req.params.id))
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    sendError(res, error, '干货收藏添加失败')
+  }
+})
+
+app.delete('/api/app/knowledge/:id/favorite', requireAppAuth, async (req, res) => {
+  try {
+    await removeUserKnowledgeFavorite(getAppUserId(req), getRouteParam(req.params.id))
+    res.json({ ok: true, data: null })
+  } catch (error) {
+    sendError(res, error, '干货收藏移除失败')
+  }
+})
+
 app.get('/api/app/profile', requireAppAuth, async (req, res) => {
   try {
     res.json({ ok: true, data: await getProfilePageData(getAppUserId(req)) })
@@ -1170,6 +1304,86 @@ app.delete('/api/app/favorites/:recipeId', requireAppAuth, async (req, res) => {
     res.json({ ok: true, data: null })
   } catch (error) {
     sendError(res, error, '收藏移除失败')
+  }
+})
+
+app.get('/api/app/cloud-album/page', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getCloudAlbumPageData(getAppUserId(req)) })
+  } catch (error) {
+    sendError(res, error, '云相册读取失败')
+  }
+})
+
+app.post('/api/app/cloud-album/entries', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await createCloudAlbumEntry(getAppUserId(req), req.body) })
+  } catch (error) {
+    sendError(res, error, '云相册创建失败')
+  }
+})
+
+app.get('/api/app/cloud-album/entries/:entryId', requireAppAuth, async (req, res) => {
+  try {
+    res.json({ ok: true, data: await getCloudAlbumEntryDetail(getAppUserId(req), getRouteParam(req.params.entryId)) })
+  } catch (error) {
+    sendError(res, error, '云相册详情读取失败')
+  }
+})
+
+app.put('/api/app/cloud-album/entries/:entryId', requireAppAuth, async (req, res) => {
+  try {
+    const data = await updateCloudAlbumEntry(getAppUserId(req), getRouteParam(req.params.entryId), req.body)
+    await removeUploadedStorageKeys(data.removedStorageKeys)
+    res.json({ ok: true, data: { entryId: data.entryId } })
+  } catch (error) {
+    sendError(res, error, '云相册更新失败')
+  }
+})
+
+app.post('/api/app/cloud-album/entries/:entryId/assets', requireAppAuth, albumUpload.single('image'), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(400).json({ ok: false, message: '未上传图片文件' })
+      return
+    }
+
+    const entryId = getRouteParam(req.params.entryId)
+    const sortOrder = typeof req.body?.sortOrder === 'string'
+      ? Number(req.body.sortOrder)
+      : typeof req.body?.sortOrder === 'number'
+        ? req.body.sortOrder
+        : 0
+    const context = await getCloudAlbumEntryUploadContext(getAppUserId(req), entryId)
+    const persisted = await persistCloudAlbumFile(req.file, {
+      babyNickname: context.babyNickname,
+      babyId: context.babyId,
+      entryId: context.entryId,
+      monthKey: context.monthKey,
+      sortOrder: Number.isFinite(sortOrder) ? Math.max(0, Math.trunc(sortOrder)) : 0
+    })
+    const asset = await addCloudAlbumAsset(getAppUserId(req), entryId, {
+      storageKey: persisted.storageKey,
+      url: persisted.url,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      sizeBytes: req.file.size,
+      sortOrder: Number.isFinite(sortOrder) ? Math.max(0, Math.trunc(sortOrder)) : 0
+    })
+
+    res.json({ ok: true, data: { asset } })
+  } catch (error) {
+    sendError(res, error, '云相册上传失败')
+  }
+})
+
+app.delete('/api/app/cloud-album/entries/:entryId', requireAppAuth, async (req, res) => {
+  try {
+    const data = await deleteCloudAlbumEntry(getAppUserId(req), getRouteParam(req.params.entryId))
+    await removeUploadedStorageKeys(data.removedStorageKeys)
+    res.json({ ok: true, data: { entryId: data.entryId } })
+  } catch (error) {
+    sendError(res, error, '云相册删除失败')
   }
 })
 

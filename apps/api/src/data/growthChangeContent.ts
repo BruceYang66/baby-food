@@ -1,0 +1,200 @@
+type GrowthChangeMetricItem = {
+  title: string
+  value: string
+  note?: string
+}
+
+type GrowthChangeDailyItem = {
+  title?: string
+  description: string
+}
+
+export type GrowthChangeStageContent = {
+  key: string
+  label: string
+  startWeek: number
+  endWeek: number | null
+  overviewTitle: string
+  overviewSummary: string
+  highlights: string[]
+  metricItems: GrowthChangeMetricItem[]
+  dailyItems: GrowthChangeDailyItem[]
+  sourceNote: string
+}
+
+export const growthChangeStages: GrowthChangeStageContent[] = [
+  {
+    key: '0-12w',
+    label: '0-3个月',
+    startWeek: 1,
+    endWeek: 12,
+    overviewTitle: '头颈控制和感官回应开始建立',
+    overviewSummary: '这一阶段重点看宝宝能否逐步追视、抬头、对声音和熟悉面孔做出回应，照护上以稳定喂养、睡眠节律和高质量互动为主。',
+    highlights: ['清醒时多做俯趴练习', '观察哭声、视线和安抚方式的变化', '优先建立稳定喂养与睡眠节律'],
+    metricItems: [
+      { title: '身高体重', value: '关注连续增长趋势，不只看单次值', note: '建议结合儿保曲线随访' },
+      { title: '运动', value: '能短暂抬头、逐步放松四肢', note: '每天安排短时俯趴' },
+      { title: '社交', value: '对照护者声音和表情更敏感', note: '多说话、多对视' }
+    ],
+    dailyItems: [
+      { description: '清醒时可以短时间趴一趴，帮助头颈和肩背力量慢慢建立。' },
+      { description: '当你靠近说话时，宝宝可能会更专注地看着你的脸。' },
+      { description: '喂奶后安静醒着的时间，可以用黑白图卡或柔和玩具做追视互动。' },
+      { description: '抱起和放下时动作尽量稳定，能帮助宝宝建立安全感和身体边界感。' },
+      { description: '宝宝开始通过不同哭声表达需求，照护者可以慢慢分辨饿、困和想被抱。' },
+      { description: '洗澡、更衣和抚触时的温和语言，是很重要的早期感官输入。' },
+      { description: '规律喂养和昼夜分化，会帮助宝宝逐步形成更稳定的生活节律。' }
+    ],
+    sourceNote: '依据婴幼儿早期发展里程碑与喂养照护共识整理，供家庭观察参考。'
+  },
+  {
+    key: '13-24w',
+    label: '4-6个月',
+    startWeek: 13,
+    endWeek: 24,
+    overviewTitle: '翻身、抓握和辅食准备信号逐步出现',
+    overviewSummary: '宝宝会更主动伸手、翻身、发声，也开始对食物和餐桌产生兴趣。这一阶段重点是大运动和手眼协调，以及判断是否具备辅食准备信号。',
+    highlights: ['观察头颈是否能稳定支撑', '鼓励伸手抓玩具和翻身', '看到食物感兴趣不等于一定可以马上加辅食'],
+    metricItems: [
+      { title: '身高体重', value: '继续看月度增长趋势', note: '儿保复查时关注头围和体重同步性' },
+      { title: '运动', value: '会翻身、抬胸、尝试支撑坐', note: '提供地面活动空间' },
+      { title: '喂养准备', value: '出现看食物流口水、主动张嘴等信号', note: '满6个月后再正式引入辅食更稳妥' }
+    ],
+    dailyItems: [
+      { description: '宝宝会更喜欢把手边的玩具往嘴里送，这是正常的口欲和探索行为。' },
+      { description: '地垫上的自由活动时间，会帮助翻身和身体协调更快发展。' },
+      { description: '看到大人吃饭时更专注，是社交模仿的一部分，不代表一定要提前加辅食。' },
+      { description: '和宝宝说话时，宝宝可能会用更响亮的咿呀声回应你。' },
+      { description: '让宝宝练习双手抓握、换手拿物，有助于手眼协调发展。' },
+      { description: '当头颈支撑更稳时，可以让宝宝短时间练习靠坐观察周围。' },
+      { description: '保持作息和喂养节律稳定，比频繁尝试新刺激更重要。' }
+    ],
+    sourceNote: '依据婴儿早期发展观察要点与辅食准备信号共识整理，供家庭观察参考。'
+  },
+  {
+    key: '25-36w',
+    label: '6-8个月',
+    startWeek: 25,
+    endWeek: 36,
+    overviewTitle: '坐稳、口手探索和辅食节律同步推进',
+    overviewSummary: '进入正式辅食阶段后，宝宝通常会更稳定地坐着、主动抓取物品，也更愿意用嘴和手共同探索世界。此时要同步关注补铁和咀嚼体验。',
+    highlights: ['继续优先补铁', '从细腻到略有颗粒的质地逐步过渡', '允许宝宝用手参与进食探索'],
+    metricItems: [
+      { title: '身高体重', value: '关注辅食添加后增长是否平稳', note: '母乳或配方奶仍是主要营养来源' },
+      { title: '运动', value: '能独坐或短时独坐，开始挪动身体', note: '避免长时间固定在座椅里' },
+      { title: '语言', value: '会重复简单音节、对名字反应更明显', note: '多做面对面回应式交流' }
+    ],
+    dailyItems: [
+      { description: '宝宝坐得更稳后，会更愿意盯着勺子和碗看，也可能主动伸手抓。' },
+      { description: '新食材一次只加一种，连续观察几天，是这个阶段很重要的节奏。' },
+      { description: '除了吃进去多少，也要观察宝宝是否愿意看、摸、闻、舔新的食物。' },
+      { description: '给宝宝留一些自己抓握食物或餐具的机会，有助于自主进食启蒙。' },
+      { description: '宝宝听到熟悉称呼时反应更快，可以多把照护动作和语言配对起来。' },
+      { description: '清醒活动时多在地面玩，能帮助核心稳定和后续爬行准备。' },
+      { description: '辅食节律建立后，作息通常也会更容易稳定下来。' }
+    ],
+    sourceNote: '依据婴儿辅食添加与运动语言发展观察要点整理，供家庭观察参考。'
+  },
+  {
+    key: '37-52w',
+    label: '9-12个月',
+    startWeek: 37,
+    endWeek: 52,
+    overviewTitle: '爬行、扶站、精细抓握和模仿能力提升',
+    overviewSummary: '宝宝会更主动地靠近目标、模仿动作和声音，也更愿意尝试手抓食。这个阶段的重点是安全探索、精细抓握和日常语言输入。',
+    highlights: ['提供安全爬行和扶站空间', '练习手抓食和杯饮', '多做指认、模仿和轮流互动'],
+    metricItems: [
+      { title: '身高体重', value: '关注三餐+加餐建立后的增长趋势', note: '饮食和活动量都在明显增加' },
+      { title: '运动', value: '会爬、扶站，部分宝宝开始扶走', note: '居家环境注意边角和插座安全' },
+      { title: '精细动作', value: '能捏小物、把东西从一只手换到另一只手', note: '避免误吞风险小物件' }
+    ],
+    dailyItems: [
+      { description: '宝宝会更想自己拿食物吃，手抓食和自主尝试比“吃得整洁”更重要。' },
+      { description: '当你指向某个物体时，宝宝可能会顺着看过去，这说明共同注意在发展。' },
+      { description: '爬到你身边、拉着家具站起来，都是常见的大运动进步信号。' },
+      { description: '可以开始让宝宝练习小杯喝水或双耳杯，动作不稳很正常。' },
+      { description: '多重复简单词和动作，比如拍手、挥手、再见，宝宝更容易模仿。' },
+      { description: '陌生环境里更黏照护者，往往是依恋发展更清晰的表现。' },
+      { description: '晚餐不宜太晚太饱，能帮助夜间睡眠更稳定。' }
+    ],
+    sourceNote: '依据婴儿后期大运动、精细动作和亲子互动观察要点整理，供家庭观察参考。'
+  },
+  {
+    key: '53-78w',
+    label: '13-18个月',
+    startWeek: 53,
+    endWeek: 78,
+    overviewTitle: '独走、自主表达和进食参与感明显增强',
+    overviewSummary: '这一阶段宝宝从“想自己试”快速过渡到“经常自己做”，会走、会指、会表达需求，也更容易在吃饭、穿衣和收拾时表现出独立意愿。',
+    highlights: ['鼓励安全独走和上下小台阶练习', '让宝宝参与收拾、递拿和简单选择', '继续坚持规律三餐两点'],
+    metricItems: [
+      { title: '身高体重', value: '身高约75-86cm · 体重约8.8-12.5kg', note: '个体差异较大，连续曲线更重要' },
+      { title: '运动', value: '独走更稳，能蹲下再站起', note: '每天保证户外或地面活动时间' },
+      { title: '语言', value: '能理解简单指令，开始用词表达需求', note: '多说短句，给回应时间' }
+    ],
+    dailyItems: [
+      { description: '宝宝会更想自己拿勺子、自己选食物，哪怕动作还不熟练，也值得鼓励。' },
+      { description: '指一指、拿给你、再看向你，是宝宝主动沟通在变多的表现。' },
+      { description: '当宝宝愿意走来走去探索环境时，安全边界比频繁制止更重要。' },
+      { description: '可以把简单家务变成游戏，比如递纸巾、放玩具、收小勺。' },
+      { description: '饭桌上给出两个简单选项，会比反复追问“吃不吃”更有效。' },
+      { description: '宝宝的词汇量在慢慢积累，重复日常短句比一次讲很多更有帮助。' },
+      { description: '当作息稳定、活动充分时，挑食和闹餐通常会更少一些。' }
+    ],
+    sourceNote: '依据幼儿早期运动、语言和自主进食发展观察要点整理，供家庭观察参考。'
+  },
+  {
+    key: '79-104w',
+    label: '19-24个月',
+    startWeek: 79,
+    endWeek: 104,
+    overviewTitle: '跑跳前准备、双词表达和规则感开始出现',
+    overviewSummary: '宝宝运动能力更强，语言理解和表达也在加速发展，会开始用两词表达想法，并尝试按简单规则完成事情。饮食上要继续稳住三餐结构和低盐少糖。',
+    highlights: ['多做走、蹲、跨和推拉类活动', '回应双词表达，扩展成短句', '零食固定时段、不过度加餐'],
+    metricItems: [
+      { title: '身高体重', value: '身高约77-90cm · 体重约9-13.8kg', note: '建议结合持续生长曲线观察' },
+      { title: '运动', value: '能快走、尝试小跑、上下台阶', note: '提供宽敞安全活动空间' },
+      { title: '语言', value: '开始说双词，能理解更多生活规则', note: '多做日常对话和复述' }
+    ],
+    dailyItems: [
+      { description: '早餐除了蛋白质和碳水，也别忘了搭配蔬菜或水果，帮助一天更有活力。' },
+      { description: '当宝宝出现推人、咬人等行为时，要及时制止，并用稳定语气告诉他边界。' },
+      { description: '宝宝会越来越爱模仿大人说话和做事，这是语言和社会性一起在发展。' },
+      { description: '让宝宝自己穿一件衣服、自己递鞋子，会增强“我自己来”的积极体验。' },
+      { description: '现在的宝宝通常很爱动，户外走、跑、推车类活动都能帮助释放精力。' },
+      { description: '如果宝宝开始用两个词表达想法，家长可以顺势扩展成更完整的短句。' },
+      { description: '晚间减少高糖高油小零食，更有利于睡眠和第二天胃口。' }
+    ],
+    sourceNote: '依据18-24个月幼儿发展观察重点与健康饮食原则整理，供家庭观察参考。'
+  },
+  {
+    key: '105w+',
+    label: '2-3岁',
+    startWeek: 105,
+    endWeek: null,
+    overviewTitle: '句子表达、想象游戏和生活自理意愿持续增强',
+    overviewSummary: '两岁后，宝宝在语言、社会互动和生活自理上会明显进阶，能说更完整的话、参与假装游戏，也更愿意自己完成穿脱、洗手、收拾等动作。',
+    highlights: ['继续坚持三餐两点和低盐少糖', '把说话、讲故事和角色扮演融入日常', '鼓励自理但不过度催促速度'],
+    metricItems: [
+      { title: '身高体重', value: '重点看年度趋势和生活习惯', note: '定期儿保随访更有参考意义' },
+      { title: '运动', value: '能跑、跳、踢球、双脚离地尝试', note: '每天安排高质量户外活动' },
+      { title: '语言社交', value: '会说短句、喜欢假装游戏和轮流互动', note: '亲子共读和对话很重要' }
+    ],
+    dailyItems: [
+      { description: '两岁后的宝宝更愿意“自己来”，吃饭、穿鞋、洗手都可以让他多试一点。' },
+      { description: '把日常经历说成短句，会帮助宝宝把词汇慢慢组织成更完整的表达。' },
+      { description: '假装给娃娃喂饭、给玩具看病，是很典型的想象游戏发展。' },
+      { description: '如果宝宝总想边玩边吃，规律的餐桌时间和固定零食时段会更重要。' },
+      { description: '多带宝宝跑跳、踢球、钻爬，可以帮助大运动和情绪调节一起发展。' },
+      { description: '开始学会轮流、等待和收拾，但仍然需要大人一次次温和提醒。' },
+      { description: '亲子共读时多提问、多描述画面，比单纯读完更能带动语言发展。' }
+    ],
+    sourceNote: '依据2-3岁幼儿发展观察重点与健康照护原则整理，供家庭观察参考。'
+  }
+]
+
+export function getGrowthChangeStage(weekNumber: number) {
+  const normalizedWeek = Math.max(1, Math.floor(weekNumber))
+  return growthChangeStages.find((stage) => normalizedWeek >= stage.startWeek && (stage.endWeek == null || normalizedWeek <= stage.endWeek))
+    ?? growthChangeStages[growthChangeStages.length - 1]
+}

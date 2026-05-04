@@ -90,7 +90,7 @@ onShareTimeline(() => ({ title: '辅食中心：计划、食谱、收藏一站�
         <text class="login-prompt-icon">🍚</text>
         <view class="login-prompt-content">
           <text class="login-prompt-title">登录后管理辅食计划</text>
-          <text class="login-prompt-desc">生成个性化计划、记录喂养历史、收藏喜欢的食谱</text>
+          <text class="login-prompt-desc">生成个性化计划、记录喂养历史、同步常看收藏</text>
         </view>
         <view class="login-prompt-btn" @tap="goLogin">立即登录</view>
       </view>
@@ -127,7 +127,7 @@ onShareTimeline(() => ({ title: '辅食中心：计划、食谱、收藏一站�
         <view class="tips-list">
           <text class="tips-item">• 生成个性化辅食计划</text>
           <text class="tips-item">• 记录每日喂养情况</text>
-          <text class="tips-item">• 收藏喜欢的食谱</text>
+          <text class="tips-item">• 收藏并缓存常看食谱</text>
           <text class="tips-item">• 查看历史计划和统计</text>
         </view>
       </view>
@@ -176,9 +176,9 @@ onShareTimeline(() => ({ title: '辅食中心：计划、食谱、收藏一站�
           <text class="quick-desc">查找食谱并加入计划</text>
         </view>
         <view class="quick-card soft-card" @tap="goFavorites">
-          <text class="quick-icon">♡</text>
+          <text class="quick-icon">⭐</text>
           <text class="quick-title">我的收藏</text>
-          <text class="quick-desc">常做辅食一键复用</text>
+          <text class="quick-desc">缓存常看食谱，随时回看</text>
         </view>
       </view>
 

@@ -1,6 +1,6 @@
 export type DateOnlyInput = string | Date | DateOnlyValue
 
-export type GuideStageKey = '4-6' | '6-7' | '8-9' | '10-12' | '12-18' | '18-24'
+export type GuideStageKey = '1-3' | '4-6' | '6-7' | '8-9' | '10-12' | '12-18' | '18-24' | '24-36'
 
 export type DateOnlyValue = {
   year: number
@@ -129,6 +129,10 @@ export function formatAgeLabel(from: DateOnlyInput, to: DateOnlyInput = getToday
 }
 
 export function getGuideStageKey(totalCompletedMonths: number): GuideStageKey {
+  if (totalCompletedMonths < 4) {
+    return '1-3'
+  }
+
   if (totalCompletedMonths < 6) {
     return '4-6'
   }
@@ -149,5 +153,9 @@ export function getGuideStageKey(totalCompletedMonths: number): GuideStageKey {
     return '12-18'
   }
 
-  return '18-24'
+  if (totalCompletedMonths < 24) {
+    return '18-24'
+  }
+
+  return '24-36'
 }

@@ -77,6 +77,61 @@ export interface IngredientHighlight {
   image: string
 }
 
+export interface HomeGrowthSnapshot {
+  weekNumber: number
+  weekLabel: string
+  ageLabel: string
+  summary: string
+}
+
+export interface HomeMonthlyFocus {
+  stageKey: string
+  ageLabel: string
+  stageLabel: string
+  title: string
+  summary: string
+}
+
+export interface GrowthChangeMetricItem {
+  title: string
+  value: string
+  note?: string
+}
+
+export interface GrowthChangeTimelineItem {
+  date: string
+  dateLabel: string
+  ageLabel: string
+  title?: string
+  description: string
+  isToday?: boolean
+}
+
+export interface GrowthChangePageData {
+  currentWeekNumber: number
+  weekNumber: number
+  weekLabel: string
+  ageLabel: string
+  stageLabel: string
+  dateRangeLabel: string
+  overviewTitle: string
+  overviewSummary: string
+  highlights: string[]
+  metricItems: GrowthChangeMetricItem[]
+  timeline: GrowthChangeTimelineItem[]
+  sourceNote?: string
+}
+
+export interface HomePageData {
+  babyProfile: BabyProfile
+  homeFeatures: HomeFeature[]
+  homeShortcuts: HomeShortcut[]
+  ingredientHighlights: IngredientHighlight[]
+  hasAnyPlan: boolean
+  growthSnapshot?: HomeGrowthSnapshot | null
+  monthlyFocus?: HomeMonthlyFocus | null
+}
+
 export interface RecipeSummary {
   id: string
   title: string
@@ -640,6 +695,83 @@ export interface FavoritesPageData {
   recipeIds: string[]
   recipes: FavoriteRecipeItem[]
   articles: FavoriteKnowledgeItem[]
+}
+
+export type CloudAlbumVisibility = 'family' | 'self'
+
+export interface CloudAlbumAsset {
+  id: string
+  entryId: string
+  babyId: string
+  url: string
+  storageKey: string
+  originalName: string
+  mimeType: string
+  sizeBytes: number
+  sortOrder: number
+  width?: number | null
+  height?: number | null
+}
+
+export interface CloudAlbumEntry {
+  id: string
+  babyId: string
+  authorUserId: string
+  authorName: string
+  authorRoleLabel: string
+  content: string
+  tags: string[]
+  isMilestone: boolean
+  visibility: CloudAlbumVisibility
+  recordedAt: string
+  recordedDate: string
+  monthKey: string
+  assets: CloudAlbumAsset[]
+  createdAt: string
+}
+
+export interface CloudAlbumTimelineGroup {
+  date: string
+  label: string
+  ageLabel: string
+  count: number
+  entries: CloudAlbumEntry[]
+}
+
+export interface CloudAlbumMonthSummary {
+  monthKey: string
+  year: number
+  month: number
+  count: number
+  milestoneCount: number
+  coverUrls: string[]
+}
+
+export interface CloudAlbumPageData {
+  babyProfile: BabyProfile | null
+  timelineGroups: CloudAlbumTimelineGroup[]
+  monthSummaries: CloudAlbumMonthSummary[]
+  totalCount: number
+}
+
+export interface CreateCloudAlbumEntryPayload {
+  content: string
+  tags: string[]
+  isMilestone: boolean
+  visibility: CloudAlbumVisibility
+  recordedAt: string
+  assetCount: number
+  babyId?: string
+}
+
+export interface UpdateCloudAlbumEntryPayload {
+  content: string
+  tags: string[]
+  isMilestone: boolean
+  visibility: CloudAlbumVisibility
+  recordedAt: string
+  retainedAssetIds: string[]
+  newAssetCount: number
 }
 
 export type GrowthMetricType = 'height' | 'weight' | 'head'

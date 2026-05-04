@@ -121,6 +121,13 @@ enum KnowledgeContentType {
   @@map("knowledge_content_type")
 }
 
+enum CloudAlbumVisibility {
+  family
+  self
+
+  @@map("cloud_album_visibility")
+}
+
 model User {
   id                String                  @id @default(cuid())
   nickname          String
@@ -138,6 +145,7 @@ model User {
   favorites         UserFavorite[]
   knowledgeFavorites UserKnowledgeFavorite[]
   wheelGenerationHistories WheelGenerationHistory[]
+  albumEntries      CloudAlbumEntry[]
 
   @@map("users")
 }
@@ -161,6 +169,8 @@ model Baby {
   growthRecords      GrowthRecord[]
   reminders          BabyReminder[]
   feedingJournalEntries FeedingJournalEntry[]
+  albumEntries       CloudAlbumEntry[]
+  albumAssets        CloudAlbumAsset[]
   user               User            @relation(fields: [userId], references: [id])
 
   @@map("babies")
@@ -378,6 +388,23 @@ model GrowthRecord {
   @@map("growth_records")
 }
 
+model GrowthChangeStage {
+  id              String   @id @default(cuid())
+  key             String   @unique
+  label           String
+  startWeek       Int      @map("start_week")
+  endWeek         Int?     @map("end_week")
+  overviewTitle   String   @map("overview_title")
+  overviewSummary String   @map("overview_summary")
+  highlightsJson  String   @default("[]") @map("highlights_json")
+  metricsJson     String   @default("[]") @map("metrics_json")
+  dailyItemsJson  String   @default("[]") @map("daily_items_json")
+  sourceNote      String   @map("source_note")
+  sortOrder       Int      @default(0) @map("sort_order")
+
+  @@map("growth_change_stages")
+}
+
 model BabyReminder {
   id                  String             @id @default(cuid())
   babyId              String             @map("baby_id")
@@ -398,6 +425,51 @@ model BabyReminder {
   @@index([babyId, reminderDate, reminderTime])
   @@index([babyId, status, reminderDate])
   @@map("baby_reminders")
+}
+
+model CloudAlbumEntry {
+  id          String               @id @default(cuid())
+  babyId      String               @map("baby_id")
+  authorUserId String              @map("author_user_id")
+  content     String               @default("")
+  tagsJson    String               @default("[]") @map("tags_json")
+  isMilestone Boolean              @default(false) @map("is_milestone")
+  visibility  CloudAlbumVisibility @default(family)
+  recordedAt  DateTime             @map("recorded_at")
+  recordedDate DateTime            @map("recorded_date") @db.Date
+  monthKey    String               @map("month_key")
+  createdAt   DateTime             @default(now()) @map("created_at")
+  updatedAt   DateTime             @updatedAt @map("updated_at")
+  deletedAt   DateTime?            @map("deleted_at")
+  authorUser  User                 @relation(fields: [authorUserId], references: [id])
+  baby        Baby                 @relation(fields: [babyId], references: [id])
+  assets      CloudAlbumAsset[]
+
+  @@index([babyId, recordedDate, createdAt])
+  @@index([babyId, monthKey])
+  @@index([authorUserId, createdAt])
+  @@map("baby_album_entries")
+}
+
+model CloudAlbumAsset {
+  id          String          @id @default(cuid())
+  entryId      String         @map("entry_id")
+  babyId      String          @map("baby_id")
+  storageKey  String          @map("storage_key")
+  url         String
+  originalName String         @map("original_name")
+  mimeType    String          @map("mime_type")
+  sizeBytes   Int             @map("size_bytes")
+  width       Int?
+  height      Int?
+  sortOrder   Int             @map("sort_order")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  baby        Baby            @relation(fields: [babyId], references: [id])
+  entry       CloudAlbumEntry @relation(fields: [entryId], references: [id])
+
+  @@index([entryId, sortOrder])
+  @@index([babyId, createdAt])
+  @@map("baby_album_assets")
 }
 
 model FeedingJournalEntry {

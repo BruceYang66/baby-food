@@ -11,20 +11,24 @@ import type {
   BabyProfile,
   BabyProfilePayload,
   BatchRecipeSummaryResponse,
+  CloudAlbumAsset,
+  CloudAlbumPageData,
+  CreateCloudAlbumEntryPayload,
+  UpdateCloudAlbumEntryPayload,
   CreateFamilyInvitePayload,
   CreateFamilyInviteResponse,
   CreateWheelHistoryPayload,
   FamilyInvitesResponse,
   FamilyMembersResponse,
+  FavoritesPageData,
   FeedingJournalEntry,
   FeedingJournalListResponse,
   GeneratePageData,
+  GrowthChangePageData,
   GrowthRecord,
   GrowthRecordsResponse,
   GuideStage,
-  HomeFeature,
-  HomeShortcut,
-  IngredientHighlight,
+  HomePageData,
   KnowledgeArticleDetail,
   KnowledgePageData,
   MarkRemindersDonePayload,
@@ -77,13 +81,6 @@ interface ApiResponse<T> {
   ok: boolean
   data: T
   message?: string
-}
-
-interface HomePageData {
-  babyProfile: BabyProfile
-  homeFeatures: HomeFeature[]
-  homeShortcuts: HomeShortcut[]
-  ingredientHighlights: IngredientHighlight[]
 }
 
 type NavigateMode = 'navigateTo' | 'reLaunch'
@@ -143,8 +140,33 @@ function isProtectedPage(path: string) {
   return PROTECTED_PAGES.has(getRouteBase(path))
 }
 
+function safeGetStorage<T>(key: string) {
+  try {
+    return uni.getStorageSync(key) as T
+  } catch (error) {
+    console.warn(`Failed to read storage: ${key}`, error)
+    return undefined
+  }
+}
+
+function safeSetStorage(key: string, value: unknown) {
+  try {
+    uni.setStorageSync(key, value)
+  } catch (error) {
+    console.warn(`Failed to write storage: ${key}`, error)
+  }
+}
+
+function safeRemoveStorage(key: string) {
+  try {
+    uni.removeStorageSync(key)
+  } catch (error) {
+    console.warn(`Failed to remove storage: ${key}`, error)
+  }
+}
+
 function getStoredAuthSession() {
-  const stored = uni.getStorageSync(AUTH_SESSION_KEY) as Partial<AuthSession> | undefined
+  const stored = safeGetStorage<Partial<AuthSession> | undefined>(AUTH_SESSION_KEY)
 
   if (!stored || typeof stored !== 'object' || typeof stored.token !== 'string' || !stored.token) {
     return null
@@ -154,7 +176,7 @@ function getStoredAuthSession() {
 }
 
 function saveAuthSession(session: AuthSession) {
-  uni.setStorageSync(AUTH_SESSION_KEY, session)
+  safeSetStorage(AUTH_SESSION_KEY, session)
 }
 
 function updateStoredAuthState(state: Partial<AuthState>) {
@@ -177,7 +199,7 @@ function updateStoredAuthState(state: Partial<AuthState>) {
 }
 
 export function clearAuthSession() {
-  uni.removeStorageSync(AUTH_SESSION_KEY)
+  safeRemoveStorage(AUTH_SESSION_KEY)
 }
 
 export function readAuthSession() {
@@ -186,19 +208,19 @@ export function readAuthSession() {
 
 function savePostLoginRedirect(url: string) {
   if (!url) {
-    uni.removeStorageSync(POST_LOGIN_REDIRECT_KEY)
+    safeRemoveStorage(POST_LOGIN_REDIRECT_KEY)
     return
   }
 
-  uni.setStorageSync(POST_LOGIN_REDIRECT_KEY, url)
+  safeSetStorage(POST_LOGIN_REDIRECT_KEY, url)
 }
 
 function clearPostLoginRedirect() {
-  uni.removeStorageSync(POST_LOGIN_REDIRECT_KEY)
+  safeRemoveStorage(POST_LOGIN_REDIRECT_KEY)
 }
 
 function readPostLoginRedirect() {
-  const stored = uni.getStorageSync(POST_LOGIN_REDIRECT_KEY)
+  const stored = safeGetStorage<string | undefined>(POST_LOGIN_REDIRECT_KEY)
   return typeof stored === 'string' ? stored : ''
 }
 
@@ -485,6 +507,11 @@ export function getHomeData() {
   return request<HomePageData>('/app/home')
 }
 
+export function getGrowthChangePageData(weekNumber?: number) {
+  const query = typeof weekNumber === 'number' ? `?weekNumber=${weekNumber}` : ''
+  return request<GrowthChangePageData>(`/app/growth/changes${query}`)
+}
+
 export function getWheelHistory(limit = 6) {
   return request<WheelHistoryResponse>(`/app/wheel/history?limit=${limit}`).then((data) => data.items)
 }
@@ -716,6 +743,18 @@ export function getKnowledgeArticleDetail(articleId: string) {
   })
 }
 
+export function addKnowledgeFavorite(articleId: string) {
+  return request<null>(`/app/knowledge/${encodeURIComponent(articleId)}/favorite`, {
+    method: 'POST'
+  })
+}
+
+export function removeKnowledgeFavorite(articleId: string) {
+  return request<null>(`/app/knowledge/${encodeURIComponent(articleId)}/favorite`, {
+    method: 'DELETE'
+  })
+}
+
 export function getProfileData() {
   return request<ProfilePageData>('/app/profile')
 }
@@ -820,6 +859,7 @@ export function updateUserProfile(payload: { nickname?: string; avatarUrl?: stri
 // ---- 收藏（云端同步 + 本地缓存） ----
 
 const FAVORITE_CACHE_KEY = 'favoriteRecipeIds'
+const FAVORITES_PAGE_CACHE_KEY = 'favoritesPageData'
 
 export function readFavoriteRecipeIds() {
   const value = uni.getStorageSync(FAVORITE_CACHE_KEY)
@@ -830,10 +870,64 @@ function writeFavoriteCache(ids: string[]) {
   uni.setStorageSync(FAVORITE_CACHE_KEY, ids)
 }
 
+export function readFavoritesPageCache(): FavoritesPageData | null {
+  const value = uni.getStorageSync(FAVORITES_PAGE_CACHE_KEY)
+
+  if (!value || typeof value !== 'object') {
+    return null
+  }
+
+  const data = value as Partial<FavoritesPageData>
+
+  return {
+    recipeIds: Array.isArray(data.recipeIds) ? data.recipeIds.filter((item): item is string => typeof item === 'string') : [],
+    recipes: Array.isArray(data.recipes) ? data.recipes : [],
+    articles: Array.isArray(data.articles) ? data.articles : []
+  }
+}
+
+function writeFavoritesPageCache(data: FavoritesPageData) {
+  uni.setStorageSync(FAVORITES_PAGE_CACHE_KEY, data)
+}
+
+function normalizeFavoritesPageData(data: FavoritesPageData): FavoritesPageData {
+  return {
+    recipeIds: data.recipeIds,
+    recipes: data.recipes.map((item) => ({
+      ...item,
+      recipe: {
+        ...item.recipe,
+        image: normalizeAppImageUrl(item.recipe.image)
+      }
+    })),
+    articles: data.articles.map((item) => ({
+      ...item,
+      article: {
+        ...item.article,
+        image: normalizeAppImageUrl(item.article.image || '')
+      }
+    }))
+  }
+}
+
+function cacheFavoritesPageData(data: FavoritesPageData) {
+  writeFavoriteCache(data.recipeIds)
+  writeFavoritesPageCache(data)
+}
+
 export async function syncFavoriteIds(): Promise<string[]> {
   try {
     const data = await request<{ recipeIds: string[] }>('/app/favorites', { redirectOnUnauthorized: false })
     writeFavoriteCache(data.recipeIds)
+
+    const cachedPage = readFavoritesPageCache()
+    if (cachedPage) {
+      writeFavoritesPageCache({
+        ...cachedPage,
+        recipeIds: data.recipeIds
+      })
+    }
+
     return data.recipeIds
   } catch {
     return readFavoriteRecipeIds()
@@ -843,18 +937,159 @@ export async function syncFavoriteIds(): Promise<string[]> {
 export async function addFavorite(recipeId: string) {
   await request<null>('/app/favorites', { method: 'POST', data: { recipeId } })
   const current = readFavoriteRecipeIds()
+
   if (!current.includes(recipeId)) {
     writeFavoriteCache([recipeId, ...current])
+  }
+
+  const cachedPage = readFavoritesPageCache()
+  if (cachedPage && !cachedPage.recipeIds.includes(recipeId)) {
+    writeFavoritesPageCache({
+      ...cachedPage,
+      recipeIds: [recipeId, ...cachedPage.recipeIds]
+    })
   }
 }
 
 export async function removeFavorite(recipeId: string) {
   await request<null>(`/app/favorites/${recipeId}`, { method: 'DELETE' })
-  writeFavoriteCache(readFavoriteRecipeIds().filter((id) => id !== recipeId))
+  const nextIds = readFavoriteRecipeIds().filter((id) => id !== recipeId)
+  writeFavoriteCache(nextIds)
+
+  const cachedPage = readFavoritesPageCache()
+  if (cachedPage) {
+    writeFavoritesPageCache({
+      ...cachedPage,
+      recipeIds: cachedPage.recipeIds.filter((id) => id !== recipeId),
+      recipes: cachedPage.recipes.filter((item) => item.recipe.id !== recipeId)
+    })
+  }
 }
 
 export function getFavoritesPageData() {
-  return request<import('@baby-food/shared-types').FavoritesPageData>('/app/favorites/page')
+  return request<FavoritesPageData>('/app/favorites/page').then((data) => {
+    const normalized = normalizeFavoritesPageData(data)
+    cacheFavoritesPageData(normalized)
+    return normalized
+  })
+}
+
+export function getCloudAlbumPageData() {
+  return request<CloudAlbumPageData>('/app/cloud-album/page').then((data) => ({
+    ...data,
+    timelineGroups: data.timelineGroups.map((group) => ({
+      ...group,
+      entries: group.entries.map((entry) => ({
+        ...entry,
+        assets: entry.assets.map((asset) => ({
+          ...asset,
+          url: normalizeAppImageUrl(asset.url)
+        }))
+      }))
+    })),
+    monthSummaries: data.monthSummaries.map((summary) => ({
+      ...summary,
+      coverUrls: summary.coverUrls.map((url) => normalizeAppImageUrl(url))
+    }))
+  }))
+}
+
+export function createCloudAlbumEntry(payload: CreateCloudAlbumEntryPayload) {
+  return request<{ entryId: string }>('/app/cloud-album/entries', {
+    method: 'POST',
+    data: payload
+  })
+}
+
+export function getCloudAlbumEntryDetail(entryId: string) {
+  return request<{ babyProfile: BabyProfile | null; entry: import('@baby-food/shared-types').CloudAlbumEntry }>(`/app/cloud-album/entries/${encodeURIComponent(entryId)}`)
+    .then((data) => ({
+      ...data,
+      entry: {
+        ...data.entry,
+        assets: data.entry.assets.map((asset) => ({
+          ...asset,
+          url: normalizeAppImageUrl(asset.url)
+        }))
+      }
+    }))
+}
+
+export function updateCloudAlbumEntry(entryId: string, payload: UpdateCloudAlbumEntryPayload) {
+  return request<{ entryId: string }>(`/app/cloud-album/entries/${encodeURIComponent(entryId)}`, {
+    method: 'PUT',
+    data: payload
+  })
+}
+
+async function prepareCloudAlbumImage(tempFilePath: string) {
+  const getFileInfo = () => new Promise<UniApp.GetFileInfoSuccessData | null>((resolve) => {
+    uni.getFileInfo({
+      filePath: tempFilePath,
+      success: resolve,
+      fail: () => resolve(null)
+    })
+  })
+
+  const fileInfo = await getFileInfo()
+  if (!fileInfo || fileInfo.size <= 4.5 * 1024 * 1024) {
+    return tempFilePath
+  }
+
+  if (typeof uni.compressImage !== 'function') {
+    return tempFilePath
+  }
+
+  // 手机原图在多图连续上传时更容易撞到服务端 5MB 限制，这里先压缩一次再发。
+  return new Promise<string>((resolve) => {
+    uni.compressImage({
+      src: tempFilePath,
+      quality: 72,
+      success: (res) => resolve(res.tempFilePath || tempFilePath),
+      fail: () => resolve(tempFilePath)
+    })
+  })
+}
+
+export async function uploadCloudAlbumAsset(entryId: string, tempFilePath: string, sortOrder: number): Promise<CloudAlbumAsset> {
+  const preparedFilePath = await prepareCloudAlbumImage(tempFilePath)
+
+  return new Promise((resolve, reject) => {
+    const token = readAuthSession()?.token ?? ''
+    uni.uploadFile({
+      url: `${appConfig.apiBaseUrl}/app/cloud-album/entries/${entryId}/assets`,
+      filePath: preparedFilePath,
+      name: 'image',
+      formData: {
+        sortOrder: String(sortOrder)
+      },
+      header: token ? { Authorization: `Bearer ${token}` } : {},
+      success(res) {
+        try {
+          const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+          if (body?.ok && body?.data?.asset) {
+            resolve({
+              ...(body.data.asset as CloudAlbumAsset),
+              url: normalizeAppImageUrl(String(body.data.asset.url || ''))
+            })
+          } else {
+            reject(new Error(body?.message || '图片上传失败'))
+          }
+        } catch {
+          reject(new Error('图片上传响应解析失败'))
+        }
+      },
+      fail(err) {
+        reject(new Error(err?.errMsg || '图片上传失败'))
+      }
+    })
+  })
+}
+
+export function deleteCloudAlbumEntry(entryId: string) {
+  return request<null>(`/app/cloud-album/entries/${entryId}`, {
+    method: 'DELETE'
+  })
 }
 
 // ---- 消息 ----

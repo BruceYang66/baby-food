@@ -126,21 +126,57 @@ export function formatAgeLabel(from: DateOnlyInput, to: DateOnlyInput = getToday
   return formatCalendarAgeLabel(getCalendarAge(from, to))
 }
 
-export function getFeedingStageLabel(totalCompletedMonths: number) {
+export function getGuideStageKey(totalCompletedMonths: number) {
+  if (totalCompletedMonths < 4) {
+    return '1-3'
+  }
+
   if (totalCompletedMonths < 6) {
-    return '泥糊状辅食阶段'
+    return '4-6'
   }
 
   if (totalCompletedMonths < 8) {
-    return '碎末状辅食阶段'
+    return '6-7'
   }
 
   if (totalCompletedMonths < 10) {
-    return '软烂颗粒阶段'
+    return '8-9'
   }
 
   if (totalCompletedMonths < 12) {
-    return '手抓食过渡阶段'
+    return '10-12'
+  }
+
+  if (totalCompletedMonths < 18) {
+    return '12-18'
+  }
+
+  if (totalCompletedMonths < 24) {
+    return '18-24'
+  }
+
+  return '24-36'
+}
+
+export function getFeedingStageLabel(totalCompletedMonths: number) {
+  if (totalCompletedMonths < 4) {
+    return '纯奶喂养阶段'
+  }
+
+  if (totalCompletedMonths < 6) {
+    return '辅食准备阶段'
+  }
+
+  if (totalCompletedMonths < 8) {
+    return '泥糊状辅食阶段'
+  }
+
+  if (totalCompletedMonths < 10) {
+    return '碎末状辅食阶段'
+  }
+
+  if (totalCompletedMonths < 12) {
+    return '软烂颗粒阶段'
   }
 
   return '软饭阶段'
