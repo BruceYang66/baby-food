@@ -11,7 +11,7 @@ defineProps<{
   <view class="steps-wrap">
     <view v-for="step in steps" :key="step.stepNo" class="step-card card">
       <view class="step-index">{{ step.stepNo }}</view>
-      <image v-if="step.image" class="step-image" :src="normalizeAppImageUrl(step.image)" mode="aspectFill" />
+      <image v-if="step.image" class="step-image" :src="normalizeAppImageUrl(step.image)" mode="widthFix" />
       <text class="step-title">{{ step.title }}</text>
       <text class="step-desc">{{ step.description }}</text>
     </view>
@@ -47,9 +47,9 @@ defineProps<{
 
 .step-image {
   width: 100%;
-  height: 280rpx;
   margin-top: 28rpx;
   border-radius: 24rpx;
+  display: block;
 }
 
 .step-title {

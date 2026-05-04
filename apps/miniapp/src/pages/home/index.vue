@@ -18,7 +18,7 @@ import {
   homeDashboardMonthlyFocusText,
   homeDashboardRecommendations
 } from '@/data/mock'
-import { getHomeReminderPreview, hydrateReminderItems } from '@/services/local-reminder'
+import { getHomeReminderPreview, getReminderDateState, hydrateReminderItems } from '@/services/local-reminder'
 
 type DashboardModule = (typeof homeDashboardModules)[number]
 type DashboardTodo = {
@@ -27,6 +27,8 @@ type DashboardTodo = {
   timeLabel?: string
   route?: string
   status: 'pending' | 'done'
+  dateState: 'today' | 'past' | 'future'
+  isPlaceholder?: boolean
 }
 type DashboardRecommendation = {
   id: string
@@ -123,6 +125,15 @@ const displayBabyName = computed(() => baby.value?.nickname || '米米')
 const displayBabyAge = computed(() => baby.value?.monthAgeLabel || '')
 const displayBabyStage = computed(() => baby.value?.stageLabel || '')
 const monthlyFocusLabel = computed(() => baby.value?.monthAgeLabel || '当前阶段')
+
+function getTodoStateLabel(todo: DashboardTodo) {
+  if (todo.status === 'done') {
+    return '已办'
+  }
+
+  return todo.dateState === 'today' ? '今日' : todo.dateState === 'past' ? '已过期' : '未来'
+}
+
 const familyPillText = computed(() => {
   if (familyFriendCount.value > 0) {
     return `${familyFriendCount.value}位亲友`
@@ -183,14 +194,20 @@ async function loadDashboardTodos() {
     const items = await getReminderItems()
     hydrateReminderItems(items)
     const preview = getHomeReminderPreview(3)
+    const reminderMap = new Map(items.map((item) => [item.id, item]))
 
-    dashboardTodos.value = preview.map((item) => ({
-      id: item.id,
-      title: item.title,
-      timeLabel: item.timeLabel,
-      route: item.route,
-      status: item.status
-    }))
+    dashboardTodos.value = preview.map((item) => {
+      const sourceItem = reminderMap.get(item.id)
+      return {
+        id: item.id,
+        title: item.title,
+        timeLabel: item.timeLabel,
+        route: item.route,
+        status: item.status,
+        dateState: sourceItem ? getReminderDateState(sourceItem.date) : 'future',
+        isPlaceholder: item.id === 'todo-empty'
+      }
+    })
   } catch {
     dashboardTodos.value = []
   }
@@ -502,13 +519,13 @@ onShareTimeline(() => ({
         </view>
 
         <view class="todo-list">
-          <view v-for="todo in dashboardTodos" :key="todo.id" class="todo-item" :class="{ done: todo.status === 'done' }" @tap="openTodo(todo)">
+          <view v-for="todo in dashboardTodos" :key="todo.id" class="todo-item" :class="[{ done: todo.status === 'done' }, `state-${todo.dateState}`]" @tap="openTodo(todo)">
             <view class="todo-main">
               <view class="todo-radio" :class="{ done: todo.status === 'done' }" />
               <text class="todo-item-title" :class="{ done: todo.status === 'done' }">{{ todo.title }}</text>
             </view>
             <view class="todo-item-side">
-              <text v-if="todo.status === 'done'" class="todo-item-status">已办</text>
+              <text v-if="!todo.isPlaceholder" class="todo-item-status" :class="todo.status === 'done' ? 'is-done' : `state-${todo.dateState}`">{{ getTodoStateLabel(todo) }}</text>
               <text class="todo-item-time" :class="{ done: todo.status === 'done' }">{{ todo.timeLabel }}</text>
             </view>
           </view>
@@ -1265,7 +1282,23 @@ onShareTimeline(() => ({
   gap: 18rpx;
   padding: 20rpx;
   border-radius: 22rpx;
+  border: 2rpx solid transparent;
   background: rgba(247, 239, 230, 0.48);
+}
+
+.todo-item.state-today {
+  background: rgba(248, 255, 251, 0.9);
+  border-color: rgba(44, 105, 86, 0.08);
+}
+
+.todo-item.state-past {
+  background: rgba(255, 249, 246, 0.9);
+  border-color: rgba(255, 153, 80, 0.12);
+}
+
+.todo-item.state-future {
+  background: rgba(247, 250, 255, 0.9);
+  border-color: rgba(90, 135, 227, 0.08);
 }
 
 .todo-item.done {
@@ -1295,23 +1328,45 @@ onShareTimeline(() => ({
 
 .todo-item-time {
   flex-shrink: 0;
+  max-width: 240rpx;
   font-size: 22rpx;
+  line-height: 1.4;
   color: var(--mini-text-muted);
+  text-align: right;
 }
 
 .todo-item-side {
   display: flex;
-  align-items: center;
-  gap: 10rpx;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8rpx;
 }
 
 .todo-item-status {
   padding: 4rpx 12rpx;
   border-radius: 999rpx;
-  background: rgba(44, 105, 86, 0.12);
-  color: var(--mini-secondary-deep);
   font-size: 18rpx;
   font-weight: 700;
+}
+
+.todo-item-status.is-done {
+  background: rgba(44, 105, 86, 0.12);
+  color: var(--mini-secondary-deep);
+}
+
+.todo-item-status.state-today {
+  background: rgba(168, 230, 207, 0.24);
+  color: var(--mini-secondary-deep);
+}
+
+.todo-item-status.state-past {
+  background: rgba(255, 153, 80, 0.16);
+  color: var(--mini-danger);
+}
+
+.todo-item-status.state-future {
+  background: rgba(90, 135, 227, 0.12);
+  color: var(--mini-primary-deep);
 }
 
 .todo-radio.done {

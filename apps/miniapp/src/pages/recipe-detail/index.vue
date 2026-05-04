@@ -139,7 +139,7 @@ function addToPlan() {
   <view class="recipe-page" v-if="recipe">
     <AppNavBar :title="isPreview ? '食谱预览' : '食谱详情'" :show-back="true" :right-text="isPreview ? '' : (favoriteIds.includes(recipe.id) ? '♥' : '♡')" @right="toggleFavorite" />
 
-    <image class="hero-image" :src="normalizeAppImageUrl(recipe.heroImage)" mode="aspectFill" />
+    <image class="hero-image" :src="normalizeAppImageUrl(recipe.heroImage)" mode="widthFix" />
 
     <view class="content-shell">
       <view v-if="isPreview" class="preview-banner soft-card">
@@ -214,7 +214,7 @@ function addToPlan() {
 
 .hero-image {
   width: 100%;
-  height: 560rpx;
+  display: block;
 }
 
 .content-shell {

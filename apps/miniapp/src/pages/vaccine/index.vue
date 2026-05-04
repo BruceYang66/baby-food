@@ -48,6 +48,13 @@ const sortedTimelineGroups = computed(() => {
 })
 
 const allItems = computed(() => sortedTimelineGroups.value.flatMap((g) => g.items))
+const timelineColumns = computed(() =>
+  sortedTimelineGroups.value.map((group) => ({
+    ...group,
+    freeItems: group.items.filter((item) => item.category === 'free'),
+    optionalItems: group.items.filter((item) => item.category === 'optional')
+  }))
+)
 
 // 简化月龄标签显示（去掉"龄"字）
 function simplifyAgeLabel(label: string): string {
@@ -203,14 +210,6 @@ function handleVaccineDetail(item: VaccineRecordItem) {
   })
 }
 
-function goBack() {
-  uni.navigateBack({
-    fail: () => {
-      uni.switchTab({ url: '/pages/home/index' })
-    }
-  })
-}
-
 async function loadPage() {
   const session = readAuthSession()
   isLoggedIn.value = !!session?.token
@@ -236,22 +235,8 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
 
 <template>
   <view class="vaccine-page">
-    <!-- 顶部导航 -->
-    <view class="top-nav">
-      <view class="nav-left">
-        <view class="nav-icon" @tap="goBack">‹</view>
-        <view class="nav-title-wrap">
-          <text class="nav-title">疫苗接种</text>
-          <text class="nav-arrow">▾</text>
-        </view>
-      </view>
-      <view class="nav-right">
-        <image v-if="pageData?.babyProfile" class="baby-avatar" :src="pageData.babyProfile.avatar" mode="aspectFill" />
-        <text class="nav-icon">🔔</text>
-      </view>
-    </view>
+    <AppNavBar title="疫苗接种" :show-back="true" center-title />
 
-    <!-- 固定区域：统计卡片 + 标签切换 -->
     <view class="fixed-header">
       <!-- 未登录提示 -->
       <view v-if="!isLoggedIn" class="login-tip-card">
@@ -332,36 +317,54 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
       <!-- 时间轴视图 -->
       <view v-if="activeTab === 'timeline' && pageData" class="timeline-view">
         <view class="timeline-line"></view>
-        <view v-for="(group, groupIndex) in sortedTimelineGroups" :key="group.key" class="timeline-stage">
-          <!-- 月龄节点 -->
+        <view v-for="(group, groupIndex) in timelineColumns" :key="group.key" class="timeline-stage">
           <view class="stage-node" :class="{ 'node-primary': groupIndex === 0, 'node-highlight': groupIndex === 1 }">
             <text class="node-text">{{ simplifyAgeLabel(group.label) }}</text>
           </view>
 
-          <!-- 疫苗卡片 -->
           <view class="stage-items">
-            <view
-              v-for="(item, itemIndex) in group.items"
-              :key="item.id"
-              class="vaccine-item"
-              :class="[
-                item.category === 'free' ? 'item-free' : 'item-optional',
-                itemIndex % 2 === 0 ? 'item-left' : 'item-right',
-                item.status === 'completed' ? 'item-completed' : ''
-              ]"
-              @tap="handleVaccineDetail(item)"
-            >
-              <view class="item-header">
-                <text class="item-name" :class="{ 'name-optional': item.category === 'optional' }">{{ item.name }}</text>
-                <view class="item-check-area" @tap.stop="toggleVaccineCheck(item)">
-                  <view v-if="item.status === 'completed'" class="item-check">✓</view>
-                  <view v-else class="item-checkbox">
-                    <view class="checkbox-inner"></view>
+            <view class="stage-column stage-column-free">
+              <view
+                v-for="item in group.freeItems"
+                :key="item.id"
+                class="vaccine-item item-free"
+                :class="{ 'item-completed': item.status === 'completed' }"
+                @tap="handleVaccineDetail(item)"
+              >
+                <view class="item-header">
+                  <text class="item-name">{{ item.name }}</text>
+                  <view class="item-check-area" @tap.stop="toggleVaccineCheck(item)">
+                    <view v-if="item.status === 'completed'" class="item-check">✓</view>
+                    <view v-else class="item-checkbox">
+                      <view class="checkbox-inner"></view>
+                    </view>
                   </view>
                 </view>
+                <text class="item-dose">{{ item.stageLabel }}</text>
+                <text v-if="item.status === 'pending'" class="item-badge">进行中</text>
               </view>
-              <text class="item-dose">{{ item.stageLabel }}</text>
-              <text v-if="item.status === 'pending'" class="item-badge">进行中</text>
+            </view>
+
+            <view class="stage-column stage-column-optional">
+              <view
+                v-for="item in group.optionalItems"
+                :key="item.id"
+                class="vaccine-item item-optional"
+                :class="{ 'item-completed': item.status === 'completed' }"
+                @tap="handleVaccineDetail(item)"
+              >
+                <view class="item-header">
+                  <text class="item-name name-optional">{{ item.name }}</text>
+                  <view class="item-check-area" @tap.stop="toggleVaccineCheck(item)">
+                    <view v-if="item.status === 'completed'" class="item-check">✓</view>
+                    <view v-else class="item-checkbox">
+                      <view class="checkbox-inner"></view>
+                    </view>
+                  </view>
+                </view>
+                <text class="item-dose">{{ item.stageLabel }}</text>
+                <text v-if="item.status === 'pending'" class="item-badge">进行中</text>
+              </view>
             </view>
           </view>
         </view>
@@ -434,88 +437,12 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
   flex-direction: column;
 }
 
-/* 顶部导航 */
-.top-nav {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    z-index: 100;
-    height: 120rpx;
-    padding: 50rpx 40rpx 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(254, 248, 243, 0.8);
-    backdrop-filter: blur(40rpx);
+.vaccine-page :deep(.app-nav) {
+  margin-bottom: 12rpx;
 }
 
-.nav-left {
-  display: flex;
-  align-items: center;
-  gap: 24rpx;
-}
-
-.nav-icon {
-  width: 64rpx;
-  height: 64rpx;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 48rpx;
-  color: #8a5108;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.nav-icon:active {
-  background: rgba(138, 81, 8, 0.1);
-}
-
-.nav-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12rpx;
-  padding: 12rpx 32rpx;
-  background: #ffffff;
-  border-radius: 999rpx;
-  border: 2rpx solid rgba(215, 195, 179, 0.1);
-}
-
-.nav-title {
-  font-size: 36rpx;
-  font-weight: 700;
-  color: #8a5108;
-}
-
-.nav-arrow {
-  font-size: 24rpx;
-  color: #8a5108;
-}
-
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 32rpx;
-}
-
-.baby-avatar {
-  width: 64rpx;
-  height: 64rpx;
-  border-radius: 50%;
-  border: 4rpx solid #ffb366;
-}
-
-/* 固定头部区域 */
 .fixed-header {
-  position: fixed;
-  top: 120rpx;
-  left: 0;
-  right: 0;
-  z-index: 90;
-  background: #fef8f3;
-  padding: 16rpx 32rpx 0;
+  padding: 0 32rpx 0;
 }
 
 /* 未登录提示卡片 */
@@ -695,10 +622,9 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
 
 /* 可滚动内容区域 */
 .scroll-content {
-    flex: 1;
-    margin-top: 475rpx;
-    margin-bottom: 130rpx ; 
-    padding: 0;
+  flex: 1;
+  margin-bottom: 130rpx;
+  padding: 0;
 }
 
 .scroll-content > view {
@@ -769,10 +695,16 @@ onShareTimeline(() => ({ title: '宝宝疫苗接种记录' }))
 
 .stage-items {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16rpx;
   padding: 0;
   width: 100%;
+}
+
+.stage-column {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
 }
 
 .vaccine-item {

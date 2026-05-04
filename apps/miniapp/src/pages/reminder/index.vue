@@ -8,6 +8,7 @@ import { getReminderItems, markReminderItemsDone, toggleReminderDoneStatus } fro
 import {
   getReminderCategoryLabel,
   getReminderCategoryMeta,
+  getReminderDateState,
   getReminderGroups,
   getReminderRepeatLabel,
   getReminderStats,
@@ -22,16 +23,34 @@ const { showBackToTop, handleScrollViewScroll, scrollViewTop, scrollScrollViewTo
 
 const groups = computed(() => {
   version.value
-  return getReminderGroups(filter.value)
+  return getReminderGroups(filter.value).map((group) => {
+    const firstItem = group.items[0]
+    const dateKey = filter.value === 'done'
+      ? firstItem?.completedAt || firstItem?.date || ''
+      : firstItem?.date || ''
+
+    return {
+      ...group,
+      dateState: dateKey ? getReminderDateState(dateKey) : 'future' as const
+    }
+  })
 })
 const stats = computed(() => {
   version.value
   return getReminderStats()
 })
-const visiblePendingIds = computed(() =>
-  groups.value.flatMap((group) => group.items.filter((item) => item.status === 'pending').map((item) => item.id))
+const actionablePendingIds = computed(() =>
+  groups.value.flatMap((group) =>
+    group.dateState === 'future'
+      ? []
+      : group.items.filter((item) => item.status === 'pending').map((item) => item.id)
+  )
 )
-const canMarkAllDone = computed(() => visiblePendingIds.value.length > 0 && filter.value !== 'done')
+const canMarkAllDone = computed(() => actionablePendingIds.value.length > 0 && filter.value !== 'done')
+
+function getReminderStateLabel(dateState: 'today' | 'past' | 'future') {
+  return dateState === 'today' ? '今日' : dateState === 'past' ? '已过期' : '未来'
+}
 
 async function refreshPage() {
   try {
@@ -57,12 +76,12 @@ async function handleToggle(id: string) {
 }
 
 async function handleMarkAllDone() {
-  if (!visiblePendingIds.value.length) {
+  if (!actionablePendingIds.value.length) {
     return
   }
 
   try {
-    await markReminderItemsDone({ ids: visiblePendingIds.value })
+    await markReminderItemsDone({ ids: actionablePendingIds.value })
     uni.showToast({ title: '已批量标记完成', icon: 'success' })
     await refreshPage()
   } catch (error) {
@@ -100,13 +119,16 @@ onShow(() => {
 
       <view v-if="groups.length" class="reminder-groups">
         <view v-for="group in groups" :key="group.label" class="reminder-group">
-          <text class="reminder-group-title">{{ group.label }}</text>
+          <view class="reminder-group-head">
+            <text class="reminder-group-title">{{ group.label }}</text>
+            <text class="reminder-group-badge" :class="`state-${group.dateState}`">{{ getReminderStateLabel(group.dateState) }}</text>
+          </view>
           <view class="reminder-card-list">
             <view
               v-for="item in group.items"
               :key="item.id"
               class="reminder-card"
-              :class="{ done: item.status === 'done' }"
+              :class="[{ done: item.status === 'done' }, `state-${group.dateState}`]"
               @tap="goEdit(item.id)"
             >
               <view class="reminder-card-main">
@@ -241,12 +263,43 @@ onShow(() => {
   margin-top: 24rpx;
 }
 
+.reminder-group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16rpx;
+  margin-bottom: 14rpx;
+}
+
 .reminder-group-title {
   display: block;
-  margin-bottom: 14rpx;
+  margin-bottom: 0;
   font-size: 24rpx;
   font-weight: 700;
   color: #7b746d;
+}
+
+.reminder-group-badge {
+  flex-shrink: 0;
+  padding: 8rpx 16rpx;
+  border-radius: 999rpx;
+  font-size: 20rpx;
+  font-weight: 700;
+}
+
+.reminder-group-badge.state-today {
+  background: rgba(168, 230, 207, 0.24);
+  color: var(--mini-secondary-deep);
+}
+
+.reminder-group-badge.state-past {
+  background: rgba(255, 153, 80, 0.16);
+  color: var(--mini-danger);
+}
+
+.reminder-group-badge.state-future {
+  background: rgba(90, 135, 227, 0.12);
+  color: var(--mini-primary-deep);
 }
 
 .reminder-card-list {
@@ -262,8 +315,24 @@ onShow(() => {
   gap: 18rpx;
   padding: 22rpx;
   border-radius: 24rpx;
+  border: 2rpx solid transparent;
   background: rgba(255, 255, 255, 0.95);
   box-shadow: var(--mini-shadow-card);
+}
+
+.reminder-card.state-today {
+  background: rgba(248, 255, 251, 0.96);
+  border-color: rgba(44, 105, 86, 0.08);
+}
+
+.reminder-card.state-past {
+  background: rgba(255, 249, 246, 0.96);
+  border-color: rgba(255, 153, 80, 0.12);
+}
+
+.reminder-card.state-future {
+  background: rgba(248, 251, 255, 0.96);
+  border-color: rgba(90, 135, 227, 0.08);
 }
 
 .reminder-card.done {
@@ -308,7 +377,7 @@ onShow(() => {
 
 .reminder-card-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 12rpx;
 }
@@ -341,8 +410,11 @@ onShow(() => {
 
 .reminder-card-time {
   flex-shrink: 0;
+  max-width: 280rpx;
   font-size: 22rpx;
+  line-height: 1.4;
   color: #8c847f;
+  text-align: right;
 }
 
 .reminder-card-title {

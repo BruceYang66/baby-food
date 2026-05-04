@@ -123,7 +123,7 @@ onShareTimeline(() => ({
         <text class="preview-desc">返回编辑页后可继续修改，再次查看会覆盖这份预览内容。</text>
       </view>
 
-      <image v-if="article.image" class="cover-image" :src="normalizeAppImageUrl(article.image)" mode="aspectFill" />
+      <image v-if="article.image" class="cover-image" :src="normalizeAppImageUrl(article.image)" mode="widthFix" />
 
       <view class="article-header">
         <view class="category-badge">{{ article.categoryLabel }}</view>
@@ -161,7 +161,7 @@ onShareTimeline(() => ({
               class="section-image-shell carousel-item"
               :class="[`image-${image.aspectRatio ?? 'wide'}`, image.style === 'square' ? 'is-square' : 'is-rounded']"
             >
-              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="aspectFill" />
+              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="widthFix" />
             </view>
           </scroll-view>
 
@@ -176,7 +176,7 @@ onShareTimeline(() => ({
               class="section-image-shell"
               :class="[`image-${image.aspectRatio ?? 'wide'}`, image.style === 'square' ? 'is-square' : 'is-rounded']"
             >
-              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="aspectFill" />
+              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="widthFix" />
             </view>
           </view>
         </view>
@@ -241,7 +241,6 @@ onShareTimeline(() => ({
 
 .cover-image {
   width: 100%;
-  height: 400rpx;
   display: block;
 }
 
@@ -372,18 +371,6 @@ onShareTimeline(() => ({
   border-radius: 0;
 }
 
-.section-image-shell.image-wide {
-  height: 320rpx;
-}
-
-.section-image-shell.image-square {
-  height: 240rpx;
-}
-
-.section-image-shell.image-portrait {
-  height: 420rpx;
-}
-
 .carousel-item {
   display: inline-block;
   width: 360rpx;
@@ -393,7 +380,6 @@ onShareTimeline(() => ({
 
 .section-image {
   width: 100%;
-  height: 100%;
   display: block;
 }
 

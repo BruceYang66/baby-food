@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll } from '@dcloudio/uni-app'
 import type {
   AdminKnowledgeArticleUpsertPayload,
   ContentStatus,
@@ -11,7 +11,9 @@ import type {
   KnowledgeSectionLayout
 } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import {
   createAppAdminKnowledge,
   getAppAdminKnowledgeDetail,
@@ -37,6 +39,7 @@ const loading = ref(false)
 const saving = ref(false)
 const tagInput = ref('')
 const suggestedTags = ref<string[]>([])
+const { showBackToTop, handlePageScroll, scrollPageToTop } = useBackToTop()
 
 const categories = [
   { key: 'feeding', label: '月龄喂养' },
@@ -203,6 +206,10 @@ function uploadCoverImage() {
 
 function addSection() {
   form.value.sections.push(createEmptySection())
+}
+
+function insertSectionAfter(index: number) {
+  form.value.sections.splice(index + 1, 0, createEmptySection())
 }
 
 function removeSection(index: number) {
@@ -429,6 +436,10 @@ async function persistArticle(openPreview = false) {
   }
 }
 
+onPageScroll(({ scrollTop }) => {
+  handlePageScroll(scrollTop)
+})
+
 onLoad((query) => {
   void (async () => {
     if (!await ensureAdminAccess()) return
@@ -469,7 +480,7 @@ onLoad((query) => {
       <view class="card form-card">
         <text class="card-title">封面与分类</text>
         <view class="cover-shell">
-          <image v-if="form.coverPreview || form.coverImage" class="cover-image" :src="normalizeAppImageUrl(form.coverPreview || form.coverImage)" mode="aspectFill" />
+          <image v-if="form.coverPreview || form.coverImage" class="cover-image" :src="normalizeAppImageUrl(form.coverPreview || form.coverImage)" mode="widthFix" />
           <view v-else class="cover-placeholder">上传封面图</view>
         </view>
         <view class="action-row">
@@ -539,7 +550,7 @@ onLoad((query) => {
 
           <view v-if="section.imageItems.length" class="image-list">
             <view v-for="(image, imageIndex) in section.imageItems" :key="`image-${imageIndex}`" class="image-card card">
-              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="aspectFill" />
+              <image class="section-image" :src="normalizeAppImageUrl(image.url)" mode="widthFix" />
               <picker :range="aspectRatioOptions.map((item) => item.label)" @change="(e) => updateSectionAspectRatio(index, imageIndex, aspectRatioOptions[Number(e.detail.value)]?.value || 'wide')">
                 <view class="picker-cell small-cell">{{ aspectRatioOptions.find((item) => item.value === image.aspectRatio)?.label || '横图' }}</view>
               </picker>
@@ -550,6 +561,7 @@ onLoad((query) => {
           <view class="action-row">
             <view class="outline-chip primary-chip" @tap="uploadSectionImage(index)">上传段落图片</view>
           </view>
+          <view class="insert-next-button" @tap="insertSectionAfter(index)">添加段落</view>
         </view>
       </view>
 
@@ -565,6 +577,7 @@ onLoad((query) => {
       </view>
     </view>
 
+    <BackToTopFab :visible="showBackToTop" extra-bottom="160rpx" @tap="scrollPageToTop" />
     <view class="fixed-bottom-actions admin-actions">
       <view class="outline-button editor-secondary-button" @tap="persistArticle(false)">{{ saving ? '保存中...' : '保存内容' }}</view>
       <view class="primary-button editor-primary-button" @tap="persistArticle(true)">{{ saving ? '保存中...' : '查看效果' }}</view>
@@ -710,10 +723,14 @@ onLoad((query) => {
   background: rgba(255, 255, 255, 0.82);
 }
 
-.cover-image,
+.cover-image {
+  width: 100%;
+  display: block;
+}
+
 .cover-placeholder {
   width: 100%;
-  height: 320rpx;
+  min-height: 320rpx;
 }
 
 .cover-placeholder {
@@ -806,8 +823,22 @@ onLoad((query) => {
 
 .section-image {
   width: 100%;
-  height: 240rpx;
   border-radius: 20rpx;
+  display: block;
+}
+
+.insert-next-button {
+  width: 100%;
+  height: 56rpx;
+  margin-top: 8rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 169, 71, 0.45);
+  color: #ff9a47;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 56rpx;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .picker-cell {

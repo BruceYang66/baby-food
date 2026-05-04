@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { onLoad, onPageScroll } from '@dcloudio/uni-app'
 import type { AdminRecipeUpsertPayload, ContentStatus, RecipeDetail } from '@baby-food/shared-types'
 import AppNavBar from '@/components/common/AppNavBar.vue'
+import BackToTopFab from '@/components/common/BackToTopFab.vue'
 import TagChip from '@/components/common/TagChip.vue'
+import { useBackToTop } from '@/composables/useBackToTop'
 import {
   createAppAdminRecipe,
   getAppAdminRecipeDetail,
@@ -35,6 +37,7 @@ const loading = ref(false)
 const saving = ref(false)
 const tagInput = ref('')
 const suggestedTags = ref<string[]>([])
+const { showBackToTop, handlePageScroll, scrollPageToTop } = useBackToTop()
 
 const statusOptions: Array<{ value: ContentStatus; label: string }> = [
   { value: 'draft', label: '草稿' },
@@ -189,6 +192,10 @@ function removeIngredient(index: number) {
 
 function addStep() {
   form.value.steps.push(createEmptyStep())
+}
+
+function insertStepAfter(index: number) {
+  form.value.steps.splice(index + 1, 0, createEmptyStep())
 }
 
 function removeStep(index: number) {
@@ -404,6 +411,10 @@ async function persistRecipe(openPreview = false) {
   }
 }
 
+onPageScroll(({ scrollTop }) => {
+  handlePageScroll(scrollTop)
+})
+
 onLoad((query) => {
   void (async () => {
     if (!await ensureAdminAccess()) return
@@ -466,7 +477,7 @@ onLoad((query) => {
       <view class="card form-card">
         <text class="card-title">封面与标签</text>
         <view class="cover-shell">
-          <image v-if="form.coverPreview || form.coverImage" class="cover-image" :src="normalizeAppImageUrl(form.coverPreview || form.coverImage)" mode="aspectFill" />
+          <image v-if="form.coverPreview || form.coverImage" class="cover-image" :src="normalizeAppImageUrl(form.coverPreview || form.coverImage)" mode="widthFix" />
           <view v-else class="cover-placeholder">上传封面图</view>
         </view>
         <view class="action-row">
@@ -523,13 +534,14 @@ onLoad((query) => {
           <input v-model="step.title" class="ghost-input mini-input" placeholder="步骤标题，如：蒸熟压泥" />
           <textarea v-model="step.description" class="mini-textarea small" placeholder="步骤描述" />
           <view class="step-image-shell">
-            <image v-if="step.imagePreview || step.imageUrl" class="step-image" :src="normalizeAppImageUrl(step.imagePreview || step.imageUrl)" mode="aspectFill" />
+            <image v-if="step.imagePreview || step.imageUrl" class="step-image" :src="normalizeAppImageUrl(step.imagePreview || step.imageUrl)" mode="widthFix" />
             <view v-else class="step-image placeholder">步骤配图</view>
           </view>
           <view class="action-row">
             <view class="outline-chip primary-chip" @tap="uploadStepImage(index)">{{ step.imageUrl ? '更换配图' : '上传配图' }}</view>
             <view v-if="step.imageUrl || step.imagePreview" class="mini-link danger" @tap="clearStepImage(index)">移除图片</view>
           </view>
+          <view class="insert-next-button" @tap="insertStepAfter(index)">添加步骤</view>
         </view>
       </view>
 
@@ -541,6 +553,7 @@ onLoad((query) => {
       </view>
     </view>
 
+    <BackToTopFab :visible="showBackToTop" extra-bottom="160rpx" @tap="scrollPageToTop" />
     <view class="fixed-bottom-actions admin-actions">
       <view class="outline-button editor-secondary-button" @tap="persistRecipe(false)">{{ saving ? '保存中...' : '保存内容' }}</view>
       <view class="primary-button editor-primary-button" @tap="persistRecipe(true)">{{ saving ? '保存中...' : '查看效果' }}</view>
@@ -692,14 +705,26 @@ onLoad((query) => {
   background: rgba(255, 255, 255, 0.82);
 }
 
-.cover-image,
-.cover-placeholder {
+.cover-image {
   width: 100%;
-  height: 320rpx;
+  display: block;
 }
 
-.cover-placeholder,
+.cover-placeholder {
+  width: 100%;
+  min-height: 320rpx;
+}
+
+.cover-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 179, 102, 0.12);
+  font-size: 26rpx;
+}
+
 .step-image.placeholder {
+  min-height: 240rpx;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -756,8 +781,21 @@ onLoad((query) => {
 
 .step-image {
   width: 100%;
-  height: 240rpx;
   display: block;
+}
+
+.insert-next-button {
+  width: 100%;
+  height: 56rpx;
+  margin-top: 8rpx;
+  border-radius: 12rpx;
+  border: 2rpx solid rgba(255, 169, 71, 0.45);
+  color: #ff9a47;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 56rpx;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.92);
 }
 
 .upload-hint {

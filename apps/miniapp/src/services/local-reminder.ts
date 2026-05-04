@@ -51,19 +51,42 @@ function compareReminder(left: ReminderItem, right: ReminderItem) {
   return (left.time || '').localeCompare(right.time || '')
 }
 
+export type ReminderDateState = 'today' | 'past' | 'future'
+
+function formatMonthDay(date: string) {
+  const [, month, day] = date.split('-')
+  return `${Number(month)}月${Number(day)}号`
+}
+
+function formatFullDate(date: string) {
+  const [year, month, day] = date.split('-')
+  return `${year}年${Number(month)}月${Number(day)}日`
+}
+
 function formatGroupLabel(date: string) {
+  return formatFullDate(date)
+}
+
+export function getReminderDateState(date: string): ReminderDateState {
   const today = formatYmd(new Date())
   if (date === today) {
-    return '今天'
+    return 'today'
   }
 
+  return date < today ? 'past' : 'future'
+}
+
+export function formatReminderDisplayLabel(date: string, time?: string) {
+  const today = formatYmd(new Date())
   const tomorrow = formatYmd(new Date(Date.now() + 24 * 60 * 60 * 1000))
-  if (date === tomorrow) {
-    return '明天'
-  }
 
-  const [year, month, day] = date.split('-')
-  return `${Number(month)}月${Number(day)}日`
+  const dateLabel = date === today
+    ? `今日${formatMonthDay(date)}`
+    : date === tomorrow
+      ? `明天${formatMonthDay(date)}`
+      : formatFullDate(date)
+
+  return time ? `${dateLabel} ${time}` : dateLabel
 }
 
 function formatRepeatLabel(repeatType: ReminderRepeatType) {
@@ -174,10 +197,10 @@ export function getReminderGroups(filter: ReminderFilterKey = 'all'): ReminderGr
   }, {})
 
   return Object.keys(grouped)
-    .sort((left, right) => left.localeCompare(right))
+    .sort((left, right) => right.localeCompare(left))
     .map((key) => ({
       label: formatGroupLabel(key),
-      items: grouped[key].slice().sort(compareReminder)
+      items: grouped[key].slice().sort((left, right) => compareReminder(right, left))
     }))
 }
 
@@ -242,7 +265,7 @@ export function getHomeReminderPreview(limit = 3): HomeTodoItem[] {
       id: item.id,
       title: item.title,
       description: `${getReminderCategoryLabel(item)} · ${formatRepeatLabel(item.repeatType)}`,
-      timeLabel: item.time ? `${item.date.slice(5).replace('-', '/')} ${item.time}` : item.date.slice(5).replace('-', '/'),
+      timeLabel: formatReminderDisplayLabel(item.date, item.time),
       status: item.status,
       route: item.category === 'vaccine'
         ? '/pages/vaccine/index'
