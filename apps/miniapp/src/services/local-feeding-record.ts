@@ -130,7 +130,7 @@ function describeEntry(entry: FeedingJournalEntry) {
     return entry.swim?.durationMinutes ? `游泳 ${entry.swim.durationMinutes}分钟` : '游泳'
   }
 
-  return entry.other?.categoryLabel || entry.title || '其他事件'
+  return entry.title || entry.other?.categoryLabel || '其他事件'
 }
 
 function normalizeStoredEntry(raw: unknown): FeedingJournalEntry | null {

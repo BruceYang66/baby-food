@@ -109,6 +109,7 @@ const SOLID_REACTION_OPTIONS: Array<{ key: FeedingReactionTag; label: string }> 
 ]
 const WATER_QUICK_AMOUNTS = [30, 50, 80, 100, 150, 200]
 const SUPPLEMENT_OPTIONS = ['AD滴剂', '钙剂', 'DHA', '益生菌', '铁剂', '其他']
+const OTHER_CATEGORY_OPTIONS = ['用药', '体温', '外出', '护理'] as const
 const SUPPLEMENT_UNITS: SupplementDoseUnit[] = ['滴', '粒', 'ml', '勺']
 const DIAPER_OPTIONS: Array<{ key: DiaperRecordKind; label: string }> = [
   { key: 'wet', label: '尿湿' },
@@ -162,7 +163,7 @@ const form = ref({
   playDurationMinutes: '30',
   swimDurationMinutes: '20',
   otherTitle: '',
-  otherCategoryLabel: '其他事件'
+  otherCategoryLabel: ''
 })
 
 const displayScopeLabel = computed(() => SCOPE_TABS.find((item) => item.key === activeScope.value)?.label || '全部')
@@ -261,6 +262,25 @@ function toNumber(value: string) {
   return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined
 }
 
+function normalizeOtherCategoryLabel(value?: string, title?: string) {
+  const categoryLabel = value?.trim() || ''
+  const eventTitle = title?.trim() || ''
+
+  if (!categoryLabel || categoryLabel === '其他事件' || categoryLabel === eventTitle) {
+    return ''
+  }
+
+  return categoryLabel
+}
+
+function formatTimelineDescription(entry: FeedingJournalEntry) {
+  if (entry.type === 'other') {
+    return entry.title || entry.description || normalizeOtherCategoryLabel(entry.other?.categoryLabel) || '已记录'
+  }
+
+  return entry.description || entry.title || '已记录'
+}
+
 function toggleTag<T extends string>(items: T[], value: T) {
   return items.includes(value)
     ? items.filter((item) => item !== value)
@@ -308,7 +328,7 @@ function formatTimelineAmount(entry: FeedingJournalEntry) {
     return entry.swim?.durationMinutes ? `${entry.swim.durationMinutes}分钟` : '已记录'
   }
 
-  return entry.other?.categoryLabel || '已记录'
+  return normalizeOtherCategoryLabel(entry.other?.categoryLabel, entry.title)
 }
 
 function buildSegments(points: ChartPoint[], color: string) {
@@ -420,7 +440,7 @@ function resetForm(mode: FeedingJournalType) {
     playDurationMinutes: '30',
     swimDurationMinutes: '20',
     otherTitle: '',
-    otherCategoryLabel: '其他事件'
+    otherCategoryLabel: ''
   }
 }
 
@@ -453,7 +473,7 @@ function fillForm(entry: FeedingJournalEntry) {
     playDurationMinutes: entry.play?.durationMinutes ? `${entry.play.durationMinutes}` : '30',
     swimDurationMinutes: entry.swim?.durationMinutes ? `${entry.swim.durationMinutes}` : '20',
     otherTitle: entry.title,
-    otherCategoryLabel: entry.other?.categoryLabel || entry.title || '其他事件'
+    otherCategoryLabel: normalizeOtherCategoryLabel(entry.other?.categoryLabel, entry.title)
   }
 }
 
@@ -770,14 +790,18 @@ function buildSavePayload() {
     throw new Error('请先输入事件标题')
   }
 
+  const otherCategoryLabel = normalizeOtherCategoryLabel(form.value.otherCategoryLabel, otherTitle)
+
   return {
     ...common,
     type: 'other' as const,
     title: otherTitle,
-    description: form.value.otherCategoryLabel.trim() || otherTitle,
-    other: {
-      categoryLabel: form.value.otherCategoryLabel.trim() || '其他事件'
-    }
+    description: otherTitle,
+    other: otherCategoryLabel
+      ? {
+          categoryLabel: otherCategoryLabel
+        }
+      : undefined
   }
 }
 
@@ -950,8 +974,8 @@ onShareTimeline(() => ({
                   </view>
                   <text class="timeline-more" @tap="openRecordActions(entry)">⋮</text>
                 </view>
-                <text class="timeline-desc">{{ entry.description }}</text>
-                <text class="timeline-amount">{{ entry.amountLabel }}</text>
+                <text class="timeline-desc">{{ formatTimelineDescription(entry) }}</text>
+                <text v-if="entry.amountLabel" class="timeline-amount">{{ entry.amountLabel }}</text>
                 <text v-if="entry.note" class="timeline-note">备注：{{ entry.note }}</text>
               </view>
             </view>
@@ -1402,14 +1426,25 @@ onShareTimeline(() => ({
 
           <view v-else class="mode-panel">
             <view class="panel-card card">
-              <text class="panel-title">其他事件</text>
+              <text class="panel-title">自定义事件</text>
               <view class="input-card soft-card">
                 <text class="field-label">事件标题</text>
-                <input v-model="form.otherTitle" class="text-input" type="text" placeholder="如：外出散步 / 感冒咳嗽" />
+                <input v-model="form.otherTitle" class="text-input" type="text" placeholder="如：退烧药 / 量体温 / 外出散步" />
+              </view>
+              <view class="chip-row quick-tag-row">
+                <view
+                  v-for="item in OTHER_CATEGORY_OPTIONS"
+                  :key="item"
+                  class="choice-chip"
+                  :class="{ active: form.otherCategoryLabel === item }"
+                  @tap="form.otherCategoryLabel = form.otherCategoryLabel === item ? '' : item"
+                >
+                  {{ item }}
+                </view>
               </view>
               <view class="input-card soft-card">
-                <text class="field-label">事件分类名</text>
-                <input v-model="form.otherCategoryLabel" class="text-input" type="text" placeholder="如：其他事件" />
+                <text class="field-label">事件标签（选填）</text>
+                <input v-model="form.otherCategoryLabel" class="text-input" type="text" placeholder="如：用药 / 体温 / 外出" />
               </view>
             </view>
           </view>
